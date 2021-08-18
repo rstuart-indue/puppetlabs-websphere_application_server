@@ -73,6 +73,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
   # passed a String argument which is the name of the field/sibling
   # we are trying to get the value for. i.e. it can be "wim:cn"
   # or "wim:sn" or "wim:email" or "*" for all of them.
+  #
   def get_userid_data(field)
     if File.exist?(scope('file'))
       doc = REXML::Document.new(File.open(scope('file')))
