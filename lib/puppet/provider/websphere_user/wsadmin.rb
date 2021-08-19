@@ -31,18 +31,13 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
   # Create a given user
   def create
     cmd = <<-END.unindent
-    # Create for #{resource[:userid]}
-    scope=AdminConfig.getid('#{scope('query')}/VariableMap:/')
-    nodeid=AdminConfig.getid('#{scope('query')}/')
-    # Create a variable map if it doesn't exist
-    if len(scope) < 1:
-      varMapserver = AdminConfig.create('VariableMap', nodeid, [])
-    AdminConfig.create('VariableSubstitutionEntry', scope, '[[symbolicName "#{resource[:variable]}"] [description "#{resource[:description]}"] [value "#{resource[:value]}"]]')
+    # Create user for #{resource[:userid]}
+    AdminTask.createUser(['-uid', #{resource[:userid]}, '-password', #{resource[:password]}, '-cn', #{resource[:common_name]}, '-sn', #{resource[:surname]}])
     AdminConfig.save()
     END
 
     debug "Running #{cmd}"
-    result = wsadmin(file: cmd, user: resource[:user], failonfail: false)
+    result = wsadmin(file: cmd, user: resource[:userid], failonfail: false)
 
     if %r{Invalid parameter value "" for parameter "parent config id" on command "create"}.match?(result)
       ## I'd rather handle this in the Jython, but I'm not sure how.
@@ -56,12 +51,6 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
       may need to be created on the DMGR.
       EOT
 
-      if resource[:scope] == 'server'
-        err += <<-EOT
-        This is a server scoped variable, so make sure the DMGR has created the
-        cluster member.  The DMGR may need to run Puppet.
-        EOT
-      end
       raise Puppet::Error, err
 
     end
@@ -124,7 +113,9 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
   def common_name=(_val)
     cmd = <<-END.unindent
     # Update value for #{resource[:common_name]}
-    # Put in here the change of the CN for a given user.
+    uniqueName = AdminTask.searchUsers(['-uid', userName])
+    if len(uniqueName):
+        AdminTask.updateUser(['-uniqueName', uniqueName, '-cn', #{resource[:common_name]}])
     AdminConfig.save()
     END
     debug "Running #{cmd}"
@@ -141,7 +132,9 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
   def surname=(_val)
     cmd = <<-END.unindent
     # Update description for #{resource[:surname]}
-    # Put in here the change of the SN for a given user.
+    uniqueName = AdminTask.searchUsers(['-uid', userName])
+    if len(uniqueName):
+        AdminTask.updateUser(['-uniqueName', uniqueName, '-sn', #{resource[:surname]}])
     AdminConfig.save()
     END
     debug "Running #{cmd}"
@@ -165,7 +158,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
     secadms = AdminControl.queryNames("type=SecurityAdmin,*")
     if len(secadms) == 0:
         print "Unable to detect any Security MBeans."
-        exit 1;
+        sys.exit(1);
 
     secadmbean = secadms.split("\n")[0];
     plist = "#{userid}" + " " + "#{password}" + " " + "[]";
@@ -179,15 +172,14 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
     debug "result: #{result}"
   end
 
-  # Remove a given user
+  # Remove a given user - we try to find it first, and if it does exist
+  # we remove the user.
   def destroy
     cmd = <<-END.unindent
-    vars=AdminConfig.getid("#{scope('query')}/VariableMap:/VariableSubstitutionEntry:/").splitlines()
-    for var in vars :
-        name = AdminConfig.showAttribute(var, "symbolicName")
-        value = AdminConfig.showAttribute(var, "description")
-        if (name == "#{resource[:variable]}"):
-            AdminConfig.remove(var)
+    uniqueName = AdminTask.searchUsers(['-uid', #{resource[:userid]}])
+    if len(uniqueName):
+        AdminTask.deleteUser(['-uniqueName', uniqueName])
+
     AdminConfig.save()
     END
 
@@ -197,9 +189,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
   end
 
   def flush
-    case resource[:scope]
-    when %r{(server|node)}
-      sync_node
-    end
+    # We could do the updates here - so that we save having to run jython half a billion times
+    # and take forever in the process.
   end
 end
