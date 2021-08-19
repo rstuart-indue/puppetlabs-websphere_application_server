@@ -28,6 +28,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
     end
   end
 
+  # Create a given user
   def create
     cmd = <<-END.unindent
     # Create for #{resource[:userid]}
@@ -95,6 +96,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
     end
   end
 
+  # Check to see if a user exists.
   def exists?
     unless File.exist?(scope('file'))
       return false
@@ -113,10 +115,12 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
     !userid.nil?
   end
 
+  # Get a user's given name
   def common_name
     get_userid_data('wim:cn')
   end
 
+  # Set a user's given name
   def common_name=(_val)
     cmd = <<-END.unindent
     # Update value for #{resource[:common_name]}
@@ -128,10 +132,12 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
     debug "result: #{result}"
   end
 
+  # Get a user's surname
   def surname
     get_userid_data('wim:sn')
   end
 
+  # Set a user's surname
   def surname=(_val)
     cmd = <<-END.unindent
     # Update description for #{resource[:surname]}
@@ -143,10 +149,12 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
     debug "result: #{result}"
   end
 
-  def surname
-    get_userid_data('wim:sn')
-  end
-
+  # Fixing the passwords from here is probably not desirable. It means
+  # that if the user changes their own password, puppet comes around
+  # and resets it to what it knows of.
+  # 
+  # That aside - jython is incredibly slow. If this needs to be done
+  # for 50-100 users, the puppet run will take a very long time.
   def password
     cmd = <<-END.unindent
     # Check the password - we need to find the SecurityAdmin MBean.
@@ -171,6 +179,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
     debug "result: #{result}"
   end
 
+  # Remove a given user
   def destroy
     cmd = <<-END.unindent
     vars=AdminConfig.getid("#{scope('query')}/VariableMap:/VariableSubstitutionEntry:/").splitlines()
