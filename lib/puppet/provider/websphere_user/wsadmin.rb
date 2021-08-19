@@ -6,6 +6,9 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
   desc <<-DESC
     Provider to manage WebSphere users in the default WIM file based realm
 
+    Please see the IBM documentation available at:
+    https://www.ibm.com/docs/en/was/9.0.5?topic=scripting-wimmanagementcommands-command-group-admintask-object#rxml_atwimmgt__cmd3
+
     We execute the 'wsadmin' tool to query and make changes, which interprets
     Jython. This means we need to use heredocs to satisfy whitespace sensitivity.
     DESC
@@ -44,7 +47,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
       ## This usually indicates that the server isn't ready on the DMGR yet -
       ## the DMGR needs to do another Puppet run, probably.
       err = <<-EOT
-      Could not create variable: #{resource[:variable]}
+      Could not create user: #{resource[:userid]}
       This appears to be due to the remote resource not being available.
       Ensure that all the necessary services have been created and are running
       on this host and the DMGR. If this is the first run, the cluster member
@@ -142,12 +145,10 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
     debug "result: #{result}"
   end
 
-  # Fixing the passwords from here is probably not desirable. It means
-  # that if the user changes their own password, puppet comes around
-  # and resets it to what it knows of.
+  # Checking the passwords from here is probably not desirable: Jython is incredibly slow.
+  # If this needs to be done for 50-100 users, the puppet run will take a very long time.
   # 
-  # That aside - jython is incredibly slow. If this needs to be done
-  # for 50-100 users, the puppet run will take a very long time.
+  # Leave it in for now - for testing purposes.
   def password
     cmd = <<-END.unindent
     # Check the password - we need to find the SecurityAdmin MBean.
@@ -189,7 +190,10 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
   end
 
   def flush
-    # We could do the updates here - so that we save having to run jython half a billion times
-    # and take forever in the process.
+    # We could do the user attributes updates here - so that we save having to run
+    # jython half a billion times and take forever in the process.
+    # We must be careful about trying to update a deleted user because you can
+    # envisage someone setting cn => 'joe' and ensure => 'absent' at the same time.
+    # Stupid, but can happen.
   end
 end
