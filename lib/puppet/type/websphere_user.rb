@@ -121,7 +121,7 @@ Puppet::Type.newtype(:websphere_user) do
     The dmgr profile in which this user should be created. It is where
     the `wsadmin` command can be found
 
-    This is synonomous with the 'profile' parameter.
+    This is synonimous with the 'profile' parameter.
 
     Example: dmgrProfile01"
     EOT
