@@ -65,14 +65,14 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
   # we have to keep track on and see if they changed. This method is
   # passed a String argument which is the name of the field/sibling
   # we are trying to get the value for. i.e. it can be "wim:cn"
-  # or "wim:sn" or "wim:email" or "*" for all of them.
+  # or "wim:sn" or "wim:email" or any other of them.
   #
-  def get_userid_data(field, field_value)
+  def get_userid_data(field)
     if File.exist?(scope('file'))
       doc = REXML::Document.new(File.open(scope('file')))
 
-      userid = XPath.first(doc, "//[wim:uid='#{resource[:userid]}']']")
-      field_data = XPath.first(userid, "[#{field}=#{field_value}]") if userid
+      userid = XPath.first(doc, "//[wim:uid='#{resource[:userid]}']")
+      field_data = path_user_id.elements['#{field}'].text() if userid
 
       debug "Matching #{field}/#{field_value} for #{resource[:userid]} elicits: #{field_data}"
 
@@ -88,7 +88,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
     end
   end
 
-  # Check to see if a user exists.
+  # Check to see if a user exists - must return a boolean.
   def exists?
     unless File.exist?(scope('file'))
       return false
@@ -99,6 +99,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
 
     # We're looking for user-id entries matching our user name
     userid = XPath.first(doc, "//[wim:uid='#{resource[:userid]}']")
+
     debug "Exists? result for #{resource[:userid]} is: #{userid}"
 
     !userid.nil?
@@ -106,7 +107,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
 
   # Get a user's given name
   def common_name
-    attr_data = get_userid_data('wim:cn', resource[:common_name])
+    attr_data = get_userid_data('wim:cn')
     !attr_data.nil?
   end
 
@@ -126,7 +127,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
 
   # Get a user's surname
   def surname
-    attr_data = get_userid_data('wim:sn', resource[:surname])
+    attr_data = get_userid_data('wim:sn')
     !attr_data.nil?
   end
 
@@ -146,7 +147,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
 
   # Get a user's mail
   def mail
-    attr_data = get_userid_data('wim:mail', resource[:mail])
+    attr_data = get_userid_data('wim:mail')
     !attr_data.nil?
   end
 
@@ -191,7 +192,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
     result = wsadmin(file: cmd, user: resource[:user])
     debug "result: #{result}"
     # What would you even return here?
-    $? == 0
+    return resource[:password] if $? == 0
   end
 
   # Remove a given user - we try to find it first, and if it does exist
