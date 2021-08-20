@@ -9,14 +9,15 @@ Puppet::Type.newtype(:websphere_user) do
       websphere_user { 'jbloggs':
         ensure       => 'present',
         common_name  => 'Joe',
-        surname      => 'Bloggs,
+        surname      => 'Bloggs',
         mail         => 'jbloggs@foo.bar.baz.com',
         password     => 'somePassword',
         profile_base => '/opt/IBM/WebSphere/AppServer/profiles',
         dmgr_profile => 'PROFILE_DMGR_01',
         cell         => 'CELL_01',
         user         => 'webadmin',
-        value        => 'TestValue',
+        wsadmin_user => 'wasadmin',
+        wsadmin_pass => 'password',
       }
   DOC
 
@@ -121,7 +122,7 @@ Puppet::Type.newtype(:websphere_user) do
     The dmgr profile in which this user should be created. It is where
     the `wsadmin` command can be found
 
-    This is synonomous with the 'profile' parameter.
+    This is synonimous with the 'profile' parameter.
 
     Example: dmgrProfile01"
     EOT
