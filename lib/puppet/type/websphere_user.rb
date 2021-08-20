@@ -9,14 +9,15 @@ Puppet::Type.newtype(:websphere_user) do
       websphere_user { 'jbloggs':
         ensure       => 'present',
         common_name  => 'Joe',
-        surname      => 'Bloggs,
+        surname      => 'Bloggs',
         mail         => 'jbloggs@foo.bar.baz.com',
         password     => 'somePassword',
         profile_base => '/opt/IBM/WebSphere/AppServer/profiles',
         dmgr_profile => 'PROFILE_DMGR_01',
         cell         => 'CELL_01',
         user         => 'webadmin',
-        value        => 'TestValue',
+        wsadmin_user => 'wasadmin',
+        wsadmin_pass => 'password',
       }
   DOC
 
