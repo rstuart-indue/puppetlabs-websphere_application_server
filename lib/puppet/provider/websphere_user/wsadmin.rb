@@ -116,7 +116,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
   def common_name=(_val)
     cmd = <<-END.unindent
     # Update value for #{resource[:common_name]}
-    uniqueName = AdminTask.searchUsers(['-uid', userName])
+    uniqueName = AdminTask.searchUsers(['-uid', #{resource[:userid]}])
     if len(uniqueName):
         AdminTask.updateUser(['-uniqueName', uniqueName, '-cn', #{resource[:common_name]}])
     AdminConfig.save()
@@ -135,9 +135,28 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
   def surname=(_val)
     cmd = <<-END.unindent
     # Update description for #{resource[:surname]}
-    uniqueName = AdminTask.searchUsers(['-uid', userName])
+    uniqueName = AdminTask.searchUsers(['-uid', #{resource[:userid]}])
     if len(uniqueName):
         AdminTask.updateUser(['-uniqueName', uniqueName, '-sn', #{resource[:surname]}])
+    AdminConfig.save()
+    END
+    debug "Running #{cmd}"
+    result = wsadmin(file: cmd, user: resource[:user])
+    debug "result: #{result}"
+  end
+
+  # Get a user's mail
+  def mail
+    get_userid_data('wim:mail')
+  end
+
+  # Set a user's mail
+  def mail=(_val)
+    cmd = <<-END.unindent
+    # Update description for #{resource[:mail]}
+    uniqueName = AdminTask.searchUsers(['-uid', #{resource[:userid]}])
+    if len(uniqueName):
+        AdminTask.updateUser(['-uniqueName', uniqueName, '-mail', #{resource[:mail]}])
     AdminConfig.save()
     END
     debug "Running #{cmd}"
@@ -162,7 +181,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
         sys.exit(1);
 
     secadmbean = secadms.split("\n")[0];
-    plist = "#{userid}" + " " + "#{password}" + " " + "[]";
+    plist = "#{resource[:userid]}" + " " + "#{resource[:password]}" + " " + "[]";
 
     # the following command throws an exception and exits the
     # script if the password doesn't match.
