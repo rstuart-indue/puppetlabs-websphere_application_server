@@ -180,7 +180,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
         print "Unable to detect any Security MBeans."
         sys.exit(1)
 
-    secadmbean = secadms.split("\n")[0]
+    secadmbean = secadms.split("\\n")[0]
     plist = "#{resource[:userid]}" + " " + "#{resource[:password]}" + " " + "[]";
 
     # the following command throws an exception and exits the
