@@ -106,14 +106,15 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
 
   # Get a user's given name
   def common_name
-    get_userid_data('wim:cn', resource[:common_name] )
+    attr_data = get_userid_data('wim:cn', resource[:common_name])
+    !attr_data.nil?
   end
 
   # Set a user's given name
   def common_name=(_val)
     cmd = <<-END.unindent
     # Update value for #{resource[:common_name]}
-    uniqueName = AdminTask.searchUsers(['-uid', #{resource[:userid]}])
+    uniqueName = AdminTask.searchUsers(['-uid', '#{resource[:userid]}'])
     if len(uniqueName):
         AdminTask.updateUser(['-uniqueName', uniqueName, '-cn', '#{resource[:common_name]}'])
     AdminConfig.save()
@@ -125,14 +126,15 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
 
   # Get a user's surname
   def surname
-    get_userid_data('wim:sn', resource[:surname])
+    attr_data = get_userid_data('wim:sn', resource[:surname])
+    !attr_data.nil?
   end
 
   # Set a user's surname
   def surname=(_val)
     cmd = <<-END.unindent
     # Update description for #{resource[:surname]}
-    uniqueName = AdminTask.searchUsers(['-uid', #{resource[:userid]}])
+    uniqueName = AdminTask.searchUsers(['-uid', '#{resource[:userid]}'])
     if len(uniqueName):
         AdminTask.updateUser(['-uniqueName', uniqueName, '-sn', '#{resource[:surname]}'])
     AdminConfig.save()
@@ -144,14 +146,15 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
 
   # Get a user's mail
   def mail
-    get_userid_data('wim:mail', resource[:mail])
+    attr_data = get_userid_data('wim:mail', resource[:mail])
+    !attr_data.nil?
   end
 
   # Set a user's mail
   def mail=(_val)
     cmd = <<-END.unindent
     # Update description for #{resource[:mail]}
-    uniqueName = AdminTask.searchUsers(['-uid', #{resource[:userid]}])
+    uniqueName = AdminTask.searchUsers(['-uid', '#{resource[:userid]}'])
     if len(uniqueName):
         AdminTask.updateUser(['-uniqueName', uniqueName, '-mail', '#{resource[:mail]}'])
     AdminConfig.save()
@@ -188,7 +191,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
     result = wsadmin(file: cmd, user: resource[:user])
     debug "result: #{result}"
     # What would you even return here?
-    #return password if $? == 0
+    $? == 0
   end
 
   # Remove a given user - we try to find it first, and if it does exist
