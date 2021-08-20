@@ -185,7 +185,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
 
     # the following command throws an exception and exits the
     # script if the password doesn't match.
-    AdminControl.invoke(secadm, "checkPassword", plist)
+    AdminControl.invoke(secadmbean, "checkPassword", plist)
     END
     debug "Running #{cmd}"
     result = wsadmin(file: cmd, user: resource[:user])
