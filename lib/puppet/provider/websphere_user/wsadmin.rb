@@ -74,7 +74,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
       userid = XPath.first(doc, "//wim:Root/wim:entities [@xsi:type='wim:PersonAccount']/wim:uid [text()='#{resource[:userid]}']")
       field_data = XPath.first(userid, "following-siblings::#{field}") if userid
 
-      debug "Common_name for #{resource[:userid]} is: #{cn}"
+      debug "#{field} for #{resource[:userid]} is: #{field_data}"
 
       return field_data.to_s if field_data
     else
