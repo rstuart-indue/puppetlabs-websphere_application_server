@@ -67,14 +67,14 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
   # we are trying to get the value for. i.e. it can be "wim:cn"
   # or "wim:sn" or "wim:email" or "*" for all of them.
   #
-  def get_userid_data(field)
+  def get_userid_data(field, field_value)
     if File.exist?(scope('file'))
       doc = REXML::Document.new(File.open(scope('file')))
 
-      userid = XPath.first(doc, "//wim:Root/wim:entities [@xsi:type='wim:PersonAccount']/wim:uid [text()='#{resource[:userid]}']")
-      field_data = XPath.first(userid, "following-siblings::#{field}") if userid
+      userid = XPath.first(doc, "//[wim:uid='#{resource[:userid]}']']")
+      field_data = XPath.first(userid, "[#{field}=#{field_value}]") if userid
 
-      debug "#{field} for #{resource[:userid]} is: #{field_data}"
+      debug "Matching #{field}/#{field_value} for #{resource[:userid]} elicits: #{field_data}"
 
       return field_data.to_s if field_data
     else
@@ -97,10 +97,8 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
     debug "Retrieving value of #{resource[:userid]} from #{scope('file')}"
     doc = REXML::Document.new(File.open(scope('file')))
 
-    # We're looking for user-id entries 
+    # We're looking for user-id entries matching our user name
     userid = XPath.first(doc, "//[wim:uid='#{resource[:userid]}']")
-    values = Array[XPath.match(doc, "//wim:Root/wim:entities [@xsi:type='wim:PersonAccount']/wim:uid [text()='#{resource[:userid]}']/following-siblings::*")] if userid
-
     debug "Exists? result for #{resource[:userid]} is: #{userid}"
 
     !userid.nil?
@@ -108,7 +106,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
 
   # Get a user's given name
   def common_name
-    get_userid_data('wim:cn')
+    get_userid_data('wim:cn', resource[:common_name] )
   end
 
   # Set a user's given name
@@ -127,7 +125,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
 
   # Get a user's surname
   def surname
-    get_userid_data('wim:sn')
+    get_userid_data('wim:sn', resource[:surname])
   end
 
   # Set a user's surname
@@ -146,7 +144,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
 
   # Get a user's mail
   def mail
-    get_userid_data('wim:mail')
+    get_userid_data('wim:mail', resource[:mail])
   end
 
   # Set a user's mail
@@ -190,7 +188,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
     result = wsadmin(file: cmd, user: resource[:user])
     debug "result: #{result}"
     # What would you even return here?
-    return password if $? == 0
+    #return password if $? == 0
   end
 
   # Remove a given user - we try to find it first, and if it does exist
