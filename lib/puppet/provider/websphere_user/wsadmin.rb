@@ -99,7 +99,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
 
     #path = XPath.first(doc, "//variables:VariableMap/entries[@symbolicName='#{resource[:variable]}']")
     #value = XPath.first(path, '@symbolicName') if path
-    userid = XPath.first(doc, "//wim:Root/wim:entities [@xsi:type='wim:PersonAccount']/wim:uid [text()='#{resource[:userid]}']")
+    userid = XPath.first(doc, "//wim:Root/wim:entities [@xsi:type='wim:PersonAccount']/wim:uid/text()='#{resource[:userid]}'")
     values = Array[XPath.match(doc, "//wim:Root/wim:entities [@xsi:type='wim:PersonAccount']/wim:uid [text()='#{resource[:userid]}']/following-siblings::*")] if userid
 
     debug "Exists? result for #{resource[:userid]} is: #{userid}"
