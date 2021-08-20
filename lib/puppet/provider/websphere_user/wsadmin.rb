@@ -108,8 +108,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
 
   # Get a user's given name
   def common_name
-    attr_data = get_userid_data('wim:cn')
-    !attr_data.nil?
+    get_userid_data('wim:cn')
   end
 
   # Set a user's given name
@@ -128,8 +127,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
 
   # Get a user's surname
   def surname
-    attr_data = get_userid_data('wim:sn')
-    !attr_data.nil?
+    get_userid_data('wim:sn')
   end
 
   # Set a user's surname
@@ -148,8 +146,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
 
   # Get a user's mail
   def mail
-    attr_data = get_userid_data('wim:mail')
-    !attr_data.nil?
+    get_userid_data('wim:mail')
   end
 
   # Set a user's mail
