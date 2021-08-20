@@ -72,7 +72,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
       doc = REXML::Document.new(File.open(scope('file')))
 
       userid = XPath.first(doc, "//[wim:uid='#{resource[:userid]}']")
-      field_data = path_user_id.elements['#{field}'].text() if userid
+      field_data = userid.elements['#{field}'].text() if userid
 
       debug "Matching #{field}/#{field_value} for #{resource[:userid]} elicits: #{field_data}"
 
