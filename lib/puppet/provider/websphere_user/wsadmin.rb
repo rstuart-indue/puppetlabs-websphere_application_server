@@ -178,9 +178,9 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
     secadms = AdminControl.queryNames("type=SecurityAdmin,*")
     if len(secadms) == 0:
         print "Unable to detect any Security MBeans."
-        sys.exit(1);
+        sys.exit(1)
 
-    secadmbean = secadms.split("\n")[0];
+    secadmbean = secadms.split("\n")[0]
     plist = "#{resource[:userid]}" + " " + "#{resource[:password]}" + " " + "[]";
 
     # the following command throws an exception and exits the
@@ -190,6 +190,8 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
     debug "Running #{cmd}"
     result = wsadmin(file: cmd, user: resource[:user])
     debug "result: #{result}"
+    # What would you even return here?
+    return password if $? == 0
   end
 
   # Remove a given user - we try to find it first, and if it does exist
