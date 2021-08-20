@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'English'
 require_relative '../websphere_helper'
 
 Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::Websphere_Helper) do
@@ -72,9 +73,9 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
       doc = REXML::Document.new(File.open(scope('file')))
 
       userid = XPath.first(doc, "//[wim:uid='#{resource[:userid]}']")
-      field_data = userid.elements['#{field}'].text() if userid
+      field_data = userid.elements['#{field}'].text if userid
 
-      debug "Matching #{field}/#{field_value} for #{resource[:userid]} elicits: #{field_data}"
+      debug "Getting #{field} for #{resource[:userid]} elicits: #{field_data}"
 
       return field_data.to_s if field_data
     else
@@ -167,7 +168,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
 
   # Checking the passwords from here is probably not desirable: Jython is incredibly slow.
   # If this needs to be done for 50-100 users, the puppet run will take a very long time.
-  # 
+  #
   # Leave it in for now - for testing purposes.
   def password
     cmd = <<-END.unindent
@@ -192,7 +193,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
     result = wsadmin(file: cmd, user: resource[:user])
     debug "result: #{result}"
     # What would you even return here?
-    return resource[:password] if $? == 0
+    return resource[:password] if $CHILD_STATUS == 0
   end
 
   # Remove a given user - we try to find it first, and if it does exist
