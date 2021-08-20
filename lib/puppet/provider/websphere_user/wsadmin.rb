@@ -106,7 +106,8 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
 
   # Get a user's given name
   def common_name
-    get_userid_data('wim:cn', resource[:common_name] )
+    attr_data = get_userid_data('wim:cn', resource[:common_name])
+    !attr_data.nil?
   end
 
   # Set a user's given name
@@ -125,7 +126,8 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
 
   # Get a user's surname
   def surname
-    get_userid_data('wim:sn', resource[:surname])
+    attr_data = get_userid_data('wim:sn', resource[:surname])
+    !attr_data.nil?
   end
 
   # Set a user's surname
@@ -144,7 +146,8 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
 
   # Get a user's mail
   def mail
-    get_userid_data('wim:mail', resource[:mail])
+    attr_data = get_userid_data('wim:mail', resource[:mail])
+    !attr_data.nil?
   end
 
   # Set a user's mail
@@ -188,7 +191,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
     result = wsadmin(file: cmd, user: resource[:user])
     debug "result: #{result}"
     # What would you even return here?
-    #return password if $? == 0
+    $? == 0
   end
 
   # Remove a given user - we try to find it first, and if it does exist
