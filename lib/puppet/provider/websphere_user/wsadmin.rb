@@ -113,7 +113,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
   def common_name=(_val)
     cmd = <<-END.unindent
     # Update value for #{resource[:common_name]}
-    uniqueName = AdminTask.searchUsers(['-uid', #{resource[:userid]}])
+    uniqueName = AdminTask.searchUsers(['-uid', '#{resource[:userid]}'])
     if len(uniqueName):
         AdminTask.updateUser(['-uniqueName', uniqueName, '-cn', '#{resource[:common_name]}'])
     AdminConfig.save()
@@ -132,7 +132,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
   def surname=(_val)
     cmd = <<-END.unindent
     # Update description for #{resource[:surname]}
-    uniqueName = AdminTask.searchUsers(['-uid', #{resource[:userid]}])
+    uniqueName = AdminTask.searchUsers(['-uid', '#{resource[:userid]}'])
     if len(uniqueName):
         AdminTask.updateUser(['-uniqueName', uniqueName, '-sn', '#{resource[:surname]}'])
     AdminConfig.save()
@@ -151,7 +151,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
   def mail=(_val)
     cmd = <<-END.unindent
     # Update description for #{resource[:mail]}
-    uniqueName = AdminTask.searchUsers(['-uid', #{resource[:userid]}])
+    uniqueName = AdminTask.searchUsers(['-uid', '#{resource[:userid]}'])
     if len(uniqueName):
         AdminTask.updateUser(['-uniqueName', uniqueName, '-mail', '#{resource[:mail]}'])
     AdminConfig.save()
