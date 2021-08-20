@@ -35,7 +35,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
   def create
     cmd = <<-END.unindent
     # Create user for #{resource[:userid]}
-    AdminTask.createUser(['-uid', #{resource[:userid]}, '-password', #{resource[:password]}, '-cn', #{resource[:common_name]}, '-sn', #{resource[:surname]}])
+    AdminTask.createUser(['-uid', '#{resource[:userid]}', '-password', '#{resource[:password]}', '-cn', '#{resource[:common_name]}', '-sn', '#{resource[:surname]}'])
     AdminConfig.save()
     END
 
@@ -117,7 +117,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
     # Update value for #{resource[:common_name]}
     uniqueName = AdminTask.searchUsers(['-uid', #{resource[:userid]}])
     if len(uniqueName):
-        AdminTask.updateUser(['-uniqueName', uniqueName, '-cn', #{resource[:common_name]}])
+        AdminTask.updateUser(['-uniqueName', uniqueName, '-cn', '#{resource[:common_name]}'])
     AdminConfig.save()
     END
     debug "Running #{cmd}"
@@ -136,7 +136,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
     # Update description for #{resource[:surname]}
     uniqueName = AdminTask.searchUsers(['-uid', #{resource[:userid]}])
     if len(uniqueName):
-        AdminTask.updateUser(['-uniqueName', uniqueName, '-sn', #{resource[:surname]}])
+        AdminTask.updateUser(['-uniqueName', uniqueName, '-sn', '#{resource[:surname]}'])
     AdminConfig.save()
     END
     debug "Running #{cmd}"
@@ -155,7 +155,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
     # Update description for #{resource[:mail]}
     uniqueName = AdminTask.searchUsers(['-uid', #{resource[:userid]}])
     if len(uniqueName):
-        AdminTask.updateUser(['-uniqueName', uniqueName, '-mail', #{resource[:mail]}])
+        AdminTask.updateUser(['-uniqueName', uniqueName, '-mail', '#{resource[:mail]}'])
     AdminConfig.save()
     END
     debug "Running #{cmd}"
@@ -197,7 +197,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
   # we remove the user.
   def destroy
     cmd = <<-END.unindent
-    uniqueName = AdminTask.searchUsers(['-uid', #{resource[:userid]}])
+    uniqueName = AdminTask.searchUsers(['-uid', '#{resource[:userid]}'])
     if len(uniqueName):
         AdminTask.deleteUser(['-uniqueName', uniqueName])
 
