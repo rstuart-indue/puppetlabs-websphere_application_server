@@ -72,12 +72,11 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
     if File.exist?(scope('file'))
       doc = REXML::Document.new(File.open(scope('file')))
 
-      userid = XPath.first(doc, "//[wim:uid='#{resource[:userid]}']")
-      field_data = userid.elements['#{field}'] if userid
+      field_data = XPath.first(doc, "//[wim:uid='#{resource[:userid]}']/#{field}")
 
       debug "Getting #{field} for #{resource[:userid]} elicits: #{field_data}"
 
-      return field_data.to_s if field_data
+      return field_data.text if field_data
     else
       msg = <<-END
       #{scope('file')} does not exist. This may indicate that the cluster
@@ -99,9 +98,9 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
     doc = REXML::Document.new(File.open(scope('file')))
 
     # We're looking for user-id entries matching our user name
-    userid = XPath.first(doc, "//[wim:uid='#{resource[:userid]}']")
+    userid = XPath.first(doc, "//[wim:uid='#{resource[:userid]}']/wim:uid")
 
-    debug "Exists? result for #{resource[:userid]} is: #{userid}"
+    debug "Exists? method result for #{resource[:userid]} is: #{userid}"
 
     !userid.nil?
   end
