@@ -44,7 +44,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
   def create
     cmd = <<-END.unindent
     # Create user for #{resource[:userid]}
-    AdminTask.createUser(['-uid', '#{resource[:userid]}', '-password', '#{resource[:password]}', '-cn', '#{resource[:common_name]}', '-sn', '#{resource[:surname]}', '-mail', '#{resource[:mail]}])
+    AdminTask.createUser(['-uid', '#{resource[:userid]}', '-password', '#{resource[:password]}', '-cn', '#{resource[:common_name]}', '-sn', '#{resource[:surname]}', '-mail', '#{resource[:mail]}'])
     AdminConfig.save()
     END
 
