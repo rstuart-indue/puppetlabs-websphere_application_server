@@ -13,6 +13,14 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
     We execute the 'wsadmin' tool to query and make changes, which interprets
     Jython. This means we need to use heredocs to satisfy whitespace sensitivity.
     DESC
+
+  # We are going to use the flush() method to enact all the user changes we may perform.
+  # This will speed up the application of changes, because instead of changing every
+  # attribute individually, we coalesce the changes in one script and execute it once.
+  def initialize (_val={})
+    super(_val)
+    @property_flush = {}
+  end
   def scope(what)
     # (cells/CELL_01/nodes/appNode01/servers/AppServer01
     file = "#{resource[:profile_base]}/#{resource[:dmgr_profile]}"
@@ -112,16 +120,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
 
   # Set a user's given name
   def common_name=(_val)
-    cmd = <<-END.unindent
-    # Update value for #{resource[:common_name]}
-    uniqueName = AdminTask.searchUsers(['-uid', '#{resource[:userid]}'])
-    if len(uniqueName):
-        AdminTask.updateUser(['-uniqueName', uniqueName, '-cn', '#{resource[:common_name]}'])
-    AdminConfig.save()
-    END
-    debug "Running #{cmd}"
-    result = wsadmin(file: cmd, user: resource[:user])
-    debug "result: #{result}"
+    @property_flush[:common_name] = _val
   end
 
   # Get a user's surname
@@ -131,16 +130,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
 
   # Set a user's surname
   def surname=(_val)
-    cmd = <<-END.unindent
-    # Update description for #{resource[:surname]}
-    uniqueName = AdminTask.searchUsers(['-uid', '#{resource[:userid]}'])
-    if len(uniqueName):
-        AdminTask.updateUser(['-uniqueName', uniqueName, '-sn', '#{resource[:surname]}'])
-    AdminConfig.save()
-    END
-    debug "Running #{cmd}"
-    result = wsadmin(file: cmd, user: resource[:user])
-    debug "result: #{result}"
+    @property_flush[:surname] = _val
   end
 
   # Get a user's mail
@@ -150,16 +140,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
 
   # Set a user's mail
   def mail=(_val)
-    cmd = <<-END.unindent
-    # Update description for #{resource[:mail]}
-    uniqueName = AdminTask.searchUsers(['-uid', '#{resource[:userid]}'])
-    if len(uniqueName):
-        AdminTask.updateUser(['-uniqueName', uniqueName, '-mail', '#{resource[:mail]}'])
-    AdminConfig.save()
-    END
-    debug "Running #{cmd}"
-    result = wsadmin(file: cmd, user: resource[:user])
-    debug "result: #{result}"
+    @property_flush[:mail] = _val
   end
 
   # Checking/enforcing the passwords from here is probably not desirable: Jython is
@@ -183,6 +164,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
   # 'manage_password => true' for said accounts.
   def password
 
+    # Pretend it's all OK if we're not managing the password
     return resource[:password] if !resource[:manage_password]
 
     cmd = <<-END.unindent
@@ -211,16 +193,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
   end
 
   def password=(_val)
-    cmd = <<-END.unindent
-    # Update password for #{resource[:userid]}
-    uniqueName = AdminTask.searchUsers(['-uid', '#{resource[:userid]}'])
-    if len(uniqueName):
-        AdminTask.updateUser(['-uniqueName', uniqueName, '-password', '#{resource[:password]}'])
-    AdminConfig.save()
-    END
-    debug "Running #{cmd}"
-    result = wsadmin(file: cmd, user: resource[:user])
-    debug "result: #{result}"
+    @property_flush[:password] = _val
   end
 
   # Remove a given user - we try to find it first, and if it does exist
@@ -240,10 +213,28 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
   end
 
   def flush
-    # We could do the user attributes updates here - so that we save having to run
-    # jython half a billion times and take forever in the process.
-    # We must be careful about trying to update a deleted user because you can
-    # envisage someone setting cn => 'joe' and ensure => 'absent' at the same time.
-    # Stupid, but can happen.
+    args = []
+    if @property_flush
+      (args << "'-cn'" <<"'#{resource[:common_name]}'") if @property_flush[:common_name]
+      (args << "'-sn'" <<"'#{resource[:surname]}'") if @property_flush[:surname
+      (args << "'-mail'" <<"'#{resource[:mail]}'") if @property_flush[:mail]
+      (args << "'-password'" <<"'#{resource[:password]}'") if @property_flush[:password]
+      unless args.empty?
+        # If we do have to run something, prepend the uniqueName arguments and make a comma
+        # separated string out of the whole array.
+        arg_string = args.prepend("'-uniqueName'", 'uniqueName').join(', ')
+
+        cmd = <<-END.unindent
+        # Update value for #{resource[:common_name]}
+        uniqueName = AdminTask.searchUsers(['-uid', '#{resource[:userid]}'])
+        if len(uniqueName):
+            AdminTask.updateUser([#{arg_string}])
+        AdminConfig.save()
+        END
+        debug "Running #{cmd}"
+        result = wsadmin(file: cmd, user: resource[:user])
+        debug "result: #{result}"
+      end 
+    end
   end
 end
