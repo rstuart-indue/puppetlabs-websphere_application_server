@@ -162,11 +162,29 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
     debug "result: #{result}"
   end
 
-  # Checking the passwords from here is probably not desirable: Jython is incredibly slow.
-  # If this needs to be done for 50-100 users, the puppet run will take a very long time.
+  # Checking/enforcing the passwords from here is probably not desirable: Jython is
+  # incredibly slow. If this needs to be done for 50-100 users, the puppet run will
+  # take a *very* long time.
   #
-  # Leave it in for now - for testing purposes.
+  # Long story short: we don't know what encryption is used for the WAS user passwords
+  # which means that the only way to check them is via this little script - which
+  # returns a different non-zero value whether the user doesn't exist, or the password
+  # does not match. The drawback is that it takes 8-10 seconds to run. Expand this to
+  # more than a handful of users (2-3) and you have a problem.
+  # 
+  # Also it is likely you want to allow the users to change their own passwords if they
+  # are alive users, not machine/service accounts.
+  #
+  # The work around this is to conditionally check the password based on the newparam
+  # resource[:manage_password] - and make that default to false, which will allow to
+  # set the password at the account-creation time, but will not care about it afterwards.
+  #
+  # If clients want force a change for selected accounts, then set the attribute
+  # 'manage_password => true' for said accounts.
   def password
+
+    return resource[:password] if !resource[:manage_password]
+
     cmd = <<-END.unindent
     # Check the password - we need to find the SecurityAdmin MBean.
     # If there is more than one, we just take the first.
@@ -188,8 +206,21 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
     debug "Running #{cmd}"
     result = wsadmin(file: cmd, user: resource[:user])
     debug "result: #{result}"
-    # What would you even return here?
+
     return resource[:password] if $CHILD_STATUS == 0
+  end
+
+  def password=(_val)
+    cmd = <<-END.unindent
+    # Update password for #{resource[:userid]}
+    uniqueName = AdminTask.searchUsers(['-uid', '#{resource[:userid]}'])
+    if len(uniqueName):
+        AdminTask.updateUser(['-uniqueName', uniqueName, '-password', '#{resource[:password]}'])
+    AdminConfig.save()
+    END
+    debug "Running #{cmd}"
+    result = wsadmin(file: cmd, user: resource[:user])
+    debug "result: #{result}"
   end
 
   # Remove a given user - we try to find it first, and if it does exist
