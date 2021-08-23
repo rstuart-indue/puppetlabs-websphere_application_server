@@ -224,8 +224,9 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
     wascmd_args.push("'-password'", "'#{resource[:password]}'") if @property_flush[:password]
 
     # If property_flush had something inside, but wasn't what we expected, we really
-    # need to bail.
-    return unless wascmd_args.empty?
+    # need to bail, because the list of was command arguments will be empty.
+    return if wascmd_args.empty?
+
     # If we do have to run something, prepend the uniqueName arguments and make a comma
     # separated string out of the whole array.
     arg_string = wascmd_args.unshift("'-uniqueName'", 'uniqueName').join(', ')
