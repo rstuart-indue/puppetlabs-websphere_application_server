@@ -219,7 +219,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
       wascmd_args.push("'-sn'", "'#{resource[:surname]}'") if @property_flush[:surname]
       wascmd_args.push("'-mail'", "'#{resource[:mail]}'") if @property_flush[:mail]
       wascmd_args.push("'-password'", "'#{resource[:password]}'") if @property_flush[:password]
-      unless args.empty?
+      unless wascmd_args.empty?
         # If we do have to run something, prepend the uniqueName arguments and make a comma
         # separated string out of the whole array.
         arg_string = wascmd_args.prepend("'-uniqueName'", 'uniqueName').join(', ')
