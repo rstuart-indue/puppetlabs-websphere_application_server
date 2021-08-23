@@ -17,10 +17,11 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
   # We are going to use the flush() method to enact all the user changes we may perform.
   # This will speed up the application of changes, because instead of changing every
   # attribute individually, we coalesce the changes in one script and execute it once.
-  def initialize (_val={})
-    super(_val)
+  def initialize(val = {})
+    super(val)
     @property_flush = {}
   end
+
   def scope(what)
     # (cells/CELL_01/nodes/appNode01/servers/AppServer01
     file = "#{resource[:profile_base]}/#{resource[:dmgr_profile]}"
@@ -119,8 +120,8 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
   end
 
   # Set a user's given name
-  def common_name=(_val)
-    @property_flush[:common_name] = _val
+  def common_name=(val)
+    @property_flush[:common_name] = val
   end
 
   # Get a user's surname
@@ -129,8 +130,8 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
   end
 
   # Set a user's surname
-  def surname=(_val)
-    @property_flush[:surname] = _val
+  def surname=(val)
+    @property_flush[:surname] = val
   end
 
   # Get a user's mail
@@ -139,8 +140,8 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
   end
 
   # Set a user's mail
-  def mail=(_val)
-    @property_flush[:mail] = _val
+  def mail=(val)
+    @property_flush[:mail] = val
   end
 
   # Checking/enforcing the passwords from here is probably not desirable: Jython is
@@ -152,7 +153,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
   # returns a different non-zero value whether the user doesn't exist, or the password
   # does not match. The drawback is that it takes 8-10 seconds to run. Expand this to
   # more than a handful of users (2-3) and you have a problem.
-  # 
+  #
   # Also it is likely you want to allow the users to change their own passwords if they
   # are alive users, not machine/service accounts.
   #
@@ -163,9 +164,8 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
   # If clients want force a change for selected accounts, then set the attribute
   # 'manage_password => true' for said accounts.
   def password
-
     # Pretend it's all OK if we're not managing the password
-    return resource[:password] if !resource[:manage_password]
+    return resource[:password] unless resource[:manage_password]
 
     cmd = <<-END.unindent
     # Check the password - we need to find the SecurityAdmin MBean.
@@ -192,8 +192,8 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
     return resource[:password] if $CHILD_STATUS == 0
   end
 
-  def password=(_val)
-    @property_flush[:password] = _val
+  def password=(val)
+    @property_flush[:password] = val
   end
 
   # Remove a given user - we try to find it first, and if it does exist
@@ -214,27 +214,31 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
 
   def flush
     wascmd_args = []
-    if @property_flush
-      wascmd_args.push("'-cn'", "'#{resource[:common_name]}'") if @property_flush[:common_name]
-      wascmd_args.push("'-sn'", "'#{resource[:surname]}'") if @property_flush[:surname]
-      wascmd_args.push("'-mail'", "'#{resource[:mail]}'") if @property_flush[:mail]
-      wascmd_args.push("'-password'", "'#{resource[:password]}'") if @property_flush[:password]
-      unless wascmd_args.empty?
-        # If we do have to run something, prepend the uniqueName arguments and make a comma
-        # separated string out of the whole array.
-        arg_string = wascmd_args.unshift("'-uniqueName'", 'uniqueName').join(', ')
 
-        cmd = <<-END.unindent
+    # If we haven't got anything to modify, we've got nothing to flush. Otherwise
+    # parse the list of things to do
+    return unless @property_flush
+    wascmd_args.push("'-cn'", "'#{resource[:common_name]}'") if @property_flush[:common_name]
+    wascmd_args.push("'-sn'", "'#{resource[:surname]}'") if @property_flush[:surname]
+    wascmd_args.push("'-mail'", "'#{resource[:mail]}'") if @property_flush[:mail]
+    wascmd_args.push("'-password'", "'#{resource[:password]}'") if @property_flush[:password]
+
+    # If property_flush had something inside, but wasn't what we expected, we really
+    # need to bail.
+    return unless wascmd_args.empty?
+    # If we do have to run something, prepend the uniqueName arguments and make a comma
+    # separated string out of the whole array.
+    arg_string = wascmd_args.unshift("'-uniqueName'", 'uniqueName').join(', ')
+
+    cmd = <<-END.unindent
         # Update value for #{resource[:common_name]}
         uniqueName = AdminTask.searchUsers(['-uid', '#{resource[:userid]}'])
         if len(uniqueName):
             AdminTask.updateUser([#{arg_string}])
         AdminConfig.save()
         END
-        debug "Running #{cmd}"
-        result = wsadmin(file: cmd, user: resource[:user])
-        debug "result: #{result}"
-      end 
-    end
+    debug "Running #{cmd}"
+    result = wsadmin(file: cmd, user: resource[:user])
+    debug "result: #{result}"
   end
 end
