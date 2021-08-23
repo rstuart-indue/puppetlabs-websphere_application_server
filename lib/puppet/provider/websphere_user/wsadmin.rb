@@ -213,16 +213,16 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
   end
 
   def flush
-    args = []
+    wascmd_args = []
     if @property_flush
-      (args << "'-cn'" <<"'#{resource[:common_name]}'") if @property_flush[:common_name]
-      (args << "'-sn'" <<"'#{resource[:surname]}'") if @property_flush[:surname
-      (args << "'-mail'" <<"'#{resource[:mail]}'") if @property_flush[:mail]
-      (args << "'-password'" <<"'#{resource[:password]}'") if @property_flush[:password]
+      wascmd_args.append("'-cn'", "'#{resource[:common_name]}'") if @property_flush[:common_name]
+      wascmd_args.append("'-sn'", "'#{resource[:surname]}'") if @property_flush[:surname
+      wascmd_args.append("'-mail'", "'#{resource[:mail]}'") if @property_flush[:mail]
+      wascmd_args.append("'-password'", "'#{resource[:password]}'") if @property_flush[:password]
       unless args.empty?
         # If we do have to run something, prepend the uniqueName arguments and make a comma
         # separated string out of the whole array.
-        arg_string = args.prepend("'-uniqueName'", 'uniqueName').join(', ')
+        arg_string = wascmd_args.prepend("'-uniqueName'", 'uniqueName').join(', ')
 
         cmd = <<-END.unindent
         # Update value for #{resource[:common_name]}
