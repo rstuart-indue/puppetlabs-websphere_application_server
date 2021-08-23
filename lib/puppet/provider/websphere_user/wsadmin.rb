@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'English'
 require_relative '../websphere_helper'
 
 Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::Websphere_Helper) do
@@ -35,12 +36,12 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
   def create
     cmd = <<-END.unindent
     # Create user for #{resource[:userid]}
-    AdminTask.createUser(['-uid', #{resource[:userid]}, '-password', #{resource[:password]}, '-cn', #{resource[:common_name]}, '-sn', #{resource[:surname]}])
+    AdminTask.createUser(['-uid', '#{resource[:userid]}', '-password', '#{resource[:password]}', '-cn', '#{resource[:common_name]}', '-sn', '#{resource[:surname]}'])
     AdminConfig.save()
     END
 
-    debug "Running #{cmd}"
-    result = wsadmin(file: cmd, user: resource[:userid], failonfail: false)
+    debug "Running command: #{cmd} as user: resource[:user]"
+    result = wsadmin(file: cmd, user: resource[:user], failonfail: false)
 
     if %r{Invalid parameter value "" for parameter "parent config id" on command "create"}.match?(result)
       ## I'd rather handle this in the Jython, but I'm not sure how.
@@ -65,18 +66,17 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
   # we have to keep track on and see if they changed. This method is
   # passed a String argument which is the name of the field/sibling
   # we are trying to get the value for. i.e. it can be "wim:cn"
-  # or "wim:sn" or "wim:email" or "*" for all of them.
+  # or "wim:sn" or "wim:email" or any other of them.
   #
   def get_userid_data(field)
     if File.exist?(scope('file'))
       doc = REXML::Document.new(File.open(scope('file')))
 
-      userid = XPath.first(doc, "//wim:Root/wim:entities [@xsi:type='wim:PersonAccount']/wim:uid [text()='#{resource[:userid]}']")
-      field_data = XPath.first(userid, "following-siblings::#{field}") if userid
+      field_data = XPath.first(doc, "//[wim:uid='#{resource[:userid]}']/#{field}")
 
-      debug "#{field} for #{resource[:userid]} is: #{field_data}"
+      debug "Getting #{field} for #{resource[:userid]} elicits: #{field_data}"
 
-      return field_data.to_s if field_data
+      return field_data.text if field_data
     else
       msg = <<-END
       #{scope('file')} does not exist. This may indicate that the cluster
@@ -88,7 +88,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
     end
   end
 
-  # Check to see if a user exists.
+  # Check to see if a user exists - must return a boolean.
   def exists?
     unless File.exist?(scope('file'))
       return false
@@ -97,11 +97,10 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
     debug "Retrieving value of #{resource[:userid]} from #{scope('file')}"
     doc = REXML::Document.new(File.open(scope('file')))
 
-    # We're looking for user-id entries 
-    userid = XPath.first(doc, "//[wim:uid='#{resource[:userid]}']")
-    values = Array[XPath.match(doc, "//wim:Root/wim:entities [@xsi:type='wim:PersonAccount']/wim:uid [text()='#{resource[:userid]}']/following-siblings::*")] if userid
+    # We're looking for user-id entries matching our user name
+    userid = XPath.first(doc, "//[wim:uid='#{resource[:userid]}']/wim:uid")
 
-    debug "Exists? result for #{resource[:userid]} is: #{userid}"
+    debug "Exists? method result for #{resource[:userid]} is: #{userid}"
 
     !userid.nil?
   end
@@ -115,9 +114,9 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
   def common_name=(_val)
     cmd = <<-END.unindent
     # Update value for #{resource[:common_name]}
-    uniqueName = AdminTask.searchUsers(['-uid', #{resource[:userid]}])
+    uniqueName = AdminTask.searchUsers(['-uid', '#{resource[:userid]}'])
     if len(uniqueName):
-        AdminTask.updateUser(['-uniqueName', uniqueName, '-cn', #{resource[:common_name]}])
+        AdminTask.updateUser(['-uniqueName', uniqueName, '-cn', '#{resource[:common_name]}'])
     AdminConfig.save()
     END
     debug "Running #{cmd}"
@@ -134,9 +133,9 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
   def surname=(_val)
     cmd = <<-END.unindent
     # Update description for #{resource[:surname]}
-    uniqueName = AdminTask.searchUsers(['-uid', #{resource[:userid]}])
+    uniqueName = AdminTask.searchUsers(['-uid', '#{resource[:userid]}'])
     if len(uniqueName):
-        AdminTask.updateUser(['-uniqueName', uniqueName, '-sn', #{resource[:surname]}])
+        AdminTask.updateUser(['-uniqueName', uniqueName, '-sn', '#{resource[:surname]}'])
     AdminConfig.save()
     END
     debug "Running #{cmd}"
@@ -153,9 +152,9 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
   def mail=(_val)
     cmd = <<-END.unindent
     # Update description for #{resource[:mail]}
-    uniqueName = AdminTask.searchUsers(['-uid', #{resource[:userid]}])
+    uniqueName = AdminTask.searchUsers(['-uid', '#{resource[:userid]}'])
     if len(uniqueName):
-        AdminTask.updateUser(['-uniqueName', uniqueName, '-mail', #{resource[:mail]}])
+        AdminTask.updateUser(['-uniqueName', uniqueName, '-mail', '#{resource[:mail]}'])
     AdminConfig.save()
     END
     debug "Running #{cmd}"
@@ -163,11 +162,29 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
     debug "result: #{result}"
   end
 
-  # Checking the passwords from here is probably not desirable: Jython is incredibly slow.
-  # If this needs to be done for 50-100 users, the puppet run will take a very long time.
+  # Checking/enforcing the passwords from here is probably not desirable: Jython is
+  # incredibly slow. If this needs to be done for 50-100 users, the puppet run will
+  # take a *very* long time.
+  #
+  # Long story short: we don't know what encryption is used for the WAS user passwords
+  # which means that the only way to check them is via this little script - which
+  # returns a different non-zero value whether the user doesn't exist, or the password
+  # does not match. The drawback is that it takes 8-10 seconds to run. Expand this to
+  # more than a handful of users (2-3) and you have a problem.
   # 
-  # Leave it in for now - for testing purposes.
+  # Also it is likely you want to allow the users to change their own passwords if they
+  # are alive users, not machine/service accounts.
+  #
+  # The work around this is to conditionally check the password based on the newparam
+  # resource[:manage_password] - and make that default to false, which will allow to
+  # set the password at the account-creation time, but will not care about it afterwards.
+  #
+  # If clients want force a change for selected accounts, then set the attribute
+  # 'manage_password => true' for said accounts.
   def password
+
+    return resource[:password] if !resource[:manage_password]
+
     cmd = <<-END.unindent
     # Check the password - we need to find the SecurityAdmin MBean.
     # If there is more than one, we just take the first.
@@ -189,15 +206,28 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
     debug "Running #{cmd}"
     result = wsadmin(file: cmd, user: resource[:user])
     debug "result: #{result}"
-    # What would you even return here?
-    return password if $? == 0
+
+    return resource[:password] if $CHILD_STATUS == 0
+  end
+
+  def password=(_val)
+    cmd = <<-END.unindent
+    # Update password for #{resource[:userid]}
+    uniqueName = AdminTask.searchUsers(['-uid', '#{resource[:userid]}'])
+    if len(uniqueName):
+        AdminTask.updateUser(['-uniqueName', uniqueName, '-password', '#{resource[:password]}'])
+    AdminConfig.save()
+    END
+    debug "Running #{cmd}"
+    result = wsadmin(file: cmd, user: resource[:user])
+    debug "result: #{result}"
   end
 
   # Remove a given user - we try to find it first, and if it does exist
   # we remove the user.
   def destroy
     cmd = <<-END.unindent
-    uniqueName = AdminTask.searchUsers(['-uid', #{resource[:userid]}])
+    uniqueName = AdminTask.searchUsers(['-uid', '#{resource[:userid]}'])
     if len(uniqueName):
         AdminTask.deleteUser(['-uniqueName', uniqueName])
 

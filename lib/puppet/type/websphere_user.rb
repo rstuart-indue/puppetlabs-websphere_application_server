@@ -5,19 +5,26 @@ require 'pathname'
 Puppet::Type.newtype(:websphere_user) do
   @doc = <<-DOC
     @summary This manages a WebSphere user in the default WIM file based realm
+
+    Note: manage_password defaults to false. This means that passwords are set as part of the
+          user creation, but are not managed afterwards. It allows for users to change their
+          passwords, also, more importantly, it reduces the running time. Running the simplest
+          Jython script has at least an 8-10 seconds overhead, therefore running the password
+          checking for anything above 2-3 users will not be feasible.
     @example
       websphere_user { 'jbloggs':
-        ensure       => 'present',
-        common_name  => 'Joe',
-        surname      => 'Bloggs',
-        mail         => 'jbloggs@foo.bar.baz.com',
-        password     => 'somePassword',
-        profile_base => '/opt/IBM/WebSphere/AppServer/profiles',
-        dmgr_profile => 'PROFILE_DMGR_01',
-        cell         => 'CELL_01',
-        user         => 'webadmin',
-        wsadmin_user => 'wasadmin',
-        wsadmin_pass => 'password',
+        ensure          => 'present',
+        common_name     => 'Joe',
+        surname         => 'Bloggs',
+        mail            => 'jbloggs@foo.bar.baz.com',
+        password        => 'somePassword',
+        manage_password => false,
+        profile_base    => '/opt/IBM/WebSphere/AppServer/profiles',
+        dmgr_profile    => 'PROFILE_DMGR_01',
+        cell            => 'CELL_01',
+        user            => 'webadmin',
+        wsadmin_user    => 'wasadmin',
+        wsadmin_pass    => 'password',
       }
   DOC
 
@@ -104,6 +111,11 @@ Puppet::Type.newtype(:websphere_user) do
 
   newproperty(:password) do
     desc 'The password associated with the user'
+  end
+
+  newparam(:manage_password) do
+    defaultto false
+    desc 'Whether ongoing password management is done by puppet'
   end
 
   newparam(:cell) do
