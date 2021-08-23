@@ -222,7 +222,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
       unless wascmd_args.empty?
         # If we do have to run something, prepend the uniqueName arguments and make a comma
         # separated string out of the whole array.
-        arg_string = wascmd_args.prepend("'-uniqueName'", 'uniqueName').join(', ')
+        arg_string = wascmd_args.unshift("'-uniqueName'", 'uniqueName').join(', ')
 
         cmd = <<-END.unindent
         # Update value for #{resource[:common_name]}
