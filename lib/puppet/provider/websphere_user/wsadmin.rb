@@ -216,7 +216,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
     wascmd_args = []
     if @property_flush
       wascmd_args.append("'-cn'", "'#{resource[:common_name]}'") if @property_flush[:common_name]
-      wascmd_args.append("'-sn'", "'#{resource[:surname]}'") if @property_flush[:surname
+      wascmd_args.append("'-sn'", "'#{resource[:surname]}'") if @property_flush[:surname]
       wascmd_args.append("'-mail'", "'#{resource[:mail]}'") if @property_flush[:mail]
       wascmd_args.append("'-password'", "'#{resource[:password]}'") if @property_flush[:password]
       unless args.empty?
