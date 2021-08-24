@@ -133,7 +133,7 @@ Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::
       xpath_group_id = XPath.first(doc, "//wim:entities[@xsi:type='wim:Group']/wim:cn[text()='#{resource[:groupid]}']")
       members_data = XPath.match(xpath_group_id, 'following-sibling::wim:members') if xpath_group_id
 
-      debug "Getting #{field} for #{resource[:groupid]} elicits: #{members_data}"
+      debug "Getting wim:members for #{resource[:groupid]} elicits: #{members_data}"
 
       member_list = []
       XPath.each(xpath_group_id, 'following-sibling::wim:members') do |member|
