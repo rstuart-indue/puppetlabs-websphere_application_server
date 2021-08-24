@@ -128,7 +128,7 @@ Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::
   # we remove the group.
   def destroy
     cmd = <<-END.unindent
-    uniqueName = AdminTask.searchGroups(['-uid', '#{resource[:groupid]}'])
+    uniqueName = AdminTask.searchGroups(['-cn', '#{resource[:groupid]}'])
     if len(uniqueName):
         AdminTask.deleteGroup(['-uniqueName', uniqueName])
 
@@ -158,7 +158,7 @@ Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::
 
     cmd = <<-END.unindent
         # Update group configuration for #{resource[:groupid]}
-        uniqueName = AdminTask.searchGroups(['-uid', '#{resource[:groupid]}'])
+        uniqueName = AdminTask.searchGroups(['-cn', '#{resource[:groupid]}'])
         if len(uniqueName):
             AdminTask.updateGroup([#{arg_string}])
         AdminConfig.save()
