@@ -93,9 +93,14 @@ Puppet::Type.newtype(:websphere_group) do
     desc 'The description of the group.'
   end
 
-  newproperty(:members) do
+  newproperty(:members, array_matching: :all) do
     defaultto []
     desc 'An optional list of members to be added to the group'
+
+    # Ensure the arrays are sorted when we compare them:
+    def insync?(is)
+      is.sort == should.sort
+    end
   end
 
   newparam(:cell) do
