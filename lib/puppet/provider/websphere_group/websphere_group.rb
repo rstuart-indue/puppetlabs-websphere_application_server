@@ -145,6 +145,7 @@ Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::
         # Extract the member name: any uid or cn value.
         member_name = unique_name.scan(%r{^(?:uid|cn)=(\w+),o=*})
         member_list.push(member_name) unless member_name.nil?
+        debug "Detected member array for group #{resource[:groupid]} is: #{member_list}"
       end
     else
       msg = <<-END
