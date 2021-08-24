@@ -81,7 +81,8 @@ Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::
     if File.exist?(scope('file'))
       doc = REXML::Document.new(File.open(scope('file')))
 
-      field_data = XPath.first(doc, "//wim:entities[@xsi:type='wim:Group']/wim:cn[text()='#{resource[:groupid]}']following-sibling::#{field}")
+      xpath_group_id = XPath.first(doc, "//wim:entities[@xsi:type='wim:Group']/wim:cn[text()='#{resource[:groupid]}']")
+      field_data = XPath.first(xpath_group_id, "following-sibling::#{field}") if xpath_group_id
 
       debug "Getting #{field} for #{resource[:groupid]} elicits: #{field_data}"
 
