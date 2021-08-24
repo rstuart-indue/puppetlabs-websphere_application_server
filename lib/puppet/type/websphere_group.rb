@@ -74,12 +74,12 @@ Puppet::Type.newtype(:websphere_group) do
       self[:profile] = self[:dmgr_profile]
     end
 
-    [:groupID, :cell, :profile, :user].each do |value|
+    [:groupid, :cell, :profile, :user].each do |value|
       raise ArgumentError, "Invalid #{value} #{self[:value]}" unless %r{^[-0-9A-Za-z._]+$}.match?(value)
     end
   end
 
-  newparam(:groupID) do
+  newparam(:groupid) do
     isnamevar
     desc <<-EOT
     Required. The name of the group to create/modify/remove.  For example,
@@ -93,10 +93,10 @@ Puppet::Type.newtype(:websphere_group) do
     desc 'The description of the group.'
   end
 
-#  newproperty(:members) do
-#    defaultto []
-#    desc 'An optional list of members to be added to the group'
-#  end
+  newproperty(:members) do
+    defaultto []
+    desc 'An optional list of members to be added to the group'
+  end
 
   newparam(:cell) do
     isnamevar
