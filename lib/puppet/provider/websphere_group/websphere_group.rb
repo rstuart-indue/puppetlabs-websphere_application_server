@@ -142,8 +142,9 @@ Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::
         # cn=groupName,o=defaultWIMFileBasedRealm -> for a group (note the cn=)
         unique_name = XPath.first(member, 'wim:identifier/@uniqueName').to_s
 
-        # Extract the member name: any uid or cn value.
-        member_name = unique_name.scan(%r{^(?:uid|cn)=(\w+),o=*})
+        # Extract the member name: any uid or cn value: remember that .scan() and .match()
+        # return an array of matches.
+        member_name = unique_name.match(%r{^(?:uid|cn)=(\w+),o=*}).captures.first
         member_list.push(member_name) unless member_name.nil?
       end
       debug "Detected member array for group #{resource[:groupid]} is: #{member_list}"
