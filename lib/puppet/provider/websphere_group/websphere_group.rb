@@ -157,7 +157,7 @@ Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::
     arg_string = wascmd_args.unshift("'-uniqueName'", 'uniqueName').join(', ')
 
     cmd = <<-END.unindent
-        # Update value for #{resource[:common_name]}
+        # Update group configuration for #{resource[:groupid]}
         uniqueName = AdminTask.searchGroups(['-uid', '#{resource[:groupid]}'])
         if len(uniqueName):
             AdminTask.updateGroup([#{arg_string}])
