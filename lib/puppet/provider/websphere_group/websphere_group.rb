@@ -138,8 +138,8 @@ Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::
       member_list = []
       XPath.each(xpath_group_id, 'following-sibling::wim:members') do |member|
         # The unique_name is something along the lines of:
-        # uid=userName,o=defaultWIMFileBasedRealm
-        # cn=groupName,o=defaultWIMFileBasedRealm
+        # uid=userName,o=defaultWIMFileBasedRealm -> for a user (note the uid=)
+        # cn=groupName,o=defaultWIMFileBasedRealm -> for a group (note the cn=)
         unique_name = XPath.first(member, 'wim:identifier/@uniqueName').to_s
 
         # Extract the member name: any uid or cn value.
@@ -196,29 +196,36 @@ Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::
     # If we do have to run something, prepend the grpUniqueName arguments and make a comma
     # separated string out of the whole array.
     arg_string = wascmd_args.unshift("'-groupUniqueName'", 'groupUniqueName').join(', ') unless wascmd_args.empty?
+    member_string = member_args.map { |e| "'#{e}'" }.join(',') unless member_args.empty?
 
     cmd = <<-END.unindent
       # Change the Group configuration and/or the group membership for #{resource[:groupid]}
       # When adding group members, this module allows adding other groups, not just users.
 
       arg_string = [#{arg_string}]
-      member_args = [#{member_args}]
+      member_list = [#{member_string}]
 
+      # Get the groupUniqueName for the target group
       groupUniqueName = AdminTask.searchGroups(['-cn', '#{resource[:groupid]}'])
 
       if len(groupUniqueName):
 
         # Update group configuration for #{resource[:groupid]}
-          if len(arg_string):
-            AdminTask.updateGroup(arg_string)
+        if len(arg_string):
+          AdminTask.updateGroup(arg_string)
 
         # Update the group membership for #{resource[:groupid]}
-          if len(member_args):
-            for member_uid in member_args:
-              memberUniqueName=AdminTask.searchUsers(['-uid', member_uid])
-              memberUniqueName=AdminTask.searchGroups(['-cn', member_uid]) if len(memberUniqueName) == 0
-              if len(memberUniqueName):
-                AdminTask.addMemberToGroup(['-memberUniqueName', memberUniqueName, '-groupUniqueName', groupUniqueName])
+        if len(member_list):
+          for member_uid in member_list:
+            memberUniqueName=AdminTask.searchUsers(['-uid', member_uid])
+
+            # If we can't find a user, maybe it is a group we need to add, look for it
+            if len(memberUniqueName) == 0:
+              memberUniqueName=AdminTask.searchGroups(['-cn', member_uid])
+
+            if len(memberUniqueName):
+              AdminTask.addMemberToGroup(['-memberUniqueName', memberUniqueName, '-groupUniqueName', groupUniqueName])
+
         AdminConfig.save()
         END
     debug "Running #{cmd}"
