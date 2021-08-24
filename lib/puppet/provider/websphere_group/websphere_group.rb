@@ -125,6 +125,43 @@ Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::
     @property_flush[:description] = val
   end
 
+  # Get a group's list of members - users or groups
+  def members
+    if File.exist?(scope('file'))
+      doc = REXML::Document.new(File.open(scope('file')))
+
+      xpath_group_id = XPath.first(doc, "//wim:entities[@xsi:type='wim:Group']/wim:cn[text()='#{resource[:groupid]}']")
+      members_data = XPath.match(xpath_group_id, 'following-sibling::wim:members') if xpath_group_id
+
+      debug "Getting #{field} for #{resource[:groupid]} elicits: #{members_data}"
+
+      member_list = []
+      XPath.each(xpath_group_id, 'following-sibling::wim:members') do |member|
+        # The unique_name is something along the lines of:
+        # uid=userName,o=defaultWIMFileBasedRealm
+        # cn=groupName,o=defaultWIMFileBasedRealm
+        unique_name = XPath.first(member, 'wim:identifier/@uniqueName').to_s
+
+        # Extract the member name: any uid or cn value.
+        member_name = unique_name.scan(%r{^(?:uid|cn)=(\w+),o=*})
+        member_list.push(member_name) unless member_name.nil?
+      end
+    else
+      msg = <<-END
+      #{scope('file')} does not exist. This may indicate that the cluster
+      member has not yet been realized on the DMGR server. Ensure that the
+      DMGR has created the cluster member (run Puppet on it?) and that the
+      names are correct (e.g. node name, profile name)
+      END
+      raise Puppet::Error, msg
+    end
+  end
+
+  # Set a group's description name
+  def members=(val)
+    @property_flush[:members] = val
+  end
+
   # Remove a given group - we try to find it first, and if it does exist
   # we remove the group.
   def destroy
@@ -143,25 +180,45 @@ Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::
 
   def flush
     wascmd_args = []
+    member_args = []
 
     # If we haven't got anything to modify, we've got nothing to flush. Otherwise
     # parse the list of things to do
     return unless @property_flush
     wascmd_args.push("'-description'", "'#{resource[:description]}'") if @property_flush[:description]
+    member_args = resource[:members] if @property_flush[:members]
 
     # If property_flush had something inside, but wasn't what we expected, we really
-    # need to bail, because the list of was command arguments will be empty.
-    return if wascmd_args.empty?
+    # need to bail, because the list of was command arguments will be empty. Ditto for
+    # member_args.
+    return if wascmd_args.empty? && member_args.empty?
 
-    # If we do have to run something, prepend the uniqueName arguments and make a comma
+    # If we do have to run something, prepend the grpUniqueName arguments and make a comma
     # separated string out of the whole array.
-    arg_string = wascmd_args.unshift("'-uniqueName'", 'uniqueName').join(', ')
+    arg_string = wascmd_args.unshift("'-groupUniqueName'", 'groupUniqueName').join(', ') unless wascmd_args.empty?
 
     cmd = <<-END.unindent
+      # Change the Group configuration and/or the group membership for #{resource[:groupid]}
+      # When adding group members, this module allows adding other groups, not just users.
+
+      arg_string = [#{arg_string}]
+      member_args = [#{member_args}]
+
+      groupUniqueName = AdminTask.searchGroups(['-cn', '#{resource[:groupid]}'])
+
+      if len(groupUniqueName):
+
         # Update group configuration for #{resource[:groupid]}
-        uniqueName = AdminTask.searchGroups(['-cn', '#{resource[:groupid]}'])
-        if len(uniqueName):
-            AdminTask.updateGroup([#{arg_string}])
+          if len(arg_string):
+            AdminTask.updateGroup(arg_string)
+
+        # Update the group membership for #{resource[:groupid]}
+          if len(member_args):
+            for member_uid in member_args:
+              memberUniqueName=AdminTask.searchUsers(['-uid', member_uid])
+              memberUniqueName=AdminTask.searchGroups(['-cn', member_uid]) if len(memberUniqueName) == 0
+              if len(memberUniqueName):
+                AdminTask.addMemberToGroup(['-memberUniqueName', memberUniqueName, '-groupUniqueName', groupUniqueName])
         AdminConfig.save()
         END
     debug "Running #{cmd}"
