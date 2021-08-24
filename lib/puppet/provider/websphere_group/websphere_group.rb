@@ -116,7 +116,7 @@ Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::
 
   # Get a group's description
   def description
-    get_userid_data('wim:description')
+    get_groupid_data('wim:description')
   end
 
   # Set a group's description name
