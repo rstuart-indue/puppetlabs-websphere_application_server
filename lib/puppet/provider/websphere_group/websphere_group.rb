@@ -231,7 +231,7 @@ Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::
 
         # Update group configuration for #{resource[:groupid]}
         if len(arg_string):
-          AdminTask.updateGroup(arg_string)
+          AdminTask.updateGroup([arg_string])
 
         # Add members to the group membership for #{resource[:groupid]}
         if len(add_member_list):
