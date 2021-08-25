@@ -216,7 +216,7 @@ Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::
     # we don't care about users to remove, so we bail before we execute the Jython code.
     debug "Add members string empty?: #{add_members_string.empty?}"
     debug "Enforce members: #{resource[:enforce_members]}"
-    return if add_members_string.empty? && !resource[:enforce_members]
+    return if add_members_string.empty? && resource[:enforce_members].false?
 
     cmd = <<-END.unindent
       # Change the Group configuration and/or the group membership for #{resource[:groupid]}
