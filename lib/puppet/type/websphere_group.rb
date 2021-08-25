@@ -107,8 +107,7 @@ Puppet::Type.newtype(:websphere_group) do
   newparam(:enforce_members) do
     defaultto true
 
-    newvalue(:true)
-    newvalue(:false)
+    newvalues(:true, :false)
 
     desc <<-EOT
     An optional setting for group membership management. Defaults to 'true'
