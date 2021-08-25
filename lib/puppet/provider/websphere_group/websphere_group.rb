@@ -20,6 +20,7 @@ Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::
   def initialize(val = {})
     super(val)
     @property_flush = {}
+    @old_member_list = []
   end
 
   def scope(what)
@@ -135,7 +136,6 @@ Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::
 
       debug "Getting wim:members for #{resource[:groupid]} elicits: #{members_data}"
 
-      member_list = []
       XPath.each(xpath_group_id, 'following-sibling::wim:members') do |member|
         # The unique_name is something along the lines of:
         # uid=userName,o=defaultWIMFileBasedRealm -> for a user (note the uid=)
@@ -145,12 +145,12 @@ Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::
         # Extract the member name: any uid or cn value: remember that .scan() and .match()
         # return an array of matches.
         member_name = unique_name.match(%r{^(?:uid|cn)=(\w+),o=*}).captures.first
-        member_list.push(member_name) unless member_name.nil?
+        @old_member_list.push(member_name) unless member_name.nil?
       end
-      debug "Detected member array for group #{resource[:groupid]} is: #{member_list}"
+      debug "Detected member array for group #{resource[:groupid]} is: #{@old_member_list}"
 
       # rubocop:disable Style/RedundantReturn
-      return member_list
+      return old_member_list
       # rubocop:enable Style/RedundantReturn
     else
       msg = <<-END
@@ -163,7 +163,7 @@ Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::
     end
   end
 
-  # Set a group's description name
+  # Set a group's list of members - users or groups
   def members=(val)
     @property_flush[:members] = val
   end
@@ -186,30 +186,43 @@ Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::
 
   def flush
     wascmd_args = []
-    member_args = []
+    new_member_list = nil
 
     # If we haven't got anything to modify, we've got nothing to flush. Otherwise
     # parse the list of things to do
     return unless @property_flush
     wascmd_args.push("'-description'", "'#{resource[:description]}'") if @property_flush[:description]
-    member_args = resource[:members] if @property_flush[:members]
+    new_member_list = resource[:members] if @property_flush[:members]
 
     # If property_flush had something inside, but wasn't what we expected, we really
     # need to bail, because the list of was command arguments will be empty. Ditto for
-    # member_args.
-    return if wascmd_args.empty? && member_args.empty?
+    # new_member_list.
+    return if wascmd_args.empty? && new_member_list.nil?
 
     # If we do have to run something, prepend the grpUniqueName arguments and make a comma
     # separated string out of the whole array.
     arg_string = wascmd_args.unshift("'-groupUniqueName'", 'groupUniqueName').join(', ') unless wascmd_args.empty?
-    member_string = member_args.map { |e| "'#{e}'" }.join(',') unless member_args.empty?
+
+    # Initialise these variables, we're going to use them even if they're empty.
+    add_members_string = ''
+    removable_members_string = ''
+
+    unless new_member_list.nil?
+      removable_members_string = (@old_member_list - new_member_list).map { |e| "'#{e}'" }.join(',')
+      add_members_string = (new_member_list - @old_member_list).map { |e| "'#{e}'" }.join(',')
+    end
+
+    # If we don't have to add any members, and we don't enforce strict group membership, then
+    # we don't care about users to remove, so we bail before we execute the Jython code.
+    return if add_members_string.empty? && !resource[:enforce_members]
 
     cmd = <<-END.unindent
       # Change the Group configuration and/or the group membership for #{resource[:groupid]}
       # When adding group members, this module allows adding other groups, not just users.
 
       arg_string = [#{arg_string}]
-      member_list = [#{member_string}]
+      remove_member_list = [#{removable_members_string}]
+      add_member_list = [#{add_members_string}]
 
       # Get the groupUniqueName for the target group
       groupUniqueName = AdminTask.searchGroups(['-cn', '#{resource[:groupid]}'])
@@ -220,9 +233,9 @@ Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::
         if len(arg_string):
           AdminTask.updateGroup(arg_string)
 
-        # Update the group membership for #{resource[:groupid]}
-        if len(member_list):
-          for member_uid in member_list:
+        # Add members to the group membership for #{resource[:groupid]}
+        if len(add_member_list):
+          for member_uid in add_member_list:
             memberUniqueName=AdminTask.searchUsers(['-uid', member_uid])
 
             # If we can't find a user, maybe it is a group we need to add, look for it
@@ -231,6 +244,18 @@ Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::
 
             if len(memberUniqueName):
               AdminTask.addMemberToGroup(['-memberUniqueName', memberUniqueName, '-groupUniqueName', groupUniqueName])
+
+        # Remove members from the group membership for #{resource[:groupid]}
+        if len(remove_member_list):
+          for member_uid in remove_member_list:
+            memberUniqueName=AdminTask.searchUsers(['-uid', member_uid])
+
+            # If we can't find a user, maybe it is a group we need to add, look for it
+            if len(memberUniqueName) == 0:
+              memberUniqueName=AdminTask.searchGroups(['-cn', member_uid])
+
+            if len(memberUniqueName):
+              AdminTask.removeMemberFromGroup(['-memberUniqueName', memberUniqueName, '-groupUniqueName', groupUniqueName])
 
         AdminConfig.save()
         END

@@ -11,6 +11,7 @@ Puppet::Type.newtype(:websphere_group) do
         ensure          => 'present',
         description     => 'Websphere Internal Group',
         members         => ['jbloggs', 'foo', 'bar', 'baz'],
+        enforce_members => true
         profile_base    => '/opt/IBM/WebSphere/AppServer/profiles',
         dmgr_profile    => 'PROFILE_DMGR_01',
         cell            => 'CELL_01',
@@ -103,9 +104,25 @@ Puppet::Type.newtype(:websphere_group) do
     end
   end
 
+  newparam(:enforce_members) do
+    defaultto true
+
+    newvalue(:true)
+    newvalue(:false)
+
+    desc <<-EOT
+    An optional setting for group membership management. Defaults to 'true'
+    which means that any group members found to be added via non-Puppet
+    means will be removed, and only users listed in the 'members' property
+    will be added to the group.
+
+    Example: enforce_members => true
+    EOT
+  end
+
   newparam(:cell) do
     isnamevar
-    desc 'The cell name where this user should be created in'
+    desc 'The cell name where this group should be created in'
   end
 
   newparam(:profile) do
@@ -116,10 +133,10 @@ Puppet::Type.newtype(:websphere_group) do
     isnamevar
     defaultto { @resource[:profile] }
     desc <<-EOT
-    The dmgr profile in which this user should be created. It is where
+    The dmgr profile in which this group should be created. It is where
     the `wsadmin` command can be found
 
-    This is synonimous with the 'profile' parameter.
+    This is synonymous with the 'profile' parameter.
 
     Example: dmgrProfile01"
     EOT
@@ -127,8 +144,11 @@ Puppet::Type.newtype(:websphere_group) do
 
   newparam(:profile_base) do
     isnamevar
-    desc "The base directory where profiles are stored.
-      Example: /opt/IBM/WebSphere/AppServer/profiles"
+    desc <<-EOT
+    The base directory where profiles are stored.
+
+    Example: /opt/IBM/WebSphere/AppServer/profiles
+    EOT
   end
 
   newparam(:user) do
