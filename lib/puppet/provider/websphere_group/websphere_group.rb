@@ -201,7 +201,7 @@ Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::
 
     # If we do have to run something, prepend the grpUniqueName arguments and make a comma
     # separated string out of the whole array.
-    arg_string = wascmd_args.unshift("'-groupUniqueName'", 'groupUniqueName').join(', ') unless wascmd_args.empty?
+    arg_string = wascmd_args.unshift("'-uniqueName'", 'groupUniqueName').join(', ') unless wascmd_args.empty?
 
     # Initialise these variables, we're going to use them even if they're empty.
     add_members_string = ''
@@ -220,18 +220,18 @@ Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::
       # Change the Group configuration and/or the group membership for #{resource[:groupid]}
       # When adding group members, this module allows adding other groups, not just users.
 
-      arg_string = "#{arg_string}"
-      remove_member_list = [#{removable_members_string}]
-      add_member_list = [#{add_members_string}]
-
       # Get the groupUniqueName for the target group
       groupUniqueName = AdminTask.searchGroups(['-cn', '#{resource[:groupid]}'])
+
+      arg_string = [#{arg_string}]
+      remove_member_list = [#{removable_members_string}]
+      add_member_list = [#{add_members_string}]
 
       if len(groupUniqueName):
 
         # Update group configuration for #{resource[:groupid]}
         if len(arg_string):
-          AdminTask.updateGroup([arg_string])
+          AdminTask.updateGroup(arg_string)
 
         # Add members to the group membership for #{resource[:groupid]}
         if len(add_member_list):
