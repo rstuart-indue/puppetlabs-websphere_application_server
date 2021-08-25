@@ -214,6 +214,8 @@ Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::
 
     # If we don't have to add any members, and we don't enforce strict group membership, then
     # we don't care about users to remove, so we bail before we execute the Jython code.
+    # However, it will complain every time it runs that the arrays look different and that
+    # it would attempt to fix them.
     return if add_members_string.empty? && (resource[:enforce_members] != :true)
 
     cmd = <<-END.unindent
