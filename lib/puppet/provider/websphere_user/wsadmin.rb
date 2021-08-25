@@ -81,7 +81,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
     if File.exist?(scope('file'))
       doc = REXML::Document.new(File.open(scope('file')))
 
-      userid = XPath.first(doc, "//wim:entities[@xsi:type='wim:PersonAccount']/wim:uid[text()='#{resource[:userid]}'")
+      userid = XPath.first(doc, "//wim:entities[@xsi:type='wim:PersonAccount']/wim:uid[text()='#{resource[:userid]}']")
       field_data = XPath.first(userid, "following-sibling::#{field}") if userid
       debug "Getting #{field} for #{resource[:userid]} elicits: #{field_data}"
 
@@ -107,8 +107,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
     doc = REXML::Document.new(File.open(scope('file')))
 
     # We're looking for user-id entries matching our user name
-    userid = XPath.first(doc, "//wim:entities[@xsi:type='wim:PersonAccount']/wim:uid[text()='#{resource[:userid]}'")
-
+    userid = XPath.first(doc, "//wim:entities[@xsi:type='wim:PersonAccount']/wim:uid[text()='#{resource[:userid]}']")
     debug "Exists? method result for #{resource[:userid]} is: #{userid}"
 
     !userid.nil?
