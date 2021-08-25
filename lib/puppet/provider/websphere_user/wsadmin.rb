@@ -81,8 +81,8 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
     if File.exist?(scope('file'))
       doc = REXML::Document.new(File.open(scope('file')))
 
-      field_data = XPath.first(doc, "//[wim:uid='#{resource[:userid]}']/#{field}")
-
+      userid = XPath.first(doc, "//wim:entities[@xsi:type='wim:PersonAccount']/wim:uid[text()='#{resource[:userid]}'")
+      field_data = XPath.first(userid, "following-sibling::#{field}") if userid
       debug "Getting #{field} for #{resource[:userid]} elicits: #{field_data}"
 
       return field_data.text if field_data
@@ -107,7 +107,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
     doc = REXML::Document.new(File.open(scope('file')))
 
     # We're looking for user-id entries matching our user name
-    userid = XPath.first(doc, "//[wim:uid='#{resource[:userid]}']/wim:uid")
+    userid = XPath.first(doc, "//wim:entities[@xsi:type='wim:PersonAccount']/wim:uid[text()='#{resource[:userid]}'")
 
     debug "Exists? method result for #{resource[:userid]} is: #{userid}"
 
@@ -165,7 +165,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
   # 'manage_password => true' for said accounts.
   def password
     # Pretend it's all OK if we're not managing the password
-    return resource[:password] unless resource[:manage_password]
+    return resource[:password] unless resource[:manage_password] == :true
 
     cmd = <<-END.unindent
     # Check the password - we need to find the SecurityAdmin MBean.

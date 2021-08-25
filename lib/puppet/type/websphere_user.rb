@@ -114,8 +114,14 @@ Puppet::Type.newtype(:websphere_user) do
   end
 
   newparam(:manage_password) do
-    defaultto false
-    desc 'Whether ongoing password management is done by puppet'
+    defaultto :false
+    newvalues(:true, :false)
+    desc <<-EOT
+    Defines whether ongoing password management is done by puppet. By default
+    it is set to 'false'
+
+    Example: manage_password => false,
+    EOT
   end
 
   newparam(:cell) do
