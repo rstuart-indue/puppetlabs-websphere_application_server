@@ -220,7 +220,7 @@ Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::
       # Change the Group configuration and/or the group membership for #{resource[:groupid]}
       # When adding group members, this module allows adding other groups, not just users.
 
-      arg_string = [#{arg_string}]
+      arg_string = "#{arg_string}]"
       remove_member_list = [#{removable_members_string}]
       add_member_list = [#{add_members_string}]
 
