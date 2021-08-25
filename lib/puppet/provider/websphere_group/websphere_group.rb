@@ -150,7 +150,7 @@ Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::
       debug "Detected member array for group #{resource[:groupid]} is: #{@old_member_list}"
 
       # rubocop:disable Style/RedundantReturn
-      return old_member_list
+      return @old_member_list
       # rubocop:enable Style/RedundantReturn
     else
       msg = <<-END
