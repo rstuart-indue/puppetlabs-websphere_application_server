@@ -40,6 +40,7 @@ Puppet::Type.type(:websphere_authalias).provide(:wsadmin, parent: Puppet::Provid
         :password => password,
         :description => description,
       )
+    end
   end
 
   # Populate the @property_hash by:
