@@ -174,9 +174,15 @@ Puppet::Type.type(:websphere_authalias).provide(:wsadmin, parent: Puppet::Provid
 
     # If we do have to run something, prepend the alias arguments and make a comma
     # separated string out of the whole array.
-    arg_string = wascmd_args.unshift("'-alias'", "'#{resources[:aliasid]}'").join(', ')
+    arg_string = wascmd_args.unshift("'-alias'", "'#{resource[:aliasid]}'").join(', ')
 
     cmd = <<-END.unindent
+        # Remove the backward-compatibility with older version of Websphere and do not
+        # prefix new aliases with the node-name of the cell. This will prevent creating
+        # aliases like the following: dmgr-hostname.domain.com/j2c_alias
+        # instead it will create aliases like: j2c_alias
+        AdminTask.setAdminActiveSecuritySettings('[-customProperties["com.ibm.websphere.security.JAASAuthData.removeNodeNameGlobal=true"]]')
+
         # Update J2C authentication data entry values for #{resource[:aliasid]}
         aliasDetails = AdminTask.getAuthDataEntry(['-alias', '#{resource[:userid]}'])
         if len(aliasDetails):
