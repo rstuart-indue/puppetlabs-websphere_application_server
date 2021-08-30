@@ -96,7 +96,7 @@ Puppet::Type.type(:websphere_authalias).provide(:wsadmin, parent: Puppet::Provid
     j2c_alias = XPath.first(doc, "/security:Security[@xmi:version='2.0']/authDataEntries[@alias='#{resource[:aliasid]}']")
     debug "Found auth data entry for #{resource[:aliasid]} with values: #{j2c_alias}"
     unless j2c_alias.nil?
-      aliasid, userid, password, description = Xpath.match(j2c_alias, "@*[local-name()='alias' or local-name()='userId' or local-name()='password' or local-name()='description']")
+      aliasid, userid, password, description = XPath.match(j2c_alias, "@*[local-name()='alias' or local-name()='userId' or local-name()='password' or local-name()='description']")
 
       @authalias = {
         :aliasid => aliasid,
