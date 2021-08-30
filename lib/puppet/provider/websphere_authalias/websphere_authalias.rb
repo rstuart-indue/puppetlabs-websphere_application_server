@@ -105,7 +105,7 @@ Puppet::Type.type(:websphere_authalias).provide(:wsadmin, parent: Puppet::Provid
         :description => description,
       }
 
-      debug "Found auth data entry for #{resource[:aliasid]} with values: #{authalias}"
+      debug "Found auth data entry for #{resource[:aliasid]} with values: #{@authalias}"
     end
     !@authalias.empty?
 
