@@ -87,8 +87,8 @@ Puppet::Type.type(:websphere_authalias).provide(:wsadmin, parent: Puppet::Provid
 
     debug "Retrieving value of #{resource[:aliasid]} from #{scope('file')}"
     doc = REXML::Document.new(File.open(scope('file')))
-    j2c_aliases = XPath.match(doc, "/security:Security[@xmi:version='2.0']/authDataEntries[@alias=#{resource[:aliasid]}]")
-    unless j2c_aliases.empty?
+    j2c_alias = XPath.first(doc, "/security:Security[@xmi:version='2.0']/authDataEntries[@alias=#{resource[:aliasid]}]")
+    unless j2c_alias.empty?
       aliasid, userid, password, description = Xpath.match(element, "@*[local-name()='alias' or local-name()='userId' or local-name()='password' or local-name()='description']")
 
       @authalias = {
