@@ -32,7 +32,7 @@ Puppet::Type.type(:websphere_authalias).provide(:wsadmin, parent: Puppet::Provid
   def self.instances
     j2c_aliases = XPath.match(doc, "/security:Security[@xmi:version='2.0']/authDataEntries[@alias='#{resource[:alias]}']")
     j2c_aliases.collect  do |element|
-      aliasid, userid, password, description = Xpath.match(element, '/@*[local-name()='alias' or local-name()='userId' or local-name()='password' or local-name()='description']')
+      aliasid, userid, password, description = Xpath.match(element, "/@*[local-name()='alias' or local-name()='userId' or local-name()='password' or local-name()='description']")
 
       new( :aliasid => aliasid,
         :ensure => :present,
