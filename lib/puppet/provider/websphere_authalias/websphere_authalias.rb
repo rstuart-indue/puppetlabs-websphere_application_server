@@ -184,7 +184,7 @@ Puppet::Type.type(:websphere_authalias).provide(:wsadmin, parent: Puppet::Provid
         AdminTask.setAdminActiveSecuritySettings('[-customProperties["com.ibm.websphere.security.JAASAuthData.removeNodeNameGlobal=true"]]')
 
         # Update J2C authentication data entry values for #{resource[:aliasid]}
-        aliasDetails = AdminTask.getAuthDataEntry(['-alias', '#{resource[:userid]}'])
+        aliasDetails = AdminTask.getAuthDataEntry(['-alias', '#{resource[:aliasid]}'])
         if len(aliasDetails):
             AdminTask.modifyAuthDataEntry([#{arg_string}])
         AdminConfig.save()
