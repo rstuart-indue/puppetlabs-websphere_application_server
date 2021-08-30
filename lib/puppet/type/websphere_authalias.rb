@@ -2,7 +2,7 @@
 
 require 'pathname'
 
-Puppet::Type.newtype(:websphere_authaliasid) do
+Puppet::Type.newtype(:websphere_authalias) do
   @doc = <<-DOC
     @summary This manages a WebSphere authentication data entry for a
     J2EE Connector architecture (J2C) connector in the global security
