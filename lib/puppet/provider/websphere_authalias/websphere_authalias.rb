@@ -37,8 +37,8 @@ Puppet::Type.type(:websphere_authalias).provide(:wsadmin, parent: Puppet::Provid
       new( :aliasid => aliasid,
         :ensure => :present,
         :userid => userid,
-        :password => password
-        :description => description
+        :password => password,
+        :description => description,
       )
   end
 
