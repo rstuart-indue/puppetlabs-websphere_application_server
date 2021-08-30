@@ -31,15 +31,17 @@ Puppet::Type.type(:websphere_authalias).provide(:wsadmin, parent: Puppet::Provid
   # Implement the self.instances method to perform discovery of already existing resources of this type.
   def self.instances
     j2c_aliases = XPath.match(doc, "/security:Security[@xmi:version='2.0']/authDataEntries[@alias]")
-    j2c_aliases.collect  do |element|
-      aliasid, userid, password, description = Xpath.match(element, "/@*[local-name()='alias' or local-name()='userId' or local-name()='password' or local-name()='description']")
+    unless j2c_aliases.nil?
+      j2c_aliases.collect  do |element|
+        aliasid, userid, password, description = Xpath.match(element, "/@*[local-name()='alias' or local-name()='userId' or local-name()='password' or local-name()='description']")
 
-      new( :aliasid => aliasid,
-        :ensure => :present,
-        :userid => userid,
-        :password => password,
-        :description => description,
-      )
+        new( :aliasid => aliasid,
+          :ensure => :present,
+          :userid => userid,
+          :password => password,
+          :description => description,
+        )
+      end
     end
   end
 
