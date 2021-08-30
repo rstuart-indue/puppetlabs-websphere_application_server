@@ -51,6 +51,12 @@ Puppet::Type.type(:websphere_authalias).provide(:wsadmin, parent: Puppet::Provid
   # Create a given J2C authentication data entry
   def create
     cmd = <<-END.unindent
+    # Remove the backward-compatibility with older version of Websphere and do not
+    # prefix new aliases with the node-name of the cell. This will prevent creating
+    # aliases like the following: dmgr-hostname.domain.com/j2c_alias
+    # instead it will create aliases like: j2c_alias
+    AdminTask.setAdminActiveSecuritySettings('[-customProperties["com.ibm.websphere.security.JAASAuthData.removeNodeNameGlobal=true"]]')
+
     # Create J2C authentication data entry for #{resource[:aliasid]}
     AdminTask.createAuthDataEntry(['-alias', '#{resource[:aliasid]}', '-password', '#{resource[:password]}', '-user', '#{resource[:userid]}', '-description', '#{resource[:description]}'])
     AdminConfig.save()
