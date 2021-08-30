@@ -10,6 +10,8 @@ Puppet::Type.type(:websphere_authalias).provide(:wsadmin, parent: Puppet::Provid
     or security domain configuration.
 
     This implementation only manages the global security configuration
+    which is chosen by default when no '-securityDomainName' argument
+    is specified.
 
     Please see the IBM documentation available at:
     https://www.ibm.com/docs/en/was/9.0.5?topic=scripting-securityconfigurationcommands-command-group-admintask-object#rxml_7securityconfig__SecurityConfigurationCommands.cmd35
@@ -26,12 +28,40 @@ Puppet::Type.type(:websphere_authalias).provide(:wsadmin, parent: Puppet::Provid
     @property_flush = {}
   end
 
+  # Implement the self.instances method to perform discovery of already existing resources of this type.
+  def self.instances
+    j2c_aliases = XPath.match(doc, "/security:Security[@xmi:version='2.0']/authDataEntries[@alias='#{resource[:alias]}']")
+    j2c_aliases.collect  do |element|
+      aliasid, userid, password, description = Xpath.match(element, '/@*[local-name()='alias' or local-name()='userId' or local-name()='password' or local-name()='description']')
+
+      new( :aliasid => aliasid,
+        :ensure => :present,
+        :userid => userid,
+        :password => password
+        :description => description
+      )
+  end
+
+  # Populate the @property_hash by:
+  #  1). discovering all the aliases defined by calling up self.instances
+  #  2). iterating through alias resources in the catalog
+  #  3). if the alias exists in the self.instances() cache then assign its provider
+  #      to set its property hash
+  def self.prefetch(resources)
+    aliases = instances
+    resources.keys.each do |name|
+      if provider = aliases.find{ |_alias| _alias.name == name } 
+        resources[name].provider = provider
+      end
+    end
+  end
+
   def scope(what)
     # (cells/CELL_01/nodes/appNode01/servers/AppServer01
     file = "#{resource[:profile_base]}/#{resource[:dmgr_profile]}"
     query = "/Cell:#{resource[:cell]}"
     mod   = "cells/#{resource[:cell]}"
-    file += "/config/cells/#{resource[:cell]}/fileRegistry.xml"
+    file += "/config/cells/#{resource[:cell]}/security.xml"
 
     case what
     when 'query'
@@ -45,11 +75,11 @@ Puppet::Type.type(:websphere_authalias).provide(:wsadmin, parent: Puppet::Provid
     end
   end
 
-  # Create a given user
+  # Create a given J2C authentication data entry
   def create
     cmd = <<-END.unindent
-    # Create user for #{resource[:userid]}
-    AdminTask.createUser(['-uid', '#{resource[:userid]}', '-password', '#{resource[:password]}', '-cn', '#{resource[:common_name]}', '-sn', '#{resource[:surname]}', '-mail', '#{resource[:mail]}'])
+    # Create J2C authentication data entry for #{resource[:aliasid]}
+    AdminTask.createAuthDataEntry(['-alias', '#{resource[:aliasid]}', '-password', '#{resource[:password]}', '-user', '#{resource[:userid]}', '-description', '#{resource[:description]}'])
     AdminConfig.save()
     END
 
@@ -61,7 +91,7 @@ Puppet::Type.type(:websphere_authalias).provide(:wsadmin, parent: Puppet::Provid
       ## This usually indicates that the server isn't ready on the DMGR yet -
       ## the DMGR needs to do another Puppet run, probably.
       err = <<-EOT
-      Could not create user: #{resource[:userid]}
+      Could not create J2C authentication data entry: #{resource[:aliasid]}
       This appears to be due to the remote resource not being available.
       Ensure that all the necessary services have been created and are running
       on this host and the DMGR. If this is the first run, the cluster member
@@ -75,137 +105,50 @@ Puppet::Type.type(:websphere_authalias).provide(:wsadmin, parent: Puppet::Provid
     debug result
   end
 
-  # Small helper method so we don't repeat ourselves for the fields
-  # we have to keep track on and see if they changed. This method is
-  # passed a String argument which is the name of the field/sibling
-  # we are trying to get the value for. i.e. it can be "wim:cn"
-  # or "wim:sn" or "wim:email" or any other of them.
-  #
-  def get_userid_data(field)
-    if File.exist?(scope('file'))
-      doc = REXML::Document.new(File.open(scope('file')))
-
-      userid = XPath.first(doc, "//wim:entities[@xsi:type='wim:PersonAccount']/wim:uid[text()='#{resource[:userid]}']")
-      field_data = XPath.first(userid, "following-sibling::#{field}") if userid
-      debug "Getting #{field} for #{resource[:userid]} elicits: #{field_data}"
-
-      return field_data.text if field_data
-    else
-      msg = <<-END
-      #{scope('file')} does not exist. This may indicate that the cluster
-      member has not yet been realized on the DMGR server. Ensure that the
-      DMGR has created the cluster member (run Puppet on it?) and that the
-      names are correct (e.g. node name, profile name)
-      END
-      raise Puppet::Error, msg
-    end
-  end
-
-  # Check to see if a user exists - must return a boolean.
+  # Check to see if an alias exists - must return a boolean.
+  # Because of self.prefetch and self.instances we can now
+  # just interrogate the @property_hash
   def exists?
-    unless File.exist?(scope('file'))
-      return false
-    end
-
-    debug "Retrieving value of #{resource[:userid]} from #{scope('file')}"
-    doc = REXML::Document.new(File.open(scope('file')))
-
-    # We're looking for user-id entries matching our user name
-    userid = XPath.first(doc, "//wim:entities[@xsi:type='wim:PersonAccount']/wim:uid[text()='#{resource[:userid]}']")
-    debug "Exists? method result for #{resource[:userid]} is: #{userid}"
-
-    !userid.nil?
+    @property_hash[:ensure] == :present
   end
 
-  # Get a user's given name
-  def common_name
-    get_userid_data('wim:cn')
+  # Get the userid associated with the alias
+  def userid
+    @property_hash[:userid]
   end
 
-  # Set a user's given name
-  def common_name=(val)
-    @property_flush[:common_name] = val
-  end
-
-  # Get a user's surname
-  def surname
-    get_userid_data('wim:sn')
-  end
-
-  # Set a user's surname
-  def surname=(val)
-    @property_flush[:surname] = val
-  end
-
-  # Get a user's mail
-  def mail
-    get_userid_data('wim:mail')
-  end
-
-  # Set a user's mail
-  def mail=(val)
-    @property_flush[:mail] = val
+  # Set the user id 
+  def userid=(val)
+    @property_flush[:userid] = val
   end
 
   # Checking/enforcing the passwords from here is probably not desirable: Jython is
   # incredibly slow. If this needs to be done for 50-100 users, the puppet run will
   # take a *very* long time.
-  #
-  # Long story short: we don't know what encryption is used for the WAS user passwords
-  # which means that the only way to check them is via this little script - which
-  # returns a different non-zero value whether the user doesn't exist, or the password
-  # does not match. The drawback is that it takes 8-10 seconds to run. Expand this to
-  # more than a handful of users (2-3) and you have a problem.
-  #
-  # Also it is likely you want to allow the users to change their own passwords if they
-  # are alive users, not machine/service accounts.
-  #
-  # The work around this is to conditionally check the password based on the newparam
-  # resource[:manage_password] - and make that default to false, which will allow to
-  # set the password at the account-creation time, but will not care about it afterwards.
-  #
-  # If clients want force a change for selected accounts, then set the attribute
-  # 'manage_password => true' for said accounts.
   def password
     # Pretend it's all OK if we're not managing the password
     return resource[:password] unless resource[:manage_password] == :true
-
-    cmd = <<-END.unindent
-    # Check the password - we need to find the SecurityAdmin MBean.
-    # If there is more than one, we just take the first.
-    # This may be a tad slow. (undestatement of the century)
-    # If you have tens of users, perhaps this is not a good way
-    # to ensure the passwords are reset to what they should be.
-    secadms = AdminControl.queryNames("type=SecurityAdmin,*")
-    if len(secadms) == 0:
-        print "Unable to detect any Security MBeans."
-        sys.exit(1)
-
-    secadmbean = secadms.split("\\n")[0]
-    plist = "#{resource[:userid]}" + " " + "#{resource[:password]}" + " " + "[]";
-
-    # the following command throws an exception and exits the
-    # script if the password doesn't match.
-    AdminControl.invoke(secadmbean, "checkPassword", plist)
-    END
-    debug "Running #{cmd}"
-    result = wsadmin(file: cmd, user: resource[:user])
-    debug "result: #{result}"
-
-    return resource[:password] if $CHILD_STATUS == 0
+    return resource[:password]
   end
 
   def password=(val)
     @property_flush[:password] = val
   end
+ 
+  # Get a description for a given alias
+  def description
+    @property_hash[:description]
+  end
 
-  # Remove a given user - we try to find it first, and if it does exist
-  # we remove the user.
+  # Set a description for a given alias
+  def description=(val)
+    @property_flush[:description] = val
+  end
+
+  # Remove a given alias
   def destroy
     cmd = <<-END.unindent
-    uniqueName = AdminTask.searchUsers(['-uid', '#{resource[:userid]}'])
-    if len(uniqueName):
-        AdminTask.deleteUser(['-uniqueName', uniqueName])
+    AdminTask.deleteAuthDataEntry(['-alias', '#{resource[:aliasid]}'])
 
     AdminConfig.save()
     END
@@ -221,24 +164,23 @@ Puppet::Type.type(:websphere_authalias).provide(:wsadmin, parent: Puppet::Provid
     # If we haven't got anything to modify, we've got nothing to flush. Otherwise
     # parse the list of things to do
     return unless @property_flush
-    wascmd_args.push("'-cn'", "'#{resource[:common_name]}'") if @property_flush[:common_name]
-    wascmd_args.push("'-sn'", "'#{resource[:surname]}'") if @property_flush[:surname]
-    wascmd_args.push("'-mail'", "'#{resource[:mail]}'") if @property_flush[:mail]
+    wascmd_args.push("'-user'", "'#{resource[:userid]}'") if @property_flush[:userid]
     wascmd_args.push("'-password'", "'#{resource[:password]}'") if @property_flush[:password]
+    wascmd_args.push("'-description'", "'#{resource[:description]}'") if @property_flush[:description]
 
     # If property_flush had something inside, but wasn't what we expected, we really
     # need to bail, because the list of was command arguments will be empty.
     return if wascmd_args.empty?
 
-    # If we do have to run something, prepend the uniqueName arguments and make a comma
+    # If we do have to run something, prepend the alias arguments and make a comma
     # separated string out of the whole array.
-    arg_string = wascmd_args.unshift("'-uniqueName'", 'uniqueName').join(', ')
+    arg_string = wascmd_args.unshift("'-alias'", "'#{resources[:aliasid]}'").join(', ')
 
     cmd = <<-END.unindent
-        # Update value for #{resource[:common_name]}
-        uniqueName = AdminTask.searchUsers(['-uid', '#{resource[:userid]}'])
-        if len(uniqueName):
-            AdminTask.updateUser([#{arg_string}])
+        # Update J2C authentication data entry values for #{resource[:aliasid]}
+        aliasDetails = AdminTask.getAuthDataEntry(['-alias', '#{resource[:userid]}'])
+        if len(aliasDetails):
+            AdminTask.modifyAuthDataEntry([#{arg_string}])
         AdminConfig.save()
         END
     debug "Running #{cmd}"

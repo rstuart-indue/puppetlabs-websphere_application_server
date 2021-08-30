@@ -2,19 +2,20 @@
 
 require 'pathname'
 
-Puppet::Type.newtype(:websphere_authalias) do
+Puppet::Type.newtype(:websphere_authaliasid) do
   @doc = <<-DOC
     @summary This manages a WebSphere authentication data entry for a
     J2EE Connector architecture (J2C) connector in the global security
     or security domain configuration.
 
     This implementation only manages the global security configuration
+    which is chosen by default when no '-securityDomainName' argument
+    is specified.
 
     @example
       websphere_auth_data_entry { 'j2c_alias':
         ensure          => 'present',
-        alias           => 'j2c_alias',
-        user            => 'jbloggs',
+        userid          => 'jbloggs',
         password        => 'somePassword',
         manage_password => false,
         description     => 'J2C auth data entry alias for jbloggs',
@@ -33,38 +34,38 @@ Puppet::Type.newtype(:websphere_authalias) do
   # composite namevars.
   def self.title_patterns
     [
-      # alias
+      # aliasid
       [
         %r{^([^:]+)$},
         [
-          [:alias],
+          [:aliasid],
         ],
       ],
-      # /opt/IBM/WebSphere/AppServer/profiles:alias
+      # /opt/IBM/WebSphere/AppServer/profiles:aliasid
       [
         %r{^(.*):(.*)$},
         [
           [:profile_base],
-          [:alias],
+          [:aliasid],
         ],
       ],
-      # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:alias
+      # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:aliasid
       [
         %r{^(.*):(.*):(.*)$},
         [
           [:profile_base],
           [:dmgr_profile],
-          [:alias],
+          [:aliasid],
         ],
       ],
-      # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:CELL_01:alias
+      # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:CELL_01:aliasid
       [
         %r{^(.*):(.*):(.*):(.*)$},
         [
           [:profile_base],
           [:dmgr_profile],
           [:cell],
-          [:alias],
+          [:aliasid],
         ],
       ],
     ]
@@ -81,31 +82,28 @@ Puppet::Type.newtype(:websphere_authalias) do
       self[:profile] = self[:dmgr_profile]
     end
 
-    [:alias, :cell, :profile, :user].each do |value|
+    [:aliasid, :cell, :profile, :user].each do |value|
       raise ArgumentError, "Invalid #{value} #{self[:value]}" unless %r{^[-0-9A-Za-z._]+$}.match?(value)
     end
   end
 
-  newparam(:alias) do
+  newparam(:aliasid) do
     isnamevar
     desc <<-EOT
-    Required. The J2C auth data entry alias to create/modify/remove.  For example,
-    `j2c_alias`
+    Required. Specifies the name that uniquely identifies the authentication data entry to create/modify/remove.
+    
+    For example: aliasid => j2c_alias
     EOT
   end
 
   # These are the things we need to keep track of
   # and manage if they need to set/reset
-  newproperty(:common_name) do
-    desc 'The given name of the user.'
+  newproperty(:userid) do
+    desc 'Specifies the J2C authentication data user ID.'
   end
 
-  newproperty(:surname) do
-    desc 'The surname of the user'
-  end
-
-  newproperty(:mail) do
-    desc 'The e-mail address of user'
+  newproperty(:description) do
+    desc 'The description for this auth data entry alias'
   end
 
   newproperty(:password) do
