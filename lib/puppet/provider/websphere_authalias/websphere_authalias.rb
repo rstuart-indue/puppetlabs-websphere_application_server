@@ -86,7 +86,7 @@ Puppet::Type.type(:websphere_authalias).provide(:wsadmin, parent: Puppet::Provid
     AdminConfig.save()
     END
 
-    debug "Running command: #{cmd} as user: resource[:user]"
+    debug "Running command: #{cmd} as user: #{resource[:user]}"
     result = wsadmin(file: cmd, user: resource[:user], failonfail: false)
 
     if %r{Invalid parameter value "" for parameter "parent config id" on command "create"}.match?(result)
