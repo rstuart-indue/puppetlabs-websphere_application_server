@@ -28,7 +28,8 @@ Puppet::Type.type(:websphere_authalias).provide(:wsadmin, parent: Puppet::Provid
     @property_flush = {}
     @authalias={}
 
-    unless File.exist?(scope('file')) 
+    unless File.exist?(scope('file'))
+      debug "Bailing out because security.xml file does not exist..."
       return
     end
 
