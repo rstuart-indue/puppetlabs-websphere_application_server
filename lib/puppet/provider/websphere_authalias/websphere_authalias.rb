@@ -27,27 +27,6 @@ Puppet::Type.type(:websphere_authalias).provide(:wsadmin, parent: Puppet::Provid
     super(val)
     @property_flush = {}
     @authalias={}
-
-    unless File.exist?(scope('file'))
-      debug "Bailing out because security.xml file does not exist..."
-      return
-    end
-
-    debug "Retrieving value of #{resource[:aliasid]} from #{scope('file')}"
-    doc = REXML::Document.new(File.open(scope('file')))
-    j2c_aliases = XPath.match(doc, "/security:Security[@xmi:version='2.0']/authDataEntries[@alias=#{resource[:aliasid]}]")
-    unless j2c_aliases.empty?
-      aliasid, userid, password, description = Xpath.match(element, "@*[local-name()='alias' or local-name()='userId' or local-name()='password' or local-name()='description']")
-
-      @authalias = {
-        :aliasid => aliasid,
-        :userid => userid,
-        :password => password,
-        :description => description,
-      }
-
-      debug "Found auth data entry for #{resource[:aliasid]} with values: #{authalias}"
-    end
   end
 
   def scope(what)
@@ -101,7 +80,28 @@ Puppet::Type.type(:websphere_authalias).provide(:wsadmin, parent: Puppet::Provid
 
   # Check to see if an alias exists - must return a boolean.
   def exists?
+    unless File.exist?(scope('file'))
+      debug "Bailing out because security.xml file does not exist..."
+      return false
+    end
+
+    debug "Retrieving value of #{resource[:aliasid]} from #{scope('file')}"
+    doc = REXML::Document.new(File.open(scope('file')))
+    j2c_aliases = XPath.match(doc, "/security:Security[@xmi:version='2.0']/authDataEntries[@alias=#{resource[:aliasid]}]")
+    unless j2c_aliases.empty?
+      aliasid, userid, password, description = Xpath.match(element, "@*[local-name()='alias' or local-name()='userId' or local-name()='password' or local-name()='description']")
+
+      @authalias = {
+        :aliasid => aliasid,
+        :userid => userid,
+        :password => password,
+        :description => description,
+      }
+
+      debug "Found auth data entry for #{resource[:aliasid]} with values: #{authalias}"
+    end
     !@authalias.empty?
+
   end
 
   # Get the userid associated with the alias
@@ -177,7 +177,7 @@ Puppet::Type.type(:websphere_authalias).provide(:wsadmin, parent: Puppet::Provid
         AdminConfig.save()
         END
     debug "Running #{cmd}"
-    result = wsadmin(file: cmd, user: resource[:user])
+    result = wsadmin(file: cmd, user: resource[:user], failonfail: true)
     debug "result: #{result}"
   end
 end
