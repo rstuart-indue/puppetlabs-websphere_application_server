@@ -30,7 +30,7 @@ Puppet::Type.type(:websphere_authalias).provide(:wsadmin, parent: Puppet::Provid
 
   # Implement the self.instances method to perform discovery of already existing resources of this type.
   def self.instances
-    j2c_aliases = XPath.match(doc, "/security:Security[@xmi:version='2.0']/authDataEntries[@alias='#{resource[:alias]}']")
+    j2c_aliases = XPath.match(doc, "/security:Security[@xmi:version='2.0']/authDataEntries[@alias]")
     j2c_aliases.collect  do |element|
       aliasid, userid, password, description = Xpath.match(element, "/@*[local-name()='alias' or local-name()='userId' or local-name()='password' or local-name()='description']")
 
@@ -51,7 +51,7 @@ Puppet::Type.type(:websphere_authalias).provide(:wsadmin, parent: Puppet::Provid
   def self.prefetch(resources)
     aliases = instances
     resources.keys.each do |name|
-      if provider = aliases.find{ |_alias| _alias.name == name } 
+      if provider = aliases.find { |_alias| _alias.name == name } 
         resources[name].provider = provider
       end
     end
