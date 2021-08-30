@@ -26,36 +26,26 @@ Puppet::Type.type(:websphere_authalias).provide(:wsadmin, parent: Puppet::Provid
   def initialize(val = {})
     super(val)
     @property_flush = {}
-  end
+    @authalias={}
 
-  # Implement the self.instances method to perform discovery of already existing resources of this type.
-  def self.instances
-    j2c_aliases = XPath.match(doc, "/security:Security[@xmi:version='2.0']/authDataEntries[@alias]")
-    unless j2c_aliases.empty?
-      j2c_aliases.collect  do |element|
-        aliasid, userid, password, description = Xpath.match(element, "@*[local-name()='alias' or local-name()='userId' or local-name()='password' or local-name()='description']")
-
-        new( :aliasid => aliasid,
-          :ensure => :present,
-          :userid => userid,
-          :password => password,
-          :description => description,
-        )
-      end
+    unless File.exist?(scope('file')) 
+      return
     end
-  end
 
-  # Populate the @property_hash by:
-  #  1). discovering all the aliases defined by calling up self.instances
-  #  2). iterating through alias resources in the catalog
-  #  3). if the alias exists in the self.instances() cache then assign its provider
-  #      to set its property hash
-  def self.prefetch(resources)
-    aliases = instances
-    resources.keys.each do |name|
-      if provider = aliases.find { |_alias| _alias.name == name } 
-        resources[name].provider = provider
-      end
+    debug "Retrieving value of #{resource[:aliasid]} from #{scope('file')}"
+    doc = REXML::Document.new(File.open(scope('file')))
+    j2c_aliases = XPath.match(doc, "/security:Security[@xmi:version='2.0']/authDataEntries[@alias=#{resource[:aliasid]}]")
+    unless j2c_aliases.empty?
+      aliasid, userid, password, description = Xpath.match(element, "@*[local-name()='alias' or local-name()='userId' or local-name()='password' or local-name()='description']")
+
+      @authalias = {
+        :aliasid => aliasid,
+        :userid => userid,
+        :password => password,
+        :description => description,
+      }
+
+      debug "Found auth data entry for #{resource[:aliasid]} with values: #{authalias}"
     end
   end
 
@@ -109,15 +99,13 @@ Puppet::Type.type(:websphere_authalias).provide(:wsadmin, parent: Puppet::Provid
   end
 
   # Check to see if an alias exists - must return a boolean.
-  # Because of self.prefetch and self.instances we can now
-  # just interrogate the @property_hash
   def exists?
-    @property_hash[:ensure] == :present
+    !@authalias.empty?
   end
 
   # Get the userid associated with the alias
   def userid
-    @property_hash[:userid]
+    @authalias[:userid]
   end
 
   # Set the user id 
@@ -140,7 +128,7 @@ Puppet::Type.type(:websphere_authalias).provide(:wsadmin, parent: Puppet::Provid
  
   # Get a description for a given alias
   def description
-    @property_hash[:description]
+    @authalias[:description]
   end
 
   # Set a description for a given alias
@@ -159,6 +147,7 @@ Puppet::Type.type(:websphere_authalias).provide(:wsadmin, parent: Puppet::Provid
     debug "Running #{cmd}"
     result = wsadmin(file: cmd, user: resource[:user])
     debug result
+    @authalias.clear
   end
 
   def flush
