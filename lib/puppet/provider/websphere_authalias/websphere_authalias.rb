@@ -130,12 +130,10 @@ Puppet::Type.type(:websphere_authalias).provide(:wsadmin, parent: Puppet::Provid
     xor_result = ""
     debase64 = Base64.decode64(val)
 
-    val.each_char { |char|
+    debase64.each_char { |char|
       xor_result += (char.ord ^ "_".ord).ord.chr
     }
-
-    # Return an Base64 encoded string.
-    return Base64.encode64(xor_result)
+    return xor_result
   end
 
   # Checking/enforcing the passwords from here is probably not desirable: Jython is
@@ -144,10 +142,12 @@ Puppet::Type.type(:websphere_authalias).provide(:wsadmin, parent: Puppet::Provid
   def password
     # Pretend it's all OK if we're not managing the password
     # return resource[:password] unless resource[:manage_password] == :true
-    stripped_pass = @authalias[:password].match(/^(?:{xor})(\w+)=/).captures.first
+    # stripped_pass = @authalias[:password].match(/^(?:{xor})(\w+)=/).captures.first
+    stripped_pass = @authalias[:password].match(/^(?:{xor})(.*)/).captures.first
 
     debug "Stripped pass for #{@authalias[:password]} is: #{stripped_pass}"
     old_pass = xor_string(stripped_pass)
+    debug "Old pass for #{@authalias[:password]} is: #{old_pass}"
     return old_pass
   end
 
