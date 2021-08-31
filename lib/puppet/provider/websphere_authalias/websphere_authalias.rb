@@ -145,7 +145,7 @@ Puppet::Type.type(:websphere_authalias).provide(:wsadmin, parent: Puppet::Provid
     new_pass = xor_string(resource[:password])
 
     debug "SHOULD pass: #{new_pass} , IS pass: #{@authalias[:password]}"
-    return new_pass == @authalias[:password]
+    return new_pass
   end
 
   def password=(val)
