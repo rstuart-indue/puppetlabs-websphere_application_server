@@ -164,14 +164,25 @@ Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::
     end
   end
 
+  # Look up for the roles this group is associated with. Because Websphere uses a silly
+  # indirection scheme - we have to find the role_id first, then look up to see what the 
+  # corresponding role_name of that role_id is.
+  # Once we found them all, we return an array of role_names and let Puppet compare it 
+  # with what it should be
   def roles
     member_of = []
     if File.exist?(scope('role'))
       doc = REXML::Document.new(File.open(scope('role')))
+
+      # Find the parents of <groups ... name='blah' /> and get their 'role' attributes
+      # We'll need to look each of them up - to find out what they are called.
+      # I suppose we could risk it and hardcode the role_id -> role_name mappings
+      # but I'm not sure how immutable those mappings are.
       role_id_array = XPath.match(doc, "//authorizations/groups[@name='#{resource[:groupid]}']/ancestor::/@role")
 
       debug "Member #{member} is part of the following groups: #{member_of}"
       
+      # Extract the mapping to the real role_name
       role_id_array.each do |role_id|
         member_of << rolename =  XPath.first(doc, "//rolebasedauthz:AuthorizationTableExt[@context='domain']/roles[@xmi:id='#{role_id}']/@roleName").value
         debug "  -> #{role_id.value} => #{rolename}"
