@@ -25,16 +25,17 @@ Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::
 
   def scope(what)
     # (cells/CELL_01/nodes/appNode01/servers/AppServer01
-    file = "#{resource[:profile_base]}/#{resource[:dmgr_profile]}"
+    base_dir = "#{resource[:profile_base]}/#{resource[:dmgr_profile]}"
     query = "/Cell:#{resource[:cell]}"
     mod   = "cells/#{resource[:cell]}"
-    file += "/config/cells/#{resource[:cell]}/fileRegistry.xml"
+    file = base_dir + "/config/cells/#{resource[:cell]}/fileRegistry.xml"
+    role = base_dir + "/config/cells/#{resource[:cell]}/admin-authz.xml"
 
     case what
     when 'query'
       query
-    when 'mod'
-      mod
+    when 'role'
+      role
     when 'file'
       file
     else
@@ -161,6 +162,23 @@ Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::
       END
       raise Puppet::Error, msg
     end
+  end
+
+  def roles
+    member_of = []
+    if File.exist?(scope('role'))
+      doc = REXML::Document.new(File.open(scope('role')))
+      role_id_array = XPath.match(doc, "//authorizations/groups[@name='#{resource[:groupid]}']/ancestor::/@role")
+
+      debug "Member #{member} is part of the following groups: #{member_of}"
+      
+      role_id_array.each do |role_id|
+        member_of << rolename =  XPath.first(doc, "//rolebasedauthz:AuthorizationTableExt[@context='domain']/roles[@xmi:id='#{role_id}']/@roleName").value
+        debug "  -> #{role_id.value} => #{rolename}"
+      end
+    end
+    
+    return member_of
   end
 
   # Set a group's list of members - users or groups
