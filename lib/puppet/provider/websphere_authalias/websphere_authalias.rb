@@ -141,13 +141,11 @@ Puppet::Type.type(:websphere_authalias).provide(:wsadmin, parent: Puppet::Provid
   # take a *very* long time.
   def password
     # Pretend it's all OK if we're not managing the password
-    # return resource[:password] unless resource[:manage_password] == :true
-    # stripped_pass = @authalias[:password].match(/^(?:{xor})(\w+)=/).captures.first
+    return resource[:password] unless resource[:manage_password] == :true
+
     stripped_pass = @authalias[:password].match(/^(?:{xor})(.*)/).captures.first
 
-    debug "Stripped pass for #{@authalias[:password]} is: #{stripped_pass}"
     old_pass = xor_string(stripped_pass)
-    debug "Old pass for #{@authalias[:password]} is: #{old_pass}"
     return old_pass
   end
 
