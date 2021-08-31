@@ -127,7 +127,9 @@ Puppet::Type.type(:websphere_authalias).provide(:wsadmin, parent: Puppet::Provid
   # the alias passwords.
   # The character used as the XOR key is "_" (underscore).
   def xor_string (val)
-    xor_result = "{xor}"
+    xor_result = ""
+    debase64 = Base64.decode64(val)
+
     val.each_char { |char|
       xor_result += (char.ord ^ "_".ord).ord.chr
     }
@@ -141,11 +143,12 @@ Puppet::Type.type(:websphere_authalias).provide(:wsadmin, parent: Puppet::Provid
   # take a *very* long time.
   def password
     # Pretend it's all OK if we're not managing the password
-    return resource[:password] unless resource[:manage_password] == :true
-    new_pass = xor_string(resource[:password])
+    # return resource[:password] unless resource[:manage_password] == :true
+    stripped_pass = @authalias[:password].match(/^(?:{xor})(\w+)=/).captures.first
 
-    debug "SHOULD pass: #{new_pass} , IS pass: #{@authalias[:password]}"
-    return new_pass
+    debug "Stripped pass for #{@authalias[:password]} is: #{stripped_pass}"
+    old_pass = xor_string(stripped_pass)
+    return old_pass
   end
 
   def password=(val)
