@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'base64'
 require 'English'
 require_relative '../websphere_helper'
 
@@ -121,13 +122,30 @@ Puppet::Type.type(:websphere_authalias).provide(:wsadmin, parent: Puppet::Provid
     @property_flush[:userid] = val
   end
 
+  # This creates the XOR string used in the authentication data entries.
+  # For now, WAS8 and WAS9 are using the same schema of obfuscation for
+  # the alias passwords.
+  # The character used as the XOR key is "_" (underscore).
+  def xor_string (val)
+    xor_result = "{xor}"
+    val.each_char { |char|
+      xor_result += (char.ord ^ "_".ord).ord.chr
+    }
+
+    # Return an Base64 encoded string.
+    return Base64.encode64(xor_result)
+  end
+
   # Checking/enforcing the passwords from here is probably not desirable: Jython is
   # incredibly slow. If this needs to be done for 50-100 users, the puppet run will
   # take a *very* long time.
   def password
     # Pretend it's all OK if we're not managing the password
     return resource[:password] unless resource[:manage_password] == :true
-    return resource[:password]
+    new_pass = xor_string(resource[:password])
+
+    debug "SHOULD pass: #{new_pass} , IS pass: #{@authalias[:password]}"
+    return new_pass == @authalias[:password]
   end
 
   def password=(val)
