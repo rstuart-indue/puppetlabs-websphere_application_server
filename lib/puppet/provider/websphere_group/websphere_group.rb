@@ -32,10 +32,11 @@ Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::
     mod   = "cells/#{resource[:cell]}"
     file = base_dir + "/config/cells/#{resource[:cell]}/fileRegistry.xml"
     role = base_dir + "/config/cells/#{resource[:cell]}/admin-authz.xml"
+    audit = base_dir + "/config/cells/#{resource[:cell]}/audit-authz.xml"
 
     case what
-    when 'query'
-      query
+    when 'audit'
+      audit
     when 'role'
       role
     when 'file'
@@ -172,24 +173,36 @@ Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::
   # Once we found them all, we return an array of role_names and let Puppet compare it 
   # with what it should be
   def roles
-    if File.exist?(scope('role'))
-      doc = REXML::Document.new(File.open(scope('role')))
+    if File.exist?(scope('role')) && File.exist?(scope('audit'))
+
+      # Note that there are two locations for the roles: admin and audit which map to
+      # two different XML files. They are identical as XML structure but different data.
+      # So if a group has audit role - it will be in the audit-authz.xml file.
+      admin_doc = REXML::Document.new(File.open(scope('role')))
+      audit_doc = REXML::Document.new(File.open(scope('audit')))
 
       # Find the parents of <groups ... name='blah' /> and get their 'role' attributes
       # We'll need to look each of them up - to find out what they are called.
       # I suppose we could risk it and hardcode the role_id -> role_name mappings
       # but I'm not sure how immutable those mappings are.
-      role_id_array = XPath.match(doc, "/rolebasedauthz:AuthorizationTableExt[@context='domain']/authorizations/groups[@name='#{resource[:groupid]}']/ancestor::/@role")
-      
+      role_id_array = XPath.match(admin_doc, "/rolebasedauthz:AuthorizationTableExt[@context='domain']/authorizations/groups[@name='#{resource[:groupid]}']/ancestor::/@role")
+      audit_id_array = XPath.match(audit_doc, "/rolebasedauthz:AuthorizationTableExt[@context='domain']/authorizations/groups[@name='#{resource[:groupid]}']/ancestor::/@role")
+
       # Extract the mapping from the role_id to the real role_name
       # These entries look something similar to this:
       # <roles xmi:id="SecurityRoleExt_2" roleName="operator"/>
       # and we're searching for a matching 'xmi:id' and retrieving the 'roleName'
       # Note the .to_sym conversion - because our arguments are defined as symbols.
       role_id_array.each do |role_id|
-        role_name = XPath.first(doc, "/rolebasedauthz:AuthorizationTableExt[@context='domain']/roles[@xmi:id='#{role_id}']/@roleName").value
+        role_name = XPath.first(admin_doc, "/rolebasedauthz:AuthorizationTableExt[@context='domain']/roles[@xmi:id='#{role_id}']/@roleName").value
         @old_roles_list.push(role_name.to_sym) unless role_name.nil?
       end
+
+      audit_id_array.each do |audit_id|
+        role_name = XPath.first(audit_doc, "/rolebasedauthz:AuthorizationTableExt[@context='domain']/roles[@xmi:id='#{audit_id}']/@roleName").value
+        @old_roles_list.push(role_name.to_sym) unless role_name.nil?
+      end
+
     end
 
     debug "Member #{resource[:groupid]} is part of the following roles: #{@old_roles_list}"
