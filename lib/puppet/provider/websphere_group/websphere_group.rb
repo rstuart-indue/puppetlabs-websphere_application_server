@@ -9,6 +9,7 @@ Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::
 
     Please see the IBM documentation available at:
     https://www.ibm.com/docs/en/was/9.0.5?topic=scripting-wimmanagementcommands-command-group-admintask-object#rxml_atwimmgt__cmd3
+    https://www.ibm.com/docs/en/was/9.0.5?topic=scripting-namingauthzcommands-command-group-admintask-object
 
     We execute the 'wsadmin' tool to query and make changes, which interprets
     Jython. This means we need to use heredocs to satisfy whitespace sensitivity.
@@ -21,20 +22,22 @@ Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::
     super(val)
     @property_flush = {}
     @old_member_list = []
+    @old_roles_list = []
   end
 
   def scope(what)
     # (cells/CELL_01/nodes/appNode01/servers/AppServer01
-    file = "#{resource[:profile_base]}/#{resource[:dmgr_profile]}"
+    base_dir = "#{resource[:profile_base]}/#{resource[:dmgr_profile]}"
     query = "/Cell:#{resource[:cell]}"
     mod   = "cells/#{resource[:cell]}"
-    file += "/config/cells/#{resource[:cell]}/fileRegistry.xml"
+    file = base_dir + "/config/cells/#{resource[:cell]}/fileRegistry.xml"
+    role = base_dir + "/config/cells/#{resource[:cell]}/admin-authz.xml"
 
     case what
     when 'query'
       query
-    when 'mod'
-      mod
+    when 'role'
+      role
     when 'file'
       file
     else
@@ -140,7 +143,7 @@ Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::
         # The unique_name is something along the lines of:
         # uid=userName,o=defaultWIMFileBasedRealm -> for a user (note the uid=)
         # cn=groupName,o=defaultWIMFileBasedRealm -> for a group (note the cn=)
-        unique_name = XPath.first(member, 'wim:identifier/@uniqueName').to_s
+        unique_name = XPath.first(member, 'wim:identifier/@uniqueName').value
 
         # Extract the member name: any uid or cn value: remember that .scan() and .match()
         # return an array of matches.
@@ -161,6 +164,42 @@ Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::
       END
       raise Puppet::Error, msg
     end
+  end
+
+  # Look up for the roles this group is associated with. Because Websphere uses a silly
+  # indirection scheme - we have to find the role_id first, then look up to see what the 
+  # corresponding role_name of that role_id is.
+  # Once we found them all, we return an array of role_names and let Puppet compare it 
+  # with what it should be
+  def roles
+    if File.exist?(scope('role'))
+      doc = REXML::Document.new(File.open(scope('role')))
+
+      # Find the parents of <groups ... name='blah' /> and get their 'role' attributes
+      # We'll need to look each of them up - to find out what they are called.
+      # I suppose we could risk it and hardcode the role_id -> role_name mappings
+      # but I'm not sure how immutable those mappings are.
+      role_id_array = XPath.match(doc, "/rolebasedauthz:AuthorizationTableExt[@context='domain']/authorizations/groups[@name='#{resource[:groupid]}']/ancestor::/@role")
+      
+      # Extract the mapping from the role_id to the real role_name
+      # These entries look something similar to this:
+      # <roles xmi:id="SecurityRoleExt_2" roleName="operator"/>
+      # and we're searching for a matching 'xmi:id' and retrieving the 'roleName'
+      role_id_array.each do |role_id|
+        role_name = XPath.first(doc, "/rolebasedauthz:AuthorizationTableExt[@context='domain']/roles[@xmi:id='#{role_id}']/@roleName").value
+        @old_roles_list.push(role_name) unless role_name.nil?
+      end
+    end
+
+    debug "Member #{resource[:groupid]} is part of the following roles: #{@old_roles_list}"
+    # rubocop:disable Style/RedundantReturn
+    return @old_roles_list
+    # rubocop:enable Style/RedundantReturn
+  end
+
+  # Set the roles for the given group
+  def roles=(val)
+    @property_flush[:roles] = val
   end
 
   # Set a group's list of members - users or groups
@@ -193,11 +232,12 @@ Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::
     return unless @property_flush
     wascmd_args.push("'-description'", "'#{resource[:description]}'") if @property_flush[:description]
     new_member_list = resource[:members] if @property_flush[:members]
+    new_roles_list = resource[:roles] if @property_flush[:roles]
 
     # If property_flush had something inside, but wasn't what we expected, we really
     # need to bail, because the list of was command arguments will be empty. Ditto for
-    # new_member_list.
-    return if wascmd_args.empty? && new_member_list.nil?
+    # new_member_list and new_roles_list.
+    return if wascmd_args.empty? && new_member_list.nil? && new_roles_list.nil?
 
     # If we do have to run something, prepend the grpUniqueName arguments and make a comma
     # separated string out of the whole array.
@@ -210,6 +250,14 @@ Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::
     unless new_member_list.nil?
       removable_members_string = (@old_member_list - new_member_list).map { |e| "'#{e}'" }.join(',')
       add_members_string = (new_member_list - @old_member_list).map { |e| "'#{e}'" }.join(',')
+    end
+
+    add_roles_string = ''
+    removable_roles_string = ''
+
+    unless new_roles_list.nil?
+      removable_roles_string = (@old_roles_list - new_roles_list).map { |e| "'#{e}'" }.join(',')
+      add_roles_string = (new_roles_list - @old_roles_list).map { |e| "'#{e}'" }.join(',')
     end
 
     # If we don't have to add any members, and we don't enforce strict group membership, then
@@ -225,9 +273,19 @@ Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::
       # Get the groupUniqueName for the target group
       groupUniqueName = AdminTask.searchGroups(['-cn', '#{resource[:groupid]}'])
 
+      # Set a flag whether we need to reload the security configuration
+      roles_changed = 0
+
+      # Group params to change
       arg_string = [#{arg_string}]
+
+      # Group members to add/remove
       remove_member_list = [#{removable_members_string}]
       add_member_list = [#{add_members_string}]
+
+      # Roles to add/remove
+      remove_role_list = [#{removable_roles_string}]
+      add_role_list = [#{add_roles_string}]
 
       if len(groupUniqueName):
 
@@ -259,7 +317,27 @@ Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::
             if len(memberUniqueName):
               AdminTask.removeMemberFromGroup(['-memberUniqueName', memberUniqueName, '-groupUniqueName', groupUniqueName])
 
+        # Add roles for the #{resource[:groupid]} group
+        if len(add_role_list):
+          for rolename_id in add_role_list:
+              AdminTask.mapGroupsToNamingRole(['-roleName', rolename_id, '-groupids', '#{resource[:groupid]}'])
+
+          # Ensure we refresh/reload the security configuration
+          roles_changed = 1
+
+        # Remove roles for the #{resource[:groupid]} group
+        if len(remove_role_list):
+          for rolename_id in remove_role_list:
+              AdminTask.removeGroupsFromNamingRole(['-roleName', rolename_id, '-groupids', '#{resource[:groupid]}'])
+
+          # Ensure we refresh/reload the security configuration
+          roles_changed = 1
+
         AdminConfig.save()
+
+        if roles_changed:
+          agmBean = AdminControl.queryNames('type=AuthorizationGroupManager,process=dmgr,*')
+          AdminControl.invoke(agmBean, 'refreshAll')
         END
     debug "Running #{cmd}"
     result = wsadmin(file: cmd, user: resource[:user])
