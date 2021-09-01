@@ -9,7 +9,7 @@ Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::
 
     Please see the IBM documentation available at:
     https://www.ibm.com/docs/en/was/9.0.5?topic=scripting-wimmanagementcommands-command-group-admintask-object#rxml_atwimmgt__cmd3
-    https://www.ibm.com/docs/en/was/9.0.5?topic=scripting-namingauthzcommands-command-group-admintask-object
+    https://www.ibm.com/docs/en/was/9.0.5?topic=scripting-authorizationgroupcommands-command-group-admintask-object
 
     We execute the 'wsadmin' tool to query and make changes, which interprets
     Jython. This means we need to use heredocs to satisfy whitespace sensitivity.
@@ -320,7 +320,10 @@ Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::
         # Add roles for the #{resource[:groupid]} group
         if len(add_role_list):
           for rolename_id in add_role_list:
-              AdminTask.mapGroupsToNamingRole(['-roleName', rolename_id, '-groupids', '#{resource[:groupid]}'])
+              if rolename_id == 'auditor':
+                AdminTask.mapGroupsToAuditRole(['-roleName', rolename_id, '-groupids', '#{resource[:groupid]}'])
+              else:
+                AdminTask.mapGroupsToAdminRole(['-roleName', rolename_id, '-groupids', '#{resource[:groupid]}'])
 
           # Ensure we refresh/reload the security configuration
           roles_changed = 1
@@ -328,7 +331,10 @@ Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::
         # Remove roles for the #{resource[:groupid]} group
         if len(remove_role_list):
           for rolename_id in remove_role_list:
-              AdminTask.removeGroupsFromNamingRole(['-roleName', rolename_id, '-groupids', '#{resource[:groupid]}'])
+            if rolename_id == 'auditor':
+              AdminTask.removeGroupsFromAuditRole(['-roleName', rolename_id, '-groupids', '#{resource[:groupid]}'])
+            else:
+              AdminTask.removeGroupsFromAdminRole(['-roleName', rolename_id, '-groupids', '#{resource[:groupid]}'])
 
           # Ensure we refresh/reload the security configuration
           roles_changed = 1
