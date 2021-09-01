@@ -210,13 +210,38 @@ Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::
 
   # Remove a given group - we try to find it first, and if it does exist
   # we remove the group.
+  # We also first remove the group from the roles it is in, because if we
+  # leave it there, the DMGR dies when you click on the role in the WebUI.
   def destroy
+    removable_members_string = ''
+    unless @old_member_list.empty? 
+      removable_members_string = @old_member_list.map { |e| "'#{e}'" }.join(',')
+
     cmd = <<-END.unindent
+    remove_role_list = [#{removable_members_string}]
+
+    # Set a flag whether we need to reload the security configuration
+    roles_changed = 0
+
+    # Remove roles for the #{resource[:groupid]} group before we destroy the group
+    if len(remove_role_list):
+      for rolename_id in remove_role_list:
+        if rolename_id == 'auditor':
+          AdminTask.removeGroupsFromAuditRole(['-roleName', rolename_id, '-groupids', '#{resource[:groupid]}'])
+        else:
+          AdminTask.removeGroupsFromAdminRole(['-roleName', rolename_id, '-groupids', '#{resource[:groupid]}'])
+      # Ensure we refresh/reload the security configuration
+      roles_changed = 1
+
     uniqueName = AdminTask.searchGroups(['-cn', '#{resource[:groupid]}'])
     if len(uniqueName):
         AdminTask.deleteGroup(['-uniqueName', uniqueName])
 
     AdminConfig.save()
+
+    if roles_changed:
+      agmBean = AdminControl.queryNames('type=AuthorizationGroupManager,process=dmgr,*')
+      AdminControl.invoke(agmBean, 'refreshAll')
     END
 
     debug "Running #{cmd}"
@@ -227,6 +252,7 @@ Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::
   def flush
     wascmd_args = []
     new_member_list = nil
+    new_roles_list = nil
 
     # If we haven't got anything to modify, we've got nothing to flush. Otherwise
     # parse the list of things to do
