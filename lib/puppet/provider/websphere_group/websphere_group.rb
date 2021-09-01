@@ -48,10 +48,63 @@ Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::
 
   # Create a given group
   def create
+    # Get the list of members and roles which need to be assigned to the newly created group
+    add_members_string = ''
+    add_roles_string = ''
+
+    unless resource[:members].empty?
+      add_members_string = resource[:members].map { |e| "'#{e}'" }.join(',')
+    end
+
+    unless resource[:roles].empty?
+      add_roles_string = resource[:roles].map { |e| "'#{e}'" }.join(',')
+    end
+  
     cmd = <<-END.unindent
+    # Group members to add/remove
+    add_member_list = [#{add_members_string}]
+
+    # Roles to add/remove
+    add_role_list = [#{add_roles_string}]
+
+    # Set a flag whether we need to reload the security configuration
+    roles_changed = 0
+
     # Create group for #{resource[:groupid]}
     AdminTask.createGroup(['-cn', '#{resource[:groupid]}', '-description', '#{resource[:description]}'])
     AdminConfig.save()
+
+    # Add members to the group membership for #{resource[:groupid]}
+    if len(add_member_list):
+      for member_uid in add_member_list:
+        memberUniqueName=AdminTask.searchUsers(['-uid', member_uid])
+
+        # If we can't find a user, maybe it is a group we need to add, look for it
+        if len(memberUniqueName) == 0:
+          memberUniqueName=AdminTask.searchGroups(['-cn', member_uid])
+
+        if len(memberUniqueName):
+          AdminTask.addMemberToGroup(['-memberUniqueName', memberUniqueName, '-groupUniqueName', groupUniqueName])
+
+    # Get the groupUniqueName for the target group
+    groupUniqueName = AdminTask.searchGroups(['-cn', '#{resource[:groupid]}'])
+
+    # Add roles for the #{resource[:groupid]} group
+    if len(add_role_list):
+      for rolename_id in add_role_list:
+          if rolename_id == 'auditor':
+            AdminTask.mapGroupsToAuditRole(['-roleName', rolename_id, '-groupids', '#{resource[:groupid]}'])
+          else:
+            AdminTask.mapGroupsToAdminRole(['-roleName', rolename_id, '-groupids', '#{resource[:groupid]}'])
+
+      # Ensure we refresh/reload the security configuration
+      roles_changed = 1
+
+    AdminConfig.save()
+
+    if roles_changed:
+      agmBean = AdminControl.queryNames('type=AuthorizationGroupManager,process=dmgr,*')
+      AdminControl.invoke(agmBean, 'refreshAll')
     END
 
     debug "Running command: #{cmd} as user: resource[:user]"
