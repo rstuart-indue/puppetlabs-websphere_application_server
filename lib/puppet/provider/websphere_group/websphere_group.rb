@@ -185,9 +185,10 @@ Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::
       # These entries look something similar to this:
       # <roles xmi:id="SecurityRoleExt_2" roleName="operator"/>
       # and we're searching for a matching 'xmi:id' and retrieving the 'roleName'
+      # Note the .to_sym conversion - because our arguments are defined as symbols.
       role_id_array.each do |role_id|
         role_name = XPath.first(doc, "/rolebasedauthz:AuthorizationTableExt[@context='domain']/roles[@xmi:id='#{role_id}']/@roleName").value
-        @old_roles_list.push(role_name) unless role_name.nil?
+        @old_roles_list.push(role_name.to_sym) unless role_name.nil?
       end
     end
 
