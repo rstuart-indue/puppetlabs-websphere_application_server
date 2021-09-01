@@ -216,6 +216,7 @@ Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::
     removable_members_string = ''
     unless @old_member_list.empty? 
       removable_members_string = @old_member_list.map { |e| "'#{e}'" }.join(',')
+    end
 
     cmd = <<-END.unindent
     remove_role_list = [#{removable_members_string}]
