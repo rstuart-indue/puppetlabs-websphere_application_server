@@ -213,13 +213,13 @@ Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::
   # We also first remove the group from the roles it is in, because if we
   # leave it there, the DMGR dies when you click on the role in the WebUI.
   def destroy
-    removable_members_string = ''
-    unless @old_member_list.empty? 
-      removable_members_string = @old_member_list.map { |e| "'#{e}'" }.join(',')
+    removable_roles_string = ''
+    unless @old_roles_list.empty? 
+      removable_roles_string = @old_roles_list.map { |e| "'#{e}'" }.join(',')
     end
 
     cmd = <<-END.unindent
-    remove_role_list = [#{removable_members_string}]
+    remove_role_list = [#{removable_roles_string}]
 
     # Set a flag whether we need to reload the security configuration
     roles_changed = 0
