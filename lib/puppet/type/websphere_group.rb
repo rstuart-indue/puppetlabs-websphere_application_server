@@ -12,6 +12,7 @@ Puppet::Type.newtype(:websphere_group) do
         description     => 'Websphere Internal Group',
         members         => ['jbloggs', 'foo', 'bar', 'baz'],
         enforce_members => true
+        roles           => ['administrator','operator','configurator','monitor','deployer','adminsecuritymanager','nobody','iscadmins']
         profile_base    => '/opt/IBM/WebSphere/AppServer/profiles',
         dmgr_profile    => 'PROFILE_DMGR_01',
         cell            => 'CELL_01',
@@ -116,6 +117,26 @@ Puppet::Type.newtype(:websphere_group) do
 
     Example: enforce_members => true
     EOT
+  end
+
+  newproperty(:roles, array_matching: :all) do
+    defaultto []
+    newvalues(
+      :administrator,
+      :operator,
+      :configurator,
+      :monitor,
+      :deployer,
+      :adminsecuritymanager,
+      :nobody,
+      :iscadmins
+    )
+    desc 'An optional list of roles this group will be assigned to'
+
+    # Ensure the arrays are sorted when we compare them:
+    def insync?(is)
+      is.sort == should.sort
+    end
   end
 
   newparam(:cell) do
