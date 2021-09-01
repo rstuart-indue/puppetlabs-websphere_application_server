@@ -123,6 +123,7 @@ Puppet::Type.newtype(:websphere_group) do
     defaultto []
     newvalues(
       :administrator,
+      :auditor,
       :operator,
       :configurator,
       :monitor,
