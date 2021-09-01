@@ -74,6 +74,9 @@ Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::
     AdminTask.createGroup(['-cn', '#{resource[:groupid]}', '-description', '#{resource[:description]}'])
     AdminConfig.save()
 
+    # Get the groupUniqueName for the target group
+    groupUniqueName = AdminTask.searchGroups(['-cn', '#{resource[:groupid]}'])
+
     # Add members to the group membership for #{resource[:groupid]}
     if len(add_member_list):
       for member_uid in add_member_list:
@@ -85,9 +88,6 @@ Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::
 
         if len(memberUniqueName):
           AdminTask.addMemberToGroup(['-memberUniqueName', memberUniqueName, '-groupUniqueName', groupUniqueName])
-
-    # Get the groupUniqueName for the target group
-    groupUniqueName = AdminTask.searchGroups(['-cn', '#{resource[:groupid]}'])
 
     # Add roles for the #{resource[:groupid]} group
     if len(add_role_list):
