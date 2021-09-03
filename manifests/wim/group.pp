@@ -1,3 +1,4 @@
+# lint:ignore:140chars
 # @summary
 #   Defined type to manage a WebSphere group in the default WIM file based realm. 
 #
@@ -34,7 +35,11 @@
 #   Required. The name of the DMGR profile to create this cluster member under.
 # @param user
 #   Optional. The user to run the `wsadmin` command as. Defaults to 'root'.
-
+# @param wsadmin_user
+#   Optional. The username for `wsadmin` authentication if security is enabled.
+# @param wsadmin_pass
+#   Optional. The password for `wsadmin` authentication if security is enabled.
+# lint:endignore
 define websphere_application_server::wim::group (
   String $description,
   Stdlib::Absolutepath $profile_base,
