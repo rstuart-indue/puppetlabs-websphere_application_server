@@ -48,7 +48,7 @@ define websphere_application_server::wim::user (
   String $common_name,
   String $surname,
   String $mail,
-  String $password,
+  Variant[String, Sensitive[String]] $password,
   Stdlib::Absolutepath $profile_base,
   String $dmgr_profile,
   String $cell,
