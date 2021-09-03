@@ -11,8 +11,8 @@ Puppet::Type.newtype(:websphere_group) do
         ensure          => 'present',
         description     => 'Websphere Internal Group',
         members         => ['jbloggs', 'foo', 'bar', 'baz'],
-        enforce_members => true
-        roles           => ['administrator','operator','configurator','monitor','deployer','adminsecuritymanager','nobody','iscadmins']
+        enforce_members => true,
+        roles           => ['administrator','operator','configurator','monitor','deployer','adminsecuritymanager','nobody','iscadmins'],
         profile_base    => '/opt/IBM/WebSphere/AppServer/profiles',
         dmgr_profile    => 'PROFILE_DMGR_01',
         cell            => 'CELL_01',
