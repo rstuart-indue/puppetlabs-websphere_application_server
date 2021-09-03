@@ -1,6 +1,6 @@
 # lint:ignore:140chars
 # @summary
-#   Defined type to manage a WebSphere group in the default WIM file based realm. 
+#   Defined type to manage a WebSphere group in the default WIM (Websphere Identity Management[?]) file based realm. 
 #
 # @example Manage a group with members and roles:
 #   websphere_application_server::wim::group { 'my_was_group':
@@ -46,7 +46,7 @@ define websphere_application_server::wim::group (
   String $dmgr_profile,
   String $cell,
   Variant[String, Array[String], Undef] $members = undef,
-  Boolean $enforce_members                       = undef,
+  Variant[Boolean, Undef] $enforce_members       = undef,
   Variant[String, Array[String], Undef] $roles   = undef,
   Enum['present','absent'] $ensure               = 'present',
   String $user                                   = $::websphere_application_server::user,
