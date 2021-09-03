@@ -45,13 +45,13 @@ define websphere_application_server::wim::group (
   Stdlib::Absolutepath $profile_base,
   String $dmgr_profile,
   String $cell,
-  Variant[String, Array[String]] $members = undef,
-  Boolean $enforce_members                = undef,
-  Variant[String, Array[String]] $roles   = undef,
-  Enum['present','absent'] $ensure        = 'present',
-  String $user                            = $::websphere_application_server::user,
-  String $wsadmin_user                    = undef,
-  String $wsadmin_pass                    = undef,
+  Variant[String, Array[String], Undef] $members = undef,
+  Boolean $enforce_members                       = undef,
+  Variant[String, Array[String], Undef] $roles   = undef,
+  Enum['present','absent'] $ensure               = 'present',
+  String $user                                   = $::websphere_application_server::user,
+  String $wsadmin_user                           = undef,
+  String $wsadmin_pass                           = undef,
 ) {
 
   websphere_group { $title:
