@@ -2,16 +2,16 @@
 
 require 'pathname'
 
-Puppet::Type.newtype(:websphere_qcf) do
+Puppet::Type.newtype(:websphere_cf) do
   @doc = <<-DOC
     @summary This manages a WebSphere JMS Queue Connection Factory resource.
 
     @example
       websphere_cf { 'was_qcf':
         ensure          => 'present',
-        type            => 'QCF'
+        cf_type         => 'QCF'
         description     => 'Websphere Queue Connection Factory',
-        qcf_
+        cf_
         profile_base    => '/opt/IBM/WebSphere/AppServer/profiles',
         dmgr_profile    => 'PROFILE_DMGR_01',
         cell            => 'CELL_01',
@@ -27,31 +27,31 @@ Puppet::Type.newtype(:websphere_qcf) do
   # composite namevars.
   def self.title_patterns
     [
-      # QCFName
+      # CFName
       [
         %r{^([^:]+)$},
         [
-          [:qcf_name],
+          [:cf_name],
         ],
       ],
-      # /opt/IBM/WebSphere/AppServer/profiles:QCFName
+      # /opt/IBM/WebSphere/AppServer/profiles:CFName
       [
         %r{^(.*):(.*)$},
         [
           [:profile_base],
-          [:qcf_name],
+          [:cf_name],
         ],
       ],
-      # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:QCFName
+      # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:CFName
       [
         %r{^(.*):(.*):(.*)$},
         [
           [:profile_base],
           [:dmgr_profile],
-          [:qcf_name],
+          [:cf_name],
         ],
       ],
-      # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:cell:CELL_01:QCFName
+      # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:cell:CELL_01:CFName
       [
         %r{^(.*):(.*):(cell):(.*):(.*)$},
         [
@@ -59,10 +59,10 @@ Puppet::Type.newtype(:websphere_qcf) do
           [:dmgr_profile],
           [:scope],
           [:cell],
-          [:qcf_name],
+          [:cf_name],
         ],
       ],
-      # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:cluster:CELL_01:TEST_CLUSTER_01:QCFName
+      # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:cluster:CELL_01:TEST_CLUSTER_01:CFName
       [
         %r{^(.*):(.*):(cluster):(.*):(.*):(.*)$},
         [
@@ -71,10 +71,10 @@ Puppet::Type.newtype(:websphere_qcf) do
           [:scope],
           [:cell],
           [:cluster],
-          [:qcf_name],
+          [:cf_name],
         ],
       ],
-      # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:node:CELL_01:AppNode01:QCFName
+      # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:node:CELL_01:AppNode01:CFName
       [
         %r{^(.*):(.*):(node):(.*):(.*):(.*)$},
         [
@@ -83,10 +83,10 @@ Puppet::Type.newtype(:websphere_qcf) do
           [:scope],
           [:cell],
           [:node_name],
-          [:qcf_name],
+          [:cf_name],
         ],
       ],
-      # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:server:CELL_01:AppNode01:AppServer01:QCFName
+      # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:server:CELL_01:AppNode01:AppServer01:CFName
       [
         %r{^(.*):(.*):(server):(.*):(.*):(.*)$},
         [
@@ -96,7 +96,7 @@ Puppet::Type.newtype(:websphere_qcf) do
           [:cell],
           [:node_name],
           [:server],
-          [:qcf_name],
+          [:cf_name],
         ],
       ],
     ]
@@ -115,32 +115,32 @@ Puppet::Type.newtype(:websphere_qcf) do
       self[:profile] = self[:dmgr_profile]
     end
 
-    [:qcf_name, :server, :cell, :node, :cluster, :profile, :user].each do |value|
+    [:cf_name, :server, :cell, :node, :cluster, :profile, :user].each do |value|
       raise ArgumentError, "Invalid #{value} #{self[:value]}" unless %r{^[-0-9A-Za-z._]+$}.match?(value)
     end
   end
 
-  newparam(:qcf_name) do
+  newparam(:cf_name) do
     isnamevar
     desc <<-EOT
-    Required. The Queue Connection Factory name to create/modify/remove.
+    Required. The Connection Factory name to create/modify/remove.
     
     Example: `QCFEvents`
     EOT
   end
 
   newproperty(:jndi_name) do
-    desc 'The JNDI Name the Queue Connection Factory should be set to.'
+    desc 'The JNDI Name the Connection Factory should be set to.'
   end
 
   newproperty(:jms_provider) do
-    desc 'The JMS Provider the Queue Connection Factory should be using.'
+    desc 'The JMS Provider the Connection Factory should be using.'
   end
 
   # These are the things we need to keep track of
   # and manage if they need to set/reset
   newproperty(:description) do
-    desc 'A meanigful description of the QCF object.'
+    desc 'A meanigful description of the CF object.'
   end
 
   newproperty(:qmgr_data) do
@@ -221,7 +221,7 @@ qcf_dict['QCF'] =  {
   'sp_update_pool': 'True'
 }
 
-#  newproperty(:members, array_matching: :all) do
+  #  newproperty(:members, array_matching: :all) do
 #    defaultto []
 #    desc 'An optional list of members to be added to the group'
 #

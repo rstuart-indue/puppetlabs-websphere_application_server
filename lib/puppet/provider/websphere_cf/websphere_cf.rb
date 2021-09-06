@@ -3,7 +3,7 @@
 require 'English'
 require_relative '../websphere_helper'
 
-Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::Websphere_Helper) do
+Puppet::Type.type(:websphere_cf).provide(:wsadmin, parent: Puppet::Provider::Websphere_Helper) do
   desc <<-DESC
     Provider to manage WebSphere groups in the default WIM file based realm
 
