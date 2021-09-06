@@ -5,17 +5,21 @@ require_relative '../websphere_helper'
 
 Puppet::Type.type(:websphere_cf).provide(:wsadmin, parent: Puppet::Provider::Websphere_Helper) do
   desc <<-DESC
-    Provider to manage WebSphere groups in the default WIM file based realm
+    Provider to manage or create a connection factory for the IBM MQ messaging provider at a specific scope.
 
     Please see the IBM documentation available at:
-    https://www.ibm.com/docs/en/was/9.0.5?topic=scripting-wimmanagementcommands-command-group-admintask-object#rxml_atwimmgt__cmd3
-    https://www.ibm.com/docs/en/was/9.0.5?topic=scripting-authorizationgroupcommands-command-group-admintask-object
+    https://www.ibm.com/docs/en/was/9.0.5?topic=scripting-createwmqconnectionfactory-command
+
+    It is recommended to consult the IBM documentation as the JMS connection factory subject is very
+    complex and difficult to abstract.
+
+    This provider will not allow the creation of a dummy instance (i.e. no MQ server target)
 
     We execute the 'wsadmin' tool to query and make changes, which interprets
     Jython. This means we need to use heredocs to satisfy whitespace sensitivity.
     DESC
 
-  # We are going to use the flush() method to enact all the group changes we may perform.
+  # We are going to use the flush() method to enact all the changes we may perform.
   # This will speed up the application of changes, because instead of changing every
   # attribute individually, we coalesce the changes in one script and execute it once.
   def initialize(val = {})
@@ -30,7 +34,7 @@ Puppet::Type.type(:websphere_cf).provide(:wsadmin, parent: Puppet::Provider::Web
     base_dir = "#{resource[:profile_base]}/#{resource[:dmgr_profile]}"
     query = "/Cell:#{resource[:cell]}"
     mod   = "cells/#{resource[:cell]}"
-    file = base_dir + "/config/cells/#{resource[:cell]}/fileRegistry.xml"
+    file = base_dir + "/config/cells/#{resource[:cell]}/resources.xml"
     role = base_dir + "/config/cells/#{resource[:cell]}/admin-authz.xml"
     audit = base_dir + "/config/cells/#{resource[:cell]}/audit-authz.xml"
 

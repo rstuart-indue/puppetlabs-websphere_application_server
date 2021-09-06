@@ -9,9 +9,12 @@ Puppet::Type.newtype(:websphere_cf) do
     @example
       websphere_cf { 'was_qcf':
         ensure          => 'present',
-        cf_type         => 'QCF'
+        jms_provider    => 'builtin_mqprovider',
+        cf_type         => 'QCF',
         description     => 'Websphere Queue Connection Factory',
-        cf_
+        jndi_name       => 'jms/QCF',
+        conn_pool_data  => connection_pool_hash,
+        sess_pool_data  => session_pool_hash, 
         profile_base    => '/opt/IBM/WebSphere/AppServer/profiles',
         dmgr_profile    => 'PROFILE_DMGR_01',
         cell            => 'CELL_01',
@@ -129,23 +132,29 @@ Puppet::Type.newtype(:websphere_cf) do
     EOT
   end
 
+  newproperty(:cf_type) do
+    defaultto :CF
+    newvalues(:CF, :QCF, :TCF)
+    desc 'Optional. The Connection Factory type. Can be one of CF, QCF or TCF. Defaults to CF.'
+  end
+
   newproperty(:jndi_name) do
-    desc 'The JNDI Name the Connection Factory should be set to.'
+    desc 'Required. The JNDI Name the Connection Factory should be set to. Must be referenced only once per scope'
   end
 
   newproperty(:jms_provider) do
-    desc 'The JMS Provider the Connection Factory should be using.'
+    defaultto 'builtin_mqprovider'
+    desc 'Optional. The JMS Provider the Connection Factory should be using. Defaults to `builtin_mqprovider`'
   end
 
   # These are the things we need to keep track of
   # and manage if they need to set/reset
   newproperty(:description) do
-    desc 'A meanigful description of the CF object.'
+    desc 'Required. A meanigful description of the CF object.'
   end
 
-  newproperty(:qmgr_data) do
-    desc 'A hash containing the QMGR settings data'
-    desc "A hash table of propname=propvalue entries to apply to the link. See ipadm(8)"
+  newproperty(:qmgr_data, array_matching: :all) do
+    desc "A hash table containing the QMGR settings data to apply to the Connection Factory. See createWMQConnectionFactory() manual"
 
     def insync?(is)
       # There will almost always be more properties on the system than
@@ -159,19 +168,68 @@ Puppet::Type.newtype(:websphere_cf) do
       true
     end
 
+    # Whilst we can create a CF with not a lot of data, what's the point?
+    # Bail out if the value passed is not a hash or if the hash is empty.
+    # At the very least force the user to reflect for their choices in life.
     validate do |value|
-      fail "must be a Hash" unless value.kind_of?(Hash)
-      fail "Hash cannot be empty" if value.empty?
+      raise Puppet::Error, 'Puppet::Type::Websphere_Cf: qmgr_data property must be a hash' unless value.kind_of?(Hash)
+      raise Puppet::Error  'Puppet::Type::Websphere_Cf: qmgr_data property cannot be empty' if value.empty?
+    end
+
+    # Do some basic checking for the passed in QMGR params
+    # Because of their number and complexity, there's only so much we can do before we let the users hurt themselves.
+    munge do |value|
+      value.each do |k, v|
+        case k
+        when :brokerCtrlQueue, :brokerSubQueue, :brokerCCSubQueue, :brokerVersion, :brokerPubQueue, :tempTopicPrefix, :pubAckWindow, :subStore, :stateRefreshInt, :cleanupLevel, :sparesSubs, :wildcardFormat, :brokerQmgr, :clonedSubs, :msgSelection
+          raise Puppet::Error "Puppet::Type::Websphere_Cf: Argument error in qmgr_data: parameter #{k} with value #{v} is incompatible with type QCF" unless resource[:cf_type] != 'QCF'
+        when :msgRetention, :rescanInterval, :tempQueuePrefix, :modelQueue, :replyWithRFH2
+          raise Puppet::Error "Puppet::Type::Websphere_Cf: Argument error in qmgr_data: parameter #{k} with value #{v} is incompatible with type TCF" unless resource[:cf_type] != 'TCF'
+        else
+          super
+        end
+      end
     end
   end
 
-  newproperty(:connection_pool) do
+  newproperty(:conn_pool_data, array_matching: :all) do
     desc 'A hash containing the Connection Pool settings'
-    
+    def insync?(is)
+      # There will almost always be more properties on the system than
+      # defined in the resource. Make sure the properties in the resource
+      # are insync
+      should.each_pair do |prop,value|
+        return false unless is.key?(prop)
+        # Stop after the first out of sync property
+        return false unless property_matches?(is[prop],value)
+      end
+      true
+    end
+
+    validate do |value|
+      raise Puppet::Error, 'Puppet::Type::Websphere_Cf: conn_pool_data property must be a hash' unless value.kind_of?(Hash)
+      #fail "Hash cannot be empty" if value.empty?
+    end   
   end
 
-  newproperty(:session_pool) do
+  newproperty(:sess_pool_data, array_matching: :all) do
     desc 'A hash containing the Session Pool settings'
+    def insync?(is)
+      # There will almost always be more properties on the system than
+      # defined in the resource. Make sure the properties in the resource
+      # are insync
+      should.each_pair do |prop,value|
+        return false unless is.key?(prop)
+        # Stop after the first out of sync property
+        return false unless property_matches?(is[prop],value)
+      end
+      true
+    end
+
+    validate do |value|
+      raise Puppet::Error, 'Puppet::Type::Websphere_Cf: sess_pool_data property must be a hash' unless value.kind_of?(Hash)
+      #fail "Hash cannot be empty" if value.empty?
+    end  
   end
 
 ## Defaults for connection / session pools
@@ -221,16 +279,6 @@ qcf_dict['QCF'] =  {
   'sp_update_pool': 'True'
 }
 
-  #  newproperty(:members, array_matching: :all) do
-#    defaultto []
-#    desc 'An optional list of members to be added to the group'
-#
-#    # Ensure the arrays are sorted when we compare them:
-#    def insync?(is)
-#      is.sort == should.sort
-#    end
-#  end
-
   newparam(:scope) do
     isnamevar
     desc <<-EOT
@@ -241,22 +289,22 @@ qcf_dict['QCF'] =  {
 
   newparam(:server) do
     isnamevar
-    desc 'The server for which this Queue Connection Factory should be set in'
+    desc 'The server for which this Connection Factory should be set in'
   end
 
   newparam(:cell) do
     isnamevar
-    desc 'The cell for which this Queue Connection Factory should be set in'
+    desc 'The cell for which this Connection Factory should be set in'
   end
 
   newparam(:node) do
     isnamevar
-    desc 'The node for which this Queue Connection Factory should be set in'
+    desc 'The node for which this Connection Factory should be set in'
   end
 
   newparam(:cluster) do
     isnamevar
-    desc 'The cluster for which this Queue Connection Factory should be set in'
+    desc 'The cluster for which this Connection Factory should be set in'
   end
 
   newparam(:profile) do
@@ -267,7 +315,7 @@ qcf_dict['QCF'] =  {
     isnamevar
     defaultto { @resource[:profile] }
     desc <<-EOT
-    The DMGR profile for which this Queue Connection Factory should be set under.  Basically, where
+    The DMGR profile for which this Connection Factory should be set under.  Basically, where
     are we finding `wsadmin`
 
     This is synonymous with the 'profile' parameter.
