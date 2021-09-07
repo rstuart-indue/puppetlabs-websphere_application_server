@@ -30,19 +30,33 @@ Puppet::Type.type(:websphere_cf).provide(:wsadmin, parent: Puppet::Provider::Web
   end
 
   def scope(what)
-    # (cells/CELL_01/nodes/appNode01/servers/AppServer01
-    base_dir = "#{resource[:profile_base]}/#{resource[:dmgr_profile]}"
-    query = "/Cell:#{resource[:cell]}"
-    mod   = "cells/#{resource[:cell]}"
-    file = base_dir + "/config/cells/#{resource[:cell]}/resources.xml"
-    role = base_dir + "/config/cells/#{resource[:cell]}/admin-authz.xml"
-    audit = base_dir + "/config/cells/#{resource[:cell]}/audit-authz.xml"
+    file = "#{resource[:profile_base]}/#{resource[:dmgr_profile]}"
+    case resource[:scope]
+    when 'cell'
+      query = "/Cell:#{resource[:cell]}"
+      mod   = "cells/#{resource[:cell]}"
+      file += "/config/cells/#{resource[:cell]}/variables.xml"
+    when 'cluster'
+      query = "/Cell:#{resource[:cell]}/ServerCluster:#{resource[:cluster]}"
+      mod   = "cells/#{resource[:cell]}/clusters/#{resource[:cluster]}"
+      file += "/config/cells/#{resource[:cell]}/clusters/#{resource[:cluster]}/resources.xml"
+    when 'node'
+      query = "/Cell:#{resource[:cell]}/Node:#{resource[:node_name]}"
+      mod   = "cells/#{resource[:cell]}/nodes/#{resource[:node_name]}"
+      file += "/config/cells/#{resource[:cell]}/nodes/#{resource[:node_name]}/resources.xml"
+    when 'server'
+      query = "/Cell:#{resource[:cell]}/Node:#{resource[:node_name]}/Server:#{resource[:server]}"
+      mod   = "cells/#{resource[:cell]}/nodes/#{resource[:node_name]}/servers/#{resource[:server]}"
+      file += "/config/cells/#{resource[:cell]}/nodes/#{resource[:node_name]}/servers/#{resource[:server]}/resources.xml"
+    else
+      raise Puppet::Error, "Unknown scope: #{resource[:scope]}"
+    end
 
     case what
-    when 'audit'
-      audit
-    when 'role'
-      role
+    when 'query'
+      query
+    when 'mod'
+      mod
     when 'file'
       file
     else
@@ -65,50 +79,9 @@ Puppet::Type.type(:websphere_cf).provide(:wsadmin, parent: Puppet::Provider::Web
     end
   
     cmd = <<-END.unindent
-    # Group members to add/remove
-    add_member_list = [#{add_members_string}]
 
-    # Roles to add/remove
-    add_role_list = [#{add_roles_string}]
-
-    # Set a flag whether we need to reload the security configuration
-    roles_changed = 0
-
-    # Create group for #{resource[:groupid]}
-    AdminTask.createGroup(['-cn', '#{resource[:groupid]}', '-description', '#{resource[:description]}'])
+    # create a Connection Factory 
     AdminConfig.save()
-
-    # Get the groupUniqueName for the target group
-    groupUniqueName = AdminTask.searchGroups(['-cn', '#{resource[:groupid]}'])
-
-    # Add members to the group membership for #{resource[:groupid]}
-    if len(add_member_list):
-      for member_uid in add_member_list:
-        memberUniqueName=AdminTask.searchUsers(['-uid', member_uid])
-
-        # If we can't find a user, maybe it is a group we need to add, look for it
-        if len(memberUniqueName) == 0:
-          memberUniqueName=AdminTask.searchGroups(['-cn', member_uid])
-
-        if len(memberUniqueName):
-          AdminTask.addMemberToGroup(['-memberUniqueName', memberUniqueName, '-groupUniqueName', groupUniqueName])
-
-    # Add roles for the #{resource[:groupid]} group
-    if len(add_role_list):
-      for rolename_id in add_role_list:
-          if rolename_id == 'auditor':
-            AdminTask.mapGroupsToAuditRole(['-roleName', rolename_id, '-groupids', '#{resource[:groupid]}'])
-          else:
-            AdminTask.mapGroupsToAdminRole(['-roleName', rolename_id, '-groupids', '#{resource[:groupid]}'])
-
-      # Ensure we refresh/reload the security configuration
-      roles_changed = 1
-
-    AdminConfig.save()
-
-    if roles_changed:
-      agmBean = AdminControl.queryNames('type=AuthorizationGroupManager,process=dmgr,*')
-      AdminControl.invoke(agmBean, 'refreshAll')
     END
 
     debug "Running command: #{cmd} as user: resource[:user]"
@@ -119,7 +92,7 @@ Puppet::Type.type(:websphere_cf).provide(:wsadmin, parent: Puppet::Provider::Web
       ## This usually indicates that the server isn't ready on the DMGR yet -
       ## the DMGR needs to do another Puppet run, probably.
       err = <<-EOT
-      Could not create group: #{resource[:groupid]}
+      Could not create Connection Factory: #{resource[:cf_name]} of type #{resource[:cf_type]}
       This appears to be due to the remote resource not being available.
       Ensure that all the necessary services have been created and are running
       on this host and the DMGR. If this is the first run, the cluster member
