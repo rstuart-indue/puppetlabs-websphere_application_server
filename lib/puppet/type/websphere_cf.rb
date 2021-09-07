@@ -254,52 +254,6 @@ Puppet::Type.newtype(:websphere_cf) do
     <resourceProperties xmi:id="J2EEResourceProperty_1499488861016" name="SolutionAdministration.zip" value="UEsDBAoAAAAIABIaa..." ...>
     EOT
   end
-## Defaults for connection / session pools
-reapTime          = '180'
-connectionTimeout = '30'
-unusedTimeout     = '300'
-agedTimeout       = '0'
-purgePolicy       = 'EntirePool'
-
-pool_defaults_dict = {}
-pool_defaults_dict['both_reapTime']           = reapTime
-pool_defaults_dict['both_connectionTimeout']  = connectionTimeout
-pool_defaults_dict['both_unusedTimeout']      = unusedTimeout
-pool_defaults_dict['both_agedTimeout']        = agedTimeout
-pool_defaults_dict['both_purgePolicy']        = purgePolicy
-pool_defaults_dict['cp_min_connections']      = '10'
-pool_defaults_dict['cp_max_connections']      = '35'
-pool_defaults_dict['sp_min_connections']      = '1'
-pool_defaults_dict['sp_max_connections']      = '35'
-
-
-## Queue Connection Factory Defaults
-qcf_defaults_dict = {}
-qcf_defaults_dict.update(pool_defaults_dict)
-qcf_defaults_dict['qmgrName']                = queueMgr
-qcf_defaults_dict['qmgrSvrconnChannel']      = srvConChannel
-qcf_defaults_dict['sslType']                 = sslType
-qcf_defaults_dict['sslConfiguration']        = sslAlias
-qcf_defaults_dict['wmqTransportType']        = 'CLIENT'
-qcf_defaults_dict['clientId']                = clientID
-qcf_defaults_dict['ccsid']                   = '819'
-qcf_defaults_dict['modelQueue']              = 'SYSTEM.DEFAULT.MODEL.QUEUE'
-qcf_defaults_dict['connectionNameList']      = connectionNameList
-qcf_defaults_dict['both_agedTimeout']        = '300'
-qcf_defaults_dict['type']                    = 'QCF'
-qcf_defaults_dict['mappingAlias']            = ''
-qcf_defaults_dict['containerAuthAlias']      = ''
-qcf_defaults_dict['componentAuthAlias']      = ''
-qcf_defaults_dict['xaRecoveryAuthAlias']     = ''
-
-
-qcf_dict = {}
-qcf_dict['QCF'] =  {
-  'jndiName'      : 'jms/QCF',
-  'description'   : 'OPF QCF Queue Connection Factory',
-  'cp_update_pool': 'True',
-  'sp_update_pool': 'True'
-}
 
   newparam(:scope) do
     isnamevar
