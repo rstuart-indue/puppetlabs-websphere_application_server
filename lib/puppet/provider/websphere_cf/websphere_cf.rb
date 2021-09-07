@@ -139,15 +139,39 @@ Puppet::Type.type(:websphere_cf).provide(:wsadmin, parent: Puppet::Provider::Web
       return false
     end
 
-    debug "Retrieving value of #{resource[:groupid]} from #{scope('file')}"
-    doc = REXML::Document.new(File.open(scope('file')))
+    # This sounds mad, but it is possible to store different strange objects as
+    # resources. I've found .zip and .XML files so far stored as resourceProperties
+    # at which point parsing the resources.xml file becomes incredibly slow (40seconds)
+    # and intensive. The easiest way out of this is to excise those resourceProperties
+    # based on a regexp and pass the remaining XML to the DOM parser.
+    #
+    # What we are trying to remove are constructs of this type:
+    # <resourceProperties xmi:id="J2EEResourceProperty_1499488858500" name="widgetFeedUrlMap.xml" value="&lt;?xml version=&quot;..." ...>
+    # <resourceProperties xmi:id="J2EEResourceProperty_1499488861016" name="SolutionAdministration.zip" value="UEsDBAoAAAAIABIaa..." ...>
+    #
+    # This is making an educated guess that you are not trying to admin something of
+    # this kind. If you do, you have my condolences for your dearly departed sanity.
+    xml_content = nil
+    if resource[:sanitation] == :true && ( !resource[:ignored_names].empty? )
+      suffix_list = resource[:ignored_names].join('|')
+      File.open(scope('file')).each_line do |line|
+        xml_content += line unless /<resourceProperties.*name="\w+\.(#{suffix_list})"/.match?(line)
+      end
+    else
+      xml_content = File.open(scope('file'))
+    end
 
-    # We're looking for group-id entries matching our group name
-    groupid = XPath.first(doc, "//wim:entities[@xsi:type='wim:Group']/wim:cn[text()='#{resource[:groupid]}']")
+    debug "Retrieving value of #{resource[:jms_provider]}/#{resource[:cf_name]} from #{scope('file')}"
+    doc = REXML::Document.new(xml_content)
 
-    debug "Exists? method result for #{resource[:groupid]} is: #{groupid}"
+    # We're looking for Connection Factory entries matching our cf_name. We have to ensure we're looking under the
+    # correct provider entry.
+    jms_entry = XPath.first(doc, "/xmi:XMI[@xmlns:resources.jms.mqseries]/resources.jms:JMSProvider[@xmi:id='#{resource[:jms_provider]}']")
+    cf_entry = XPath.first(jms_entry, "factories[@name='#{cf_name}']") unless jms_entry.nil?
 
-    !groupid.nil?
+    debug "Exists? method result for #{resource[:cf_name]} is: #{cf_entry}"
+
+    !cf_entry.nil?
   end
 
   # Get a group's description

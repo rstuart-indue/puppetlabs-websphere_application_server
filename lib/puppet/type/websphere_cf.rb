@@ -232,6 +232,28 @@ Puppet::Type.newtype(:websphere_cf) do
     end  
   end
 
+  newproperty(:sanitize) do
+    defaultto :true
+    newvalues(:true, :false)
+    desc 'Optional. Whether basic sanitation will be applied to the encountered resourceProperties. See `ignored_names`. Defaults to `true`'
+  end
+
+  newproperty(:ignored_names, array_matching: :all) do
+    defaultto ['zip','xml']
+    desc <<-EOT 
+    Optional. An array of name suffixes for objects which were found stored as resourceProperties and severely impeding the performance of
+    Connection Factory resource discovery.
+    
+    If listed and the `sanitize` attribute is set to `true`, any resourceProperty containing any of them in its name will be ignored.
+
+    Defaults to: ['zip','xml']
+    Example: ignored_names => ['zip','xml']
+    Will ignore resourceProperties like:
+
+    <resourceProperties xmi:id="J2EEResourceProperty_1499488858500" name="widgetFeedUrlMap.xml" value="&lt;?xml version=&quot;..." ...>
+    <resourceProperties xmi:id="J2EEResourceProperty_1499488861016" name="SolutionAdministration.zip" value="UEsDBAoAAAAIABIaa..." ...>
+    EOT
+  end
 ## Defaults for connection / session pools
 reapTime          = '180'
 connectionTimeout = '30'
