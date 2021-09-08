@@ -14,6 +14,8 @@ Puppet::Type.type(:websphere_cf).provide(:wsadmin, parent: Puppet::Provider::Web
     complex and difficult to abstract.
 
     This provider will not allow the creation of a dummy instance (i.e. no MQ server target)
+    This provider will now allow the changing of the type of a Connection Factory. You need
+    to destroy it first, then create another one of the desired type.
 
     We execute the 'wsadmin' tool to query and make changes, which interprets
     Jython. This means we need to use heredocs to satisfy whitespace sensitivity.
@@ -25,8 +27,10 @@ Puppet::Type.type(:websphere_cf).provide(:wsadmin, parent: Puppet::Provider::Web
   def initialize(val = {})
     super(val)
     @property_flush = {}
-    @old_member_list = []
-    @old_roles_list = []
+    @old_qmgr_data = {}
+    @old_conn_pool_data = {}
+    @old_sess_pool_data = {}
+    @old_mapping_data = {}
   end
 
   def scope(what)
@@ -64,20 +68,8 @@ Puppet::Type.type(:websphere_cf).provide(:wsadmin, parent: Puppet::Provider::Web
     end
   end
 
-  # Create a given group
-  def create
-    # Get the list of members and roles which need to be assigned to the newly created group
-    add_members_string = ''
-    add_roles_string = ''
-
-    unless resource[:members].empty?
-      add_members_string = resource[:members].map { |e| "'#{e}'" }.join(',')
-    end
-
-    unless resource[:roles].empty?
-      add_roles_string = resource[:roles].map { |e| "'#{e}'" }.join(',')
-    end
-  
+  # Create a Connection Factory
+  def create  
     cmd = <<-END.unindent
 
     # create a Connection Factory 
@@ -104,33 +96,6 @@ Puppet::Type.type(:websphere_cf).provide(:wsadmin, parent: Puppet::Provider::Web
     end
 
     debug result
-  end
-
-  # Small helper method so we don't repeat ourselves for the fields
-  # we have to keep track on and see if they changed. This method is
-  # passed a String argument which is the name of the field/sibling
-  # we are trying to get the value for. i.e. it can be "wim:cn"
-  # or "wim:description" or any other of them.
-  #
-  def get_groupid_data(field)
-    if File.exist?(scope('file'))
-      doc = REXML::Document.new(File.open(scope('file')))
-
-      xpath_group_id = XPath.first(doc, "//wim:entities[@xsi:type='wim:Group']/wim:cn[text()='#{resource[:groupid]}']")
-      field_data = XPath.first(xpath_group_id, "following-sibling::#{field}") if xpath_group_id
-
-      debug "Getting #{field} for #{resource[:groupid]} elicits: #{field_data}"
-
-      return field_data.text if field_data
-    else
-      msg = <<-END
-      #{scope('file')} does not exist. This may indicate that the cluster
-      member has not yet been realized on the DMGR server. Ensure that the
-      DMGR has created the cluster member (run Puppet on it?) and that the
-      names are correct (e.g. node name, profile name)
-      END
-      raise Puppet::Error, msg
-    end
   end
 
   # Check to see if a group exists - must return a boolean.
@@ -167,149 +132,104 @@ Puppet::Type.type(:websphere_cf).provide(:wsadmin, parent: Puppet::Provider::Web
     # We're looking for Connection Factory entries matching our cf_name. We have to ensure we're looking under the
     # correct provider entry.
     jms_entry = XPath.first(doc, "/xmi:XMI[@xmlns:resources.jms.mqseries]/resources.jms:JMSProvider[@xmi:id='#{resource[:jms_provider]}']")
-    cf_entry = XPath.first(jms_entry, "factories[@name='#{cf_name}']") unless jms_entry.nil?
+    cf_entry = XPath.first(jms_entry, "factories[@name='#{resource[:cf_name]}']") unless jms_entry.nil?
+
+    # Populate the @old_qmgr_data by discovering what are the params for the given Connection Factory
+    debug "Exists? method is loading existing QMGR data attributes/values:"
+    XPath.each(jms_entry, "factories[@name='#{resource[:cf_name]}']/@*")  { |attr|
+      debug "#{attr.name} => #{attr.value}"
+      @old_qmgr_data[attr.name.to_sym] = attr.value
+    } unless cf_entry.nil?
+
+    # Extract the connectionPool attributes
+    XPath.each(cf_entry, "connectionPool/@*")  { |attr|
+      debug "#{attr.name} => #{attr.value}"
+      @old_conn_pool_data[attr.name] = attr.value
+    } unless cf_entry.nil?
+
+    # Extract the sessionPool attributes
+    XPath.each(cf_entry, "sessionPool/@*")  { |attr|
+      debug "#{attr.name} => #{attr.value}"
+      @old_sess_pool_data[attr.name] = attr.value
+    } unless cf_entry.nil?
+
+    # Extract the Auth mapping attributes
+    XPath.each(cf_entry, "mapping/@*")  { |attr|
+      debug "#{attr.name} => #{attr.value}"
+      @old_mapping_data[attr.name] = attr.value
+    } unless cf_entry.nil?
 
     debug "Exists? method result for #{resource[:cf_name]} is: #{cf_entry}"
 
     !cf_entry.nil?
   end
 
-  # Get a group's description
+  # Get a CF's description
   def description
-    get_groupid_data('wim:description')
+    @old_qmgr_data[:description]
   end
 
-  # Set a group's description name
+  # Set a CF's description
   def description=(val)
     @property_flush[:description] = val
   end
-
-  # Get a group's list of members - users or groups
-  def members
-    if File.exist?(scope('file'))
-      doc = REXML::Document.new(File.open(scope('file')))
-
-      xpath_group_id = XPath.first(doc, "//wim:entities[@xsi:type='wim:Group']/wim:cn[text()='#{resource[:groupid]}']")
-      members_data = XPath.match(xpath_group_id, 'following-sibling::wim:members') if xpath_group_id
-
-      debug "Getting wim:members for #{resource[:groupid]} elicits: #{members_data}"
-
-      XPath.each(xpath_group_id, 'following-sibling::wim:members') do |member|
-        # The unique_name is something along the lines of:
-        # uid=userName,o=defaultWIMFileBasedRealm -> for a user (note the uid=)
-        # cn=groupName,o=defaultWIMFileBasedRealm -> for a group (note the cn=)
-        unique_name = XPath.first(member, 'wim:identifier/@uniqueName').value
-
-        # Extract the member name: any uid or cn value: remember that .scan() and .match()
-        # return an array of matches.
-        member_name = unique_name.match(%r{^(?:uid|cn)=(\w+),o=*}).captures.first
-        @old_member_list.push(member_name) unless member_name.nil?
-      end
-      debug "Detected member array for group #{resource[:groupid]} is: #{@old_member_list}"
-
-      # rubocop:disable Style/RedundantReturn
-      return @old_member_list
-      # rubocop:enable Style/RedundantReturn
-    else
-      msg = <<-END
-      #{scope('file')} does not exist. This may indicate that the cluster
-      member has not yet been realized on the DMGR server. Ensure that the
-      DMGR has created the cluster member (run Puppet on it?) and that the
-      names are correct (e.g. node name, profile name)
-      END
-      raise Puppet::Error, msg
-    end
+  
+  # Get a CF's JNDI
+  def jndi_name
+    @old_qmgr_data[:jndi_name]
   end
 
-  # Look up for the roles this group is associated with. Because Websphere uses a silly
-  # indirection scheme - we have to find the role_id first, then look up to see what the 
-  # corresponding role_name of that role_id is.
-  # Once we found them all, we return an array of role_names and let Puppet compare it 
-  # with what it should be
-  def roles
-    if File.exist?(scope('role')) && File.exist?(scope('audit'))
-
-      # Note that there are two locations for the roles: admin and audit which map to
-      # two different XML files. They are identical as XML structure but different data.
-      # So if a group has audit role - it will be in the audit-authz.xml file.
-      admin_doc = REXML::Document.new(File.open(scope('role')))
-      audit_doc = REXML::Document.new(File.open(scope('audit')))
-
-      # Find the parents of <groups ... name='blah' /> and get their 'role' attributes
-      # We'll need to look each of them up - to find out what they are called.
-      # I suppose we could risk it and hardcode the role_id -> role_name mappings
-      # but I'm not sure how immutable those mappings are.
-      role_id_array = XPath.match(admin_doc, "/rolebasedauthz:AuthorizationTableExt[@context='domain']/authorizations/groups[@name='#{resource[:groupid]}']/ancestor::/@role")
-      audit_id_array = XPath.match(audit_doc, "/rolebasedauthz:AuthorizationTableExt[@context='domain']/authorizations/groups[@name='#{resource[:groupid]}']/ancestor::/@role")
-
-      # Extract the mapping from the role_id to the real role_name
-      # These entries look something similar to this:
-      # <roles xmi:id="SecurityRoleExt_2" roleName="operator"/>
-      # and we're searching for a matching 'xmi:id' and retrieving the 'roleName'
-      # Note the .to_sym conversion - because our arguments are defined as symbols.
-      role_id_array.each do |role_id|
-        role_name = XPath.first(admin_doc, "/rolebasedauthz:AuthorizationTableExt[@context='domain']/roles[@xmi:id='#{role_id}']/@roleName").value
-        @old_roles_list.push(role_name.to_sym) unless role_name.nil?
-      end
-
-      audit_id_array.each do |audit_id|
-        role_name = XPath.first(audit_doc, "/rolebasedauthz:AuthorizationTableExt[@context='domain']/roles[@xmi:id='#{audit_id}']/@roleName").value
-        @old_roles_list.push(role_name.to_sym) unless role_name.nil?
-      end
-
-    end
-
-    debug "Member #{resource[:groupid]} is part of the following roles: #{@old_roles_list}"
-    # rubocop:disable Style/RedundantReturn
-    return @old_roles_list
-    # rubocop:enable Style/RedundantReturn
+  # Set a CF's JNDI
+  def jndi_name=(val)
+    @property_flush[:jndi_name] = val
   end
 
-  # Set the roles for the given group
-  def roles=(val)
-    @property_flush[:roles] = val
+  # Get a CF's QMGR Settings
+  def qmgr_data
+    @old_qmgr_data
   end
 
-  # Set a group's list of members - users or groups
-  def members=(val)
-    @property_flush[:members] = val
+  # Set a CF's QMGR Settings
+  def qmgr_data=(val)
+    @property_flush[:qmgr_data] = val
   end
 
-  # Remove a given group - we try to find it first, and if it does exist
-  # we remove the group.
-  # We also first remove the group from the roles it is in, because if we
-  # leave it there, the DMGR dies when you click on the role in the WebUI.
+  # Get a CF's connection pool data
+  def conn_pool_data
+    @old_conn_pool_data
+  end
+
+  # Set a CF's connection pool data
+  def conn_pool_data=(val)
+    @property_flush[:conn_pool_data] = val
+  end
+
+  # Get a CF's session pool data
+  def sess_pool_data
+    @old_sess_pool_data
+  end
+
+  # Set a CF's session pool data
+  def sess_pool_data=(val)
+    @property_flush[:sess_pool_data] = val
+  end
+ 
+  # Get a CF's Auth mapping data
+  def mapping_data
+    @old_mapping_data
+  end
+
+  # Set a CF's connection pool data
+  def conn_pool_data=(val)
+    @property_flush[:mapping_data] = val
+  end
+
+
+  # Remove a given Connection Factory - we try to find it first
   def destroy
-    removable_roles_string = ''
-    unless @old_roles_list.empty? 
-      removable_roles_string = @old_roles_list.map { |e| "'#{e}'" }.join(',')
-    end
-
     cmd = <<-END.unindent
-    remove_role_list = [#{removable_roles_string}]
-
-    # Set a flag whether we need to reload the security configuration
-    roles_changed = 0
-
-    # Remove roles for the #{resource[:groupid]} group before we destroy the group
-    if len(remove_role_list):
-      for rolename_id in remove_role_list:
-        if rolename_id == 'auditor':
-          AdminTask.removeGroupsFromAuditRole(['-roleName', rolename_id, '-groupids', '#{resource[:groupid]}'])
-        else:
-          AdminTask.removeGroupsFromAdminRole(['-roleName', rolename_id, '-groupids', '#{resource[:groupid]}'])
-      # Ensure we refresh/reload the security configuration
-      roles_changed = 1
-
-    uniqueName = AdminTask.searchGroups(['-cn', '#{resource[:groupid]}'])
-    if len(uniqueName):
-        AdminTask.deleteGroup(['-uniqueName', uniqueName])
 
     AdminConfig.save()
-
-    if roles_changed:
-      agmBean = AdminControl.queryNames('type=AuthorizationGroupManager,process=dmgr,*')
-      AdminControl.invoke(agmBean, 'refreshAll')
     END
 
     debug "Running #{cmd}"

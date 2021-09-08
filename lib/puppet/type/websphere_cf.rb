@@ -13,8 +13,9 @@ Puppet::Type.newtype(:websphere_cf) do
         cf_type         => 'QCF',
         description     => 'Websphere Queue Connection Factory',
         jndi_name       => 'jms/QCF',
+        mapping_data    => mapping_hash,
         conn_pool_data  => connection_pool_hash,
-        sess_pool_data  => session_pool_hash, 
+        sess_pool_data  => session_pool_hash,
         profile_base    => '/opt/IBM/WebSphere/AppServer/profiles',
         dmgr_profile    => 'PROFILE_DMGR_01',
         cell            => 'CELL_01',
@@ -179,16 +180,49 @@ Puppet::Type.newtype(:websphere_cf) do
     # Do some basic checking for the passed in QMGR params
     # Because of their number and complexity, there's only so much we can do before we let the users hurt themselves.
     munge do |value|
+      # Convert our hash keys to symbols.
+      # Of course, this only works for single level hashes which keys which accept .to_sym method...
+      value.map{|k, v| [key.to_sym, value] }.to_h
+      
       value.each do |k, v|
         case k
         when :brokerCtrlQueue, :brokerSubQueue, :brokerCCSubQueue, :brokerVersion, :brokerPubQueue, :tempTopicPrefix, :pubAckWindow, :subStore, :stateRefreshInt, :cleanupLevel, :sparesSubs, :wildcardFormat, :brokerQmgr, :clonedSubs, :msgSelection
-          raise Puppet::Error "Puppet::Type::Websphere_Cf: Argument error in qmgr_data: parameter #{k} with value #{v} is incompatible with type QCF" unless resource[:cf_type] != 'QCF'
+          raise Puppet::Error "Puppet::Type::Websphere_Cf: Argument error in qmgr_data: parameter #{k} with value #{v} is incompatible with type QCF" if resource[:cf_type] == :QCF
         when :msgRetention, :rescanInterval, :tempQueuePrefix, :modelQueue, :replyWithRFH2
-          raise Puppet::Error "Puppet::Type::Websphere_Cf: Argument error in qmgr_data: parameter #{k} with value #{v} is incompatible with type TCF" unless resource[:cf_type] != 'TCF'
+          raise Puppet::Error "Puppet::Type::Websphere_Cf: Argument error in qmgr_data: parameter #{k} with value #{v} is incompatible with type TCF" if resource[:cf_type] == :TCF
         else
           super
         end
       end
+    end
+  end
+
+  newproperty(:mapping_data, array_matching: :all) do
+    desc 'A hash containing the Auth mapping data'
+    defaultto { 
+      :mappingConfigAlias => '',
+      :authDataAlias => ''
+    }
+
+    def insync?(is)
+      # There will almost always be more properties on the system than
+      # defined in the resource. Make sure the properties in the resource
+      # are insync
+      should.each_pair do |prop,value|
+        return false unless is.key?(prop)
+        # Stop after the first out of sync property
+        return false unless property_matches?(is[prop],value)
+      end
+      true
+    end
+
+    validate do |value|
+      raise Puppet::Error, 'Puppet::Type::Websphere_Cf: mapping_data property must be a hash' unless value.kind_of?(Hash)
+      #fail "Hash cannot be empty" if value.empty?
+    end
+
+    munge do |value|
+      value.map{|k, v| [key.to_sym, value] }.to_h
     end
   end
 
@@ -209,7 +243,11 @@ Puppet::Type.newtype(:websphere_cf) do
     validate do |value|
       raise Puppet::Error, 'Puppet::Type::Websphere_Cf: conn_pool_data property must be a hash' unless value.kind_of?(Hash)
       #fail "Hash cannot be empty" if value.empty?
-    end   
+    end
+
+    munge do |value|
+      value.map{|k, v| [key.to_sym, value] }.to_h
+    end
   end
 
   newproperty(:sess_pool_data, array_matching: :all) do
@@ -229,7 +267,11 @@ Puppet::Type.newtype(:websphere_cf) do
     validate do |value|
       raise Puppet::Error, 'Puppet::Type::Websphere_Cf: sess_pool_data property must be a hash' unless value.kind_of?(Hash)
       #fail "Hash cannot be empty" if value.empty?
-    end  
+    end
+
+    munge do |value|
+      value.map{|k, v| [key.to_sym, value] }.to_h
+    end
   end
 
   newproperty(:sanitize) do
