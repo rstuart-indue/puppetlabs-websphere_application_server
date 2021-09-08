@@ -71,12 +71,158 @@ Puppet::Type.type(:websphere_cf).provide(:wsadmin, parent: Puppet::Provider::Web
   # Create a Connection Factory
   def create  
     cmd = <<-END.unindent
+    def createWMQConnectionFactory(scope, cftype, name, jndiName, otherAttrsList=[], failonerror=AdminUtilities._BLANK_ ):
+      if (failonerror==AdminUtilities._BLANK_):
+          failonerror=AdminUtilities._FAIL_ON_ERROR_
+      #endIf
+      msgPrefix = "createWMQConnectionFactory(" + `scope` + ", " + `cftype`+ ", " + `name`+ ", " + `jndiName` + ", " + `otherAttrsList` + `failonerror`+"): "
+  
+      try:
+          #--------------------------------------------------------------------
+          # Create a WMQ Connection Factory
+          #--------------------------------------------------------------------
+          print "---------------------------------------------------------------"
+          print " AdminJMS:               createWMQConnectionFactory "
+          print " Scope:                      "
+          print "     scope:                  "+scope
+          print " Type:                       "
+          print "     type:                   "+cftype
+          print " MQConnectionFactory:        "
+          print "     name:                   "+name
+          print "     jndiName:               "+jndiName
+          print " Optional Parameters :                   "
+          print "   otherAttributesList:        %s" % otherAttrsList
+          print "     maxBatchSize            "
+          print "     brokerCCSubQueue        "
+          print "     brokerCtrlQueue         "
+          print "     brokerQmgr              "
+          print "     brokerSubQueue          "
+          print "     brokerVersion           "
+          print "     brokerPubQueue          "
+          print "     ccdtQmgrName            "
+          print "     ccdtUrl                 "
+          print "     ccsid                   "
+          print "     cleanupInterval         "
+          print "     cleanupLevel            "
+          print "     clientId                "
+          print "     clonedSubs              "
+          print "     compressHeaders         "
+          print "     compressPayload         "
+          print "     containerAuthAlias      "
+          print "     description             "
+          print "     failIfQuiescing         "
+          print "     localAddress            "
+          print "     mappingAlias            "
+          print "     modelQueue              "
+          print "     msgRetention            "
+          print "     msgSelection            "
+          print "     pollingInterval         "
+          print "     providerVersion         "
+          print "     pubAckInterval          "
+          print "     qmgrHostname            "
+          print "     qmgrName                "
+          print "     qmgrPortNumber          "
+          print "     qmgrSvrconnChannel      "
+          print "     rcvExitInitData         "
+          print "     rcvExit                 "
+          print "     replyWithRFH2           "
+          print "     rescanInterval          "
+          print "     secExitInitData         "
+          print "     secExit                 "
+          print "     sendExitInitData        "
+          print "     sendExit                "
+          print "     sparseSubs              "
+          print "     sslConfiguration        "
+          print "     sslCrl                  "
+          print "     sslPeerName             "
+          print "     sslResetCount           "
+          print "     sslType                 "
+          print "     stateRefreshInt         "
+          print "     subStore                "
+          print "     support2PCProtocol      "
+          print "     tempQueuePrefix         "
+          print "     tempTopicPrefix         "
+          print "     wildcardFormat          "
+          print "     wmqTransportType        "
+          print "     xaRecoveryAuthAlias     "
+          print " "
+          if (otherAttrsList == []):
+            print " Usage: AdminJMS.createWMQConnectionFactory(\"" + scope + "\", \"" + cftype + "\", \"" + name + "\" , \"" + jndiName + "\")"
+          else:
+            if (str(otherAttrsList).startswith("[[") > 0 and str(otherAttrsList).startswith("[[[",0,3) == 0):
+                print " Usage: AdminJMS.createWMQConnectionFactory(\"" + scope + "\", \"" + cftype + "\", \"" + name + "\" , \"" + jndiName + "\", %s)" % (otherAttrsList)
+            else:
+                # d714926 check if script syntax error
+                if (str(otherAttrsList).startswith("[",0,1) > 0 or str(otherAttrsList).startswith("[[[",0,3) > 0):
+                   raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6049E", [otherAttrsList]))
+                else:
+                   if (otherAttrsList.find("\"") > 0):
+                      otherAttrsList = otherAttrsList.replace("\"", "\'")
+                   print " Usage: AdminJMS.createWMQConnectionFactory(\"" + scope + "\", \"" + cftype + "\", \"" + name + "\" , \"" + jndiName + "\", \"" + str(otherAttrsList) + "\")"
+          print " Return: The Configuration Id of the new WMQ Connection Factory"
+          print "---------------------------------------------------------------"
+          print " "
+          print " "
 
-    # create a Connection Factory 
-    AdminConfig.save()
+          #Make sure required parameters are non-empty
+          if (len(scope) == 0):
+            raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["scope", scope]))
+          if (len(cftype) == 0):
+            raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["type", cftype]))
+          if (len(name) == 0):
+            raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["name", name]))
+          if (len(jndiName) == 0):
+            raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["jndiName", jndiName]))
+
+          #validate the scope
+          #we will end up with a containment path for the scope - convert that to the config id which is needed.
+          if (scope.find(".xml") > 0 and AdminConfig.getObjectType(scope) == None):
+            raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6040E", ["scope", scope]))
+          scopeContainmentPath = AdminUtilities.getScopeContainmentPath(scope)
+          configIdScope = AdminConfig.getid(scopeContainmentPath)
+          # if at this point, we don't have a proper config id, then the scope specified was incorrect
+          if (len(configIdScope) == 0):
+            raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6040E", ["scope", scope]))
+
+          #prepare the parameters for the AdminTask command - set the implied type of CF in this case
+          otherAttrsList = AdminUtilities.convertParamStringToList(otherAttrsList)
+          requiredParameters = [["name", name], ["jndiName", jndiName], ["type", cftype]]
+          finalAttrsList = requiredParameters + otherAttrsList
+          finalParameters = []
+          for attrs in finalAttrsList:
+            attr = ["-"+attrs[0], attrs[1]]
+            finalParameters = finalParameters+attr
+
+          #call the corresponding AdminTask command
+          AdminUtilities.debugNotice("About to call AdminTask command with target : " + str(configIdScope))
+          AdminUtilities.debugNotice("About to call AdminTask command with parameters : " + str(finalParameters))
+          newObjectId = AdminTask.createWMQConnectionFactory(configIdScope, finalParameters)
+          newObjectId = str(newObjectId)
+
+          #Save the config depending on the AutoSave variable
+          if (AdminUtilities._AUTOSAVE_ == "true"):
+            AdminConfig.save()
+          #endif
+
+          #return the config ID of the newly created object
+          AdminUtilities.debugNotice("Returning config id of new object : " + str(newObjectId))
+          return newObjectId
+
+      except:
+        typ, val, tb = sys.exc_info()
+        if (typ==SystemExit):  raise SystemExit,`val`
+        if (failonerror != AdminUtilities._TRUE_):
+            print "Exception: %s %s " % (sys.exc_type, sys.exc_value)
+            val = "%s %s" % (sys.exc_type, sys.exc_value)
+            raise Exception("ScriptLibraryException: " + val)
+        else:
+            return AdminUtilities.fail(msgPrefix+AdminUtilities.getExceptionText(typ, val, tb), failonerror)
+        #endIf
+      #endTry
+    #endDef  
     END
 
-    debug "Running command: #{cmd} as user: resource[:user]"
+    debug "Running command: #{cmd} as user: #{resource[:user]}"
     result = wsadmin(file: cmd, user: resource[:user], failonfail: false)
 
     if %r{Invalid parameter value "" for parameter "parent config id" on command "create"}.match?(result)
@@ -98,7 +244,7 @@ Puppet::Type.type(:websphere_cf).provide(:wsadmin, parent: Puppet::Provider::Web
     debug result
   end
 
-  # Check to see if a group exists - must return a boolean.
+  # Check to see if a Connection Factory exists - must return a boolean.
   def exists?
     unless File.exist?(scope('file'))
       return false
@@ -164,16 +310,6 @@ Puppet::Type.type(:websphere_cf).provide(:wsadmin, parent: Puppet::Provider::Web
     !cf_entry.nil?
   end
 
-  # Get a CF's description
-  def description
-    @old_qmgr_data[:description]
-  end
-
-  # Set a CF's description
-  def description=(val)
-    @property_flush[:description] = val
-  end
-  
   # Get a CF's JNDI
   def jndi_name
     @old_qmgr_data[:jndi_name]
@@ -184,6 +320,16 @@ Puppet::Type.type(:websphere_cf).provide(:wsadmin, parent: Puppet::Provider::Web
     @property_flush[:jndi_name] = val
   end
 
+  # Get a CF's description
+  def description
+    @old_qmgr_data[:description]
+  end
+
+  # Set a CF's description
+  def description=(val)
+    @property_flush[:description] = val
+  end
+
   # Get a CF's QMGR Settings
   def qmgr_data
     @old_qmgr_data
@@ -192,6 +338,16 @@ Puppet::Type.type(:websphere_cf).provide(:wsadmin, parent: Puppet::Provider::Web
   # Set a CF's QMGR Settings
   def qmgr_data=(val)
     @property_flush[:qmgr_data] = val
+  end
+
+  # Get a CF's Auth mapping data
+  def mapping_data
+    @old_mapping_data
+  end
+
+  # Set a CF's connection pool data
+  def mapping_data=(val)
+    @property_flush[:mapping_data] = val
   end
 
   # Get a CF's connection pool data
@@ -213,17 +369,6 @@ Puppet::Type.type(:websphere_cf).provide(:wsadmin, parent: Puppet::Provider::Web
   def sess_pool_data=(val)
     @property_flush[:sess_pool_data] = val
   end
- 
-  # Get a CF's Auth mapping data
-  def mapping_data
-    @old_mapping_data
-  end
-
-  # Set a CF's connection pool data
-  def conn_pool_data=(val)
-    @property_flush[:mapping_data] = val
-  end
-
 
   # Remove a given Connection Factory - we try to find it first
   def destroy

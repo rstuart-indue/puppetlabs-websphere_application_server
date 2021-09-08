@@ -133,7 +133,12 @@ Puppet::Type.newtype(:websphere_cf) do
     EOT
   end
 
-  newproperty(:cf_type) do
+  newparam(:jms_provider) do
+    defaultto 'builtin_mqprovider'
+    desc 'Optional. The JMS Provider the Connection Factory should be using. Defaults to `builtin_mqprovider`'
+  end
+
+  newparam(:cf_type) do
     defaultto :CF
     newvalues(:CF, :QCF, :TCF)
     desc 'Optional. The Connection Factory type. Can be one of CF, QCF or TCF. Defaults to CF.'
@@ -143,13 +148,6 @@ Puppet::Type.newtype(:websphere_cf) do
     desc 'Required. The JNDI Name the Connection Factory should be set to. Must be referenced only once per scope'
   end
 
-  newproperty(:jms_provider) do
-    defaultto 'builtin_mqprovider'
-    desc 'Optional. The JMS Provider the Connection Factory should be using. Defaults to `builtin_mqprovider`'
-  end
-
-  # These are the things we need to keep track of
-  # and manage if they need to set/reset
   newproperty(:description) do
     desc 'Required. A meanigful description of the CF object.'
   end
@@ -274,13 +272,13 @@ Puppet::Type.newtype(:websphere_cf) do
     end
   end
 
-  newproperty(:sanitize) do
+  newparam(:sanitize) do
     defaultto :true
     newvalues(:true, :false)
     desc 'Optional. Whether basic sanitation will be applied to the encountered resourceProperties. See `ignored_names`. Defaults to `true`'
   end
 
-  newproperty(:ignored_names, array_matching: :all) do
+  newparam(:ignored_names, array_matching: :all) do
     defaultto ['zip','xml']
     desc <<-EOT 
     Optional. An array of name suffixes for objects which were found stored as resourceProperties and severely impeding the performance of
