@@ -71,6 +71,12 @@ Puppet::Type.type(:websphere_cf).provide(:wsadmin, parent: Puppet::Provider::Web
   # Create a Connection Factory
   def create  
     cmd = <<-END.unindent
+    import AdminUtilities
+
+    # Global variable within this script
+    bundleName = "com.ibm.ws.scripting.resources.scriptLibraryMessage"
+    resourceBundle = AdminUtilities.getResourceBundle(bundleName)
+
     def createWMQConnectionFactory(scope, cftype, name, jndiName, otherAttrsList=[], failonerror=AdminUtilities._BLANK_ ):
       if (failonerror==AdminUtilities._BLANK_):
           failonerror=AdminUtilities._FAIL_ON_ERROR_
@@ -164,7 +170,7 @@ Puppet::Type.type(:websphere_cf).provide(:wsadmin, parent: Puppet::Provider::Web
           print " "
           print " "
 
-          #Make sure required parameters are non-empty
+          # Make sure required parameters are non-empty
           if (len(scope) == 0):
             raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["scope", scope]))
           if (len(cftype) == 0):
@@ -174,17 +180,18 @@ Puppet::Type.type(:websphere_cf).provide(:wsadmin, parent: Puppet::Provider::Web
           if (len(jndiName) == 0):
             raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["jndiName", jndiName]))
 
-          #validate the scope
-          #we will end up with a containment path for the scope - convert that to the config id which is needed.
+          # Validate the scope
+          # We will end up with a containment path for the scope - convert that to the config id which is needed.
           if (scope.find(".xml") > 0 and AdminConfig.getObjectType(scope) == None):
             raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6040E", ["scope", scope]))
           scopeContainmentPath = AdminUtilities.getScopeContainmentPath(scope)
           configIdScope = AdminConfig.getid(scopeContainmentPath)
-          # if at this point, we don't have a proper config id, then the scope specified was incorrect
+
+          # If at this point, we don't have a proper config id, then the scope specified was incorrect
           if (len(configIdScope) == 0):
             raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6040E", ["scope", scope]))
 
-          #prepare the parameters for the AdminTask command - set the implied type of CF in this case
+          # Prepare the parameters for the AdminTask command - set the implied type of CF in this case
           otherAttrsList = AdminUtilities.convertParamStringToList(otherAttrsList)
           requiredParameters = [["name", name], ["jndiName", jndiName], ["type", cftype]]
           finalAttrsList = requiredParameters + otherAttrsList
@@ -193,18 +200,15 @@ Puppet::Type.type(:websphere_cf).provide(:wsadmin, parent: Puppet::Provider::Web
             attr = ["-"+attrs[0], attrs[1]]
             finalParameters = finalParameters+attr
 
-          #call the corresponding AdminTask command
+          # Call the corresponding AdminTask command
           AdminUtilities.debugNotice("About to call AdminTask command with target : " + str(configIdScope))
           AdminUtilities.debugNotice("About to call AdminTask command with parameters : " + str(finalParameters))
           newObjectId = AdminTask.createWMQConnectionFactory(configIdScope, finalParameters)
           newObjectId = str(newObjectId)
 
-          #Save the config depending on the AutoSave variable
-          if (AdminUtilities._AUTOSAVE_ == "true"):
-            AdminConfig.save()
-          #endif
+          AdminConfig.save()
 
-          #return the config ID of the newly created object
+          # Return the config ID of the newly created object
           AdminUtilities.debugNotice("Returning config id of new object : " + str(newObjectId))
           return newObjectId
 
@@ -219,7 +223,20 @@ Puppet::Type.type(:websphere_cf).provide(:wsadmin, parent: Puppet::Provider::Web
             return AdminUtilities.fail(msgPrefix+AdminUtilities.getExceptionText(typ, val, tb), failonerror)
         #endIf
       #endTry
-    #endDef  
+    #endDef
+
+    scope = '/ServerCluster:CBIS_inf_st1_cluster/'
+
+    cftype = "QCF"
+    name = "PUPQCF"
+    jndiName = "jms/PUPQCF"
+    attrs = [['description', 'Puppet PUPQCF Queue Connection Factory'], ['XAEnabled', 'true'], ['queueManager', 'PUPP.SUPP.QMGR'], ['host', 'host1.fqdn.com'], ['port', '2000'], ['channel', 'PUP'], ['transportType', 'CLIENT'], ['tempModel', 'SYSTEM.DEFAULT.MODEL.QUEUE'], ['clientID', 'mqm'], ['CCSID', '819'], ['failIfQuiesce', 'true'], ['pollingInterval', '5000'], ['rescanInterval', '5000'], ['sslResetCount', '0'], ['sslType', 'SPECIFIC'], ['sslConfiguration', 'WAS2MQ'], ['connameList', 'host1.fqdn.com(2000),host2.fqdn.com(2000)'], ['clientReconnectOptions', 'DISABLED'], ['clientReconnectTimeout', '1800']]
+
+    # Enable debug notices
+    AdminUtilities.setDebugNotices(1)
+
+    createWMQConnectionFactory(scope, cftype, name, jndiName, attrs)
+
     END
 
     debug "Running command: #{cmd} as user: #{resource[:user]}"

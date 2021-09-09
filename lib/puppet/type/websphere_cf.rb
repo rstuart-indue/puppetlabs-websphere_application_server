@@ -178,11 +178,10 @@ Puppet::Type.newtype(:websphere_cf) do
     # Do some basic checking for the passed in QMGR params
     # Because of their number and complexity, there's only so much we can do before we let the users hurt themselves.
     munge do |value|
-      # Convert our hash keys to symbols.
-      # Of course, this only works for single level hashes which keys which accept .to_sym method...
-      value.map{|k, v| [key.to_sym, value] }.to_h
-      
       value.each do |k, v|
+        # Convert our hash keys to symbols.
+        k = k.to_sym
+
         case k
         when :brokerCtrlQueue, :brokerSubQueue, :brokerCCSubQueue, :brokerVersion, :brokerPubQueue, :tempTopicPrefix, :pubAckWindow, :subStore, :stateRefreshInt, :cleanupLevel, :sparesSubs, :wildcardFormat, :brokerQmgr, :clonedSubs, :msgSelection
           raise Puppet::Error "Puppet::Type::Websphere_Cf: Argument error in qmgr_data: parameter #{k} with value #{v} is incompatible with type QCF" if resource[:cf_type] == :QCF
@@ -219,6 +218,7 @@ Puppet::Type.newtype(:websphere_cf) do
       #fail "Hash cannot be empty" if value.empty?
     end
 
+    # Convert our hash keys to symbols.
     munge do |value|
       value.map{|k, v| [key.to_sym, value] }.to_h
     end
@@ -243,6 +243,7 @@ Puppet::Type.newtype(:websphere_cf) do
       #fail "Hash cannot be empty" if value.empty?
     end
 
+    # Convert our hash keys to symbols.
     munge do |value|
       value.map{|k, v| [key.to_sym, value] }.to_h
     end
@@ -267,6 +268,7 @@ Puppet::Type.newtype(:websphere_cf) do
       #fail "Hash cannot be empty" if value.empty?
     end
 
+    # Convert our hash keys to symbols.
     munge do |value|
       value.map{|k, v| [key.to_sym, value] }.to_h
     end
