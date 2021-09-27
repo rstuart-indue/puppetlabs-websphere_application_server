@@ -179,8 +179,8 @@ Puppet::Type.newtype(:websphere_cf) do
     # Because of their number and complexity, there's only so much we can do before we let the users hurt themselves.
     munge do |value|
       value.each do |k, v|
-        # Convert our hash keys to symbols.
-        k = k.to_sym
+        # camelCase and convert our hash keys to symbols.
+        k = k.split('_').inject{|m, p| m + p.capitalize}.to_sym
 
         case k
         when :brokerCtrlQueue, :brokerSubQueue, :brokerCCSubQueue, :brokerVersion, :brokerPubQueue, :tempTopicPrefix, :pubAckWindow, :subStore, :stateRefreshInt, :cleanupLevel, :sparesSubs, :wildcardFormat, :brokerQmgr, :clonedSubs, :msgSelection
@@ -197,8 +197,8 @@ Puppet::Type.newtype(:websphere_cf) do
   newproperty(:mapping_data, array_matching: :all) do
     desc 'A hash containing the Auth mapping data'
     default_mapping_data = { 
-      :mappingConfigAlias => '',
-      :authDataAlias => ''
+      :mapping_config_alias => '',
+      :auth_data_alias => ''
     }
     defaultto default_mapping_data   
 
@@ -219,9 +219,9 @@ Puppet::Type.newtype(:websphere_cf) do
       #fail "Hash cannot be empty" if value.empty?
     end
 
-    # Convert our hash keys to symbols.
+    # camelCase and convert our hash keys to symbols.
     munge do |value|
-      value.map{|k, v| [key.to_sym, value] }.to_h
+      value.map{|k, v| [key.split('_').inject{|m, p| m + p.capitalize}.to_sym, value] }.to_h
     end
   end
 
@@ -244,9 +244,9 @@ Puppet::Type.newtype(:websphere_cf) do
       #fail "Hash cannot be empty" if value.empty?
     end
 
-    # Convert our hash keys to symbols.
+    # CamelCase and convert our hash keys to symbols.
     munge do |value|
-      value.map{|k, v| [key.to_sym, value] }.to_h
+      value.map{|k, v| [key.split('_').inject{|m, p| m + p.capitalize}.to_sym, value] }.to_h
     end
   end
 
@@ -269,9 +269,9 @@ Puppet::Type.newtype(:websphere_cf) do
       #fail "Hash cannot be empty" if value.empty?
     end
 
-    # Convert our hash keys to symbols.
+    # CamelCase and convert our hash keys to symbols.
     munge do |value|
-      value.map{|k, v| [key.to_sym, value] }.to_h
+      value.map{|k, v| [key.split('_').inject{|m, p| m + p.capitalize}.to_sym, value] }.to_h
     end
   end
 
