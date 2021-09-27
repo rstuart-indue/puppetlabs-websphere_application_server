@@ -197,7 +197,7 @@ Puppet::Type.newtype(:websphere_cf) do
   newproperty(:mapping_data, array_matching: :all) do
     desc 'A hash containing the Auth mapping data'
     defaultto { 
-      :mappingConfigAlias => '',
+      :mappingConfigAlias => ''
       :authDataAlias => ''
     }
 
