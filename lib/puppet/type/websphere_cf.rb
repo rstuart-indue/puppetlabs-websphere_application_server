@@ -196,10 +196,11 @@ Puppet::Type.newtype(:websphere_cf) do
 
   newproperty(:mapping_data, array_matching: :all) do
     desc 'A hash containing the Auth mapping data'
-    defaultto { 
-      :mappingConfigAlias => ''
+    default_mapping_data = { 
+      :mappingConfigAlias => '',
       :authDataAlias => ''
     }
+    defaultto default_mapping_data   
 
     def insync?(is)
       # There will almost always be more properties on the system than
