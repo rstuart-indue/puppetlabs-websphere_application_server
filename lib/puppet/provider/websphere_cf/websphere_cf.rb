@@ -79,6 +79,9 @@ Puppet::Type.type(:websphere_cf).provide(:wsadmin, parent: Puppet::Provider::Web
     # This string will then appear as a preformatted array to Jython
     cf_attrs += resource[:qmgr_data].map{|k,v| [k.to_s, v]}.to_a unless resource[:qmgr_data].nil?
 
+    debug "CF_ATTRS: #{cf_attrs}"
+    cf_attr_str = cf_attrs.to_s.tr("\"", "'")
+
     cmd = <<-END.unindent
     import AdminUtilities
 
@@ -87,7 +90,7 @@ Puppet::Type.type(:websphere_cf).provide(:wsadmin, parent: Puppet::Provider::Web
     cftype = "#{resource[:cf_type]}"
     name = "#{resource[:cf_name]}"
     jndiName = "#{resource[:jndi_name]}"
-    attrs = #{cf_attrs.to_s.tr("\"", "'")}
+    attrs = #{cf_attrs_str}
 
     # Historical trial/error args
     #attrs = [['description', 'Puppet PUPQCF Queue Connection Factory'], ['XAEnabled', 'true'], ['queueManager', 'PUPP.SUPP.QMGR'], ['host', 'host1.fqdn.com'], ['port', '2000'], ['channel', 'PUP'], ['transportType', 'CLIENT'], ['tempModel', 'SYSTEM.DEFAULT.MODEL.QUEUE'], ['clientID', 'mqm'], ['CCSID', '819'], ['failIfQuiesce', 'true'], ['pollingInterval', '5000'], ['rescanInterval', '5000'], ['sslResetCount', '0'], ['sslType', 'SPECIFIC'], ['sslConfiguration', 'WAS2MQ'], ['connameList', 'host1.fqdn.com(2000),host2.fqdn.com(2000)'], ['clientReconnectOptions', 'DISABLED'], ['clientReconnectTimeout', '1800']]
