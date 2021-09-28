@@ -110,7 +110,7 @@ Puppet::Type.newtype(:websphere_cf) do
     raise ArgumentError, "Invalid scope #{self[:scope]}: Must be cell, cluster, node, or server" unless %r{^(cell|cluster|node|server)$}.match?(self[:scope])
     raise ArgumentError, 'server is required when scope is server' if self[:server].nil? && self[:scope] == 'server'
     raise ArgumentError, 'cell is required' if self[:cell].nil?
-    raise ArgumentError, 'node is required when scope is server, cell, or node' if self[:node_name].nil? && self[:scope] =~ %r{(server|cell|node)}
+    raise ArgumentError, 'node is required when scope is server, or node' if self[:node_name].nil? && self[:scope] =~ %r{(server|node)}
     raise ArgumentError, 'cluster is required when scope is cluster' if self[:cluster].nil? && self[:scope] =~ %r{^cluster$}
     raise ArgumentError, "Invalid profile_base #{self[:profile_base]}" unless Pathname.new(self[:profile_base]).absolute?
 
@@ -309,6 +309,9 @@ Puppet::Type.newtype(:websphere_cf) do
   newparam(:server) do
     isnamevar
     desc 'The server for which this Connection Factory should be set in'
+    validate do |value|
+      raise Puppet::Error, 'Puppet::Type::Websphere_Cf: server param is required when scope is server' if value.nil? && @resource[:scope] == 'server'
+    end
   end
 
   newparam(:cell) do
@@ -319,11 +322,17 @@ Puppet::Type.newtype(:websphere_cf) do
   newparam(:node) do
     isnamevar
     desc 'The node for which this Connection Factory should be set in'
+    validate do |value|
+      raise Puppet::Error, 'Puppet::Type::Websphere_Cf: node param is required when scope is server, or node' if value.nil? && self[:scope] =~ %r{(server|node)}
+    end
   end
 
   newparam(:cluster) do
     isnamevar
     desc 'The cluster for which this Connection Factory should be set in'
+    validate do |value|
+      raise Puppet::Error, 'Puppet::Type::Websphere_Cf: cluster param is required when scope is cluster' if value.nil? && @resource[:scope] == 'cluster'
+    end
   end
 
   newparam(:profile) do
