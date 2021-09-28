@@ -39,7 +39,7 @@
 #   Required. The scope of this QCF resource. Can be 'cell','cluster','node' or 'server'.
 # @param cluster
 #   Optional. The cluster name for this QCF resource to be set under. Required if `scope` is set to `cluster`
-# @param node
+# @param node_name
 #   Optional. The node name for this QCF resource to be set under. Required if `scope` is set to `node`
 # @param server
 #   Optional. The server name for this QCF resource to be set under. Required if `scope` is set to `server`
@@ -69,7 +69,7 @@ define websphere_application_server::resources::jms::qcf (
   Variant[Hash, Undef] $sess_pool_data = undef,
   Variant[Hash, Undef] $mapping_data   = undef,
   Variant[String, Undef] $cluster      = undef,
-  Variant[String, Undef] $node         = undef,
+  Variant[String, Undef] $node_name    = undef,
   Variant[String, Undef] $server       = undef,
   String $user                         = $::websphere_application_server::user,
   Variant[String, Undef] $wsadmin_user = undef,
@@ -90,7 +90,7 @@ define websphere_application_server::resources::jms::qcf (
     dmgr_profile   => $dmgr_profile,
     cell           => $cell,
     cluster        => $cluster,
-    node           => $node,
+    node_name      => $node_name,
     server         => $server,
     user           => $user,
     wsadmin_user   => $wsadmin_user,
