@@ -221,7 +221,7 @@ Puppet::Type.newtype(:websphere_cf) do
 
     # camelCase and convert our hash keys to symbols.
     munge do |value|
-      value.map{|k, v| [key.split('_').inject{|m, p| m + p.capitalize}.to_sym, value] }.to_h
+      value.map{|k, v| [k.split('_').inject{|m, p| m + p.capitalize}.to_sym, value] }.to_h
     end
   end
 
@@ -246,7 +246,7 @@ Puppet::Type.newtype(:websphere_cf) do
 
     # CamelCase and convert our hash keys to symbols.
     munge do |value|
-      value.map{|k, v| [key.split('_').inject{|m, p| m + p.capitalize}.to_sym, value] }.to_h
+      value.map{|k, v| [k.split('_').inject{|m, p| m + p.capitalize}.to_sym, value] }.to_h
     end
   end
 
@@ -271,7 +271,7 @@ Puppet::Type.newtype(:websphere_cf) do
 
     # CamelCase and convert our hash keys to symbols.
     munge do |value|
-      value.map{|k, v| [key.split('_').inject{|m, p| m + p.capitalize}.to_sym, value] }.to_h
+      value.map{|k, v| [k.split('_').inject{|m, p| m + p.capitalize}.to_sym, value] }.to_h
     end
   end
 
