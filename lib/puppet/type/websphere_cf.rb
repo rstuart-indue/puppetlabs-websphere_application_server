@@ -189,6 +189,7 @@ Puppet::Type.newtype(:websphere_cf) do
           raise Puppet::Error "Puppet::Type::Websphere_Cf: Argument error in qmgr_data: parameter #{k} with value #{v} is incompatible with type TCF" if resource[:cf_type] == :TCF
         #else
         #  super
+        [k,v]
         end
       end
     end
