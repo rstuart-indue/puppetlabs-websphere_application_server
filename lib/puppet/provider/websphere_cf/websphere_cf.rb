@@ -77,10 +77,10 @@ Puppet::Type.type(:websphere_cf).provide(:wsadmin, parent: Puppet::Provider::Web
     # so that doesn't have a heart attack. Inside the Jython fragment, we further convert this array
     # to a string, and replace all the double quotes with single quotes.
     # This string will then appear as a preformatted array to Jython
-    cf_attrs += resource[:qmgr_data].map{|k,v| [k.to_s, v]}.to_a unless resource[:qmgr_data].nil?
+    cf_attrs += (resource[:qmgr_data].map{|k,v| [k.to_s, v]}).to_a unless resource[:qmgr_data].nil?
 
     debug "CF_ATTRS: #{cf_attrs}"
-    cf_attr_str = cf_attrs.to_s.tr("\"", "'")
+    cf_attrs_str = cf_attrs.to_s.tr("\"", "'")
 
     cmd = <<-END.unindent
     import AdminUtilities
