@@ -152,7 +152,7 @@ Puppet::Type.newtype(:websphere_cf) do
     desc 'Required. A meanigful description of the CF object.'
   end
 
-  newproperty(:qmgr_data, array_matching: :all) do
+  newproperty(:qmgr_data) do
     desc "A hash table containing the QMGR settings data to apply to the Connection Factory. See createWMQConnectionFactory() manual"
 
     def insync?(is)
