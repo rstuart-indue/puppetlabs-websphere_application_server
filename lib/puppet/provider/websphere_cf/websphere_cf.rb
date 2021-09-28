@@ -77,6 +77,12 @@ Puppet::Type.type(:websphere_cf).provide(:wsadmin, parent: Puppet::Provider::Web
     # so that doesn't have a heart attack. Inside the Jython fragment, we further convert this array
     # to a string, and replace all the double quotes with single quotes.
     # This string will then appear as a preformatted array to Jython
+    var_a = resource[:qmgr_data].to_a
+    var_b = resource[:qmgr_data].map{|k,v| [k.to_s, v]}
+    var_c = resource[:qmgr_data].to_s
+
+    debug "debug: #{var_a} #{var_b} #{var_c}"
+
     cf_attrs += (resource[:qmgr_data].map{|k,v| [k.to_s, v]}).to_a unless resource[:qmgr_data].nil?
 
     debug "CF_ATTRS: #{cf_attrs}"
