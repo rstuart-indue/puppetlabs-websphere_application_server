@@ -280,7 +280,7 @@ Puppet::Type.type(:websphere_cf).provide(:wsadmin, parent: Puppet::Provider::Web
     # This is making an educated guess that you are not trying to admin something of
     # this kind. If you do, you have my condolences for your dearly departed sanity.
     xml_content = nil
-    if resource[:sanitation] == :true && ( !resource[:ignored_names].empty? )
+    if resource[:sanitize] == :true && ( !resource[:ignored_names].empty? )
       suffix_list = resource[:ignored_names].join('|')
       File.open(scope('file')).each_line do |line|
         xml_content += line unless /<resourceProperties.*name="\w+\.(#{suffix_list})"/.match?(line)
