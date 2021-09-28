@@ -178,6 +178,7 @@ Puppet::Type.newtype(:websphere_cf) do
     # Do some basic checking for the passed in QMGR params
     # Because of their number and complexity, there's only so much we can do before we let the users hurt themselves.
     munge do |value|
+      munged_values={}
       value.each do |k, v|
         # camelCase and convert our hash keys to symbols.
         k = k.split('_').inject{|m, p| m + p.capitalize}.to_sym
@@ -189,9 +190,10 @@ Puppet::Type.newtype(:websphere_cf) do
           raise Puppet::Error "Puppet::Type::Websphere_Cf: Argument error in qmgr_data: parameter #{k} with value #{v} is incompatible with type TCF" if resource[:cf_type] == :TCF
         #else
         #  super
-        [k,v]
+        munged_values << {k => v}
         end
       end
+      munged_values
     end
   end
 
