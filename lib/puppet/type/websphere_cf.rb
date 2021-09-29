@@ -162,7 +162,7 @@ Puppet::Type.newtype(:websphere_cf) do
       should.each_pair do |prop,value|
         return false unless is.key?(prop)
         # Stop after the first out of sync property
-        return false unless property_matches?(is[prop],value)
+        return false unless property_matches?(is[prop.downcase],value)
       end
       true
     end
