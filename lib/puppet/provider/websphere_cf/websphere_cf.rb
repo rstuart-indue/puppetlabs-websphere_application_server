@@ -236,11 +236,10 @@ def createWMQConnectionFactory(scope, cftype, name, jndiName, otherAttrsList=[],
       AdminUtilities.debugNotice("About to call AdminTask command with target : " + str(configIdScope))
       AdminUtilities.debugNotice("About to call AdminTask command with parameters : " + str(finalParameters))
 
-      # And we're not ready to create that CF just yet.
-      #newObjectId = AdminTask.createWMQConnectionFactory(configIdScope, finalParameters)
-      #newObjectId = str(newObjectId)
+      newObjectId = AdminTask.createWMQConnectionFactory(configIdScope, finalParameters)
+      newObjectId = str(newObjectId)
 
-      #AdminConfig.save()
+      AdminConfig.save()
 
       # Return the config ID of the newly created object
       AdminUtilities.debugNotice("Returning config id of new object : " + str(newObjectId))
@@ -469,84 +468,8 @@ END
     return if add_members_string.empty? && (resource[:enforce_members] != :true)
 
     cmd = <<-END.unindent
-      # Change the Group configuration and/or the group membership for #{resource[:groupid]}
-      # When adding group members, this module allows adding other groups, not just users.
-
-      # Get the groupUniqueName for the target group
-      groupUniqueName = AdminTask.searchGroups(['-cn', '#{resource[:groupid]}'])
-
-      # Set a flag whether we need to reload the security configuration
-      roles_changed = 0
-
-      # Group params to change
-      arg_string = [#{arg_string}]
-
-      # Group members to add/remove
-      remove_member_list = [#{removable_members_string}]
-      add_member_list = [#{add_members_string}]
-
-      # Roles to add/remove
-      remove_role_list = [#{removable_roles_string}]
-      add_role_list = [#{add_roles_string}]
-
-      if len(groupUniqueName):
-
-        # Update group configuration for #{resource[:groupid]}
-        if len(arg_string):
-          AdminTask.updateGroup(arg_string)
-
-        # Add members to the group membership for #{resource[:groupid]}
-        if len(add_member_list):
-          for member_uid in add_member_list:
-            memberUniqueName=AdminTask.searchUsers(['-uid', member_uid])
-
-            # If we can't find a user, maybe it is a group we need to add, look for it
-            if len(memberUniqueName) == 0:
-              memberUniqueName=AdminTask.searchGroups(['-cn', member_uid])
-
-            if len(memberUniqueName):
-              AdminTask.addMemberToGroup(['-memberUniqueName', memberUniqueName, '-groupUniqueName', groupUniqueName])
-
-        # Remove members from the group membership for #{resource[:groupid]}
-        if len(remove_member_list):
-          for member_uid in remove_member_list:
-            memberUniqueName=AdminTask.searchUsers(['-uid', member_uid])
-
-            # If we can't find a user, maybe it is a group we need to add, look for it
-            if len(memberUniqueName) == 0:
-              memberUniqueName=AdminTask.searchGroups(['-cn', member_uid])
-
-            if len(memberUniqueName):
-              AdminTask.removeMemberFromGroup(['-memberUniqueName', memberUniqueName, '-groupUniqueName', groupUniqueName])
-
-        # Add roles for the #{resource[:groupid]} group
-        if len(add_role_list):
-          for rolename_id in add_role_list:
-              if rolename_id == 'auditor':
-                AdminTask.mapGroupsToAuditRole(['-roleName', rolename_id, '-groupids', '#{resource[:groupid]}'])
-              else:
-                AdminTask.mapGroupsToAdminRole(['-roleName', rolename_id, '-groupids', '#{resource[:groupid]}'])
-
-          # Ensure we refresh/reload the security configuration
-          roles_changed = 1
-
-        # Remove roles for the #{resource[:groupid]} group
-        if len(remove_role_list):
-          for rolename_id in remove_role_list:
-            if rolename_id == 'auditor':
-              AdminTask.removeGroupsFromAuditRole(['-roleName', rolename_id, '-groupids', '#{resource[:groupid]}'])
-            else:
-              AdminTask.removeGroupsFromAdminRole(['-roleName', rolename_id, '-groupids', '#{resource[:groupid]}'])
-
-          # Ensure we refresh/reload the security configuration
-          roles_changed = 1
-
-        AdminConfig.save()
-
-        if roles_changed:
-          agmBean = AdminControl.queryNames('type=AuthorizationGroupManager,process=dmgr,*')
-          AdminControl.invoke(agmBean, 'refreshAll')
-        END
+# Change the CF configuration script
+  END
     debug "Running #{cmd}"
     result = wsadmin(file: cmd, user: resource[:user])
     debug "result: #{result}"
