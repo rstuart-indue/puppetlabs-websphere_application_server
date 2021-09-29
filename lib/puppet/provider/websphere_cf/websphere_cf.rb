@@ -9,6 +9,7 @@ Puppet::Type.type(:websphere_cf).provide(:wsadmin, parent: Puppet::Provider::Web
 
     Please see the IBM documentation available at:
     https://www.ibm.com/docs/en/was/9.0.5?topic=scripting-createwmqconnectionfactory-command
+    https://www.ibm.com/docs/en/was-nd/9.0.5?topic=cws-mapping-administrative-console-panel-names-command-names-mq-names
 
     It is recommended to consult the IBM documentation as the JMS connection factory subject is very
     complex and difficult to abstract.
@@ -31,6 +32,8 @@ Puppet::Type.type(:websphere_cf).provide(:wsadmin, parent: Puppet::Provider::Web
     @old_conn_pool_data = {}
     @old_sess_pool_data = {}
     @old_mapping_data = {}
+
+    @xlate_cmd_table = {}
   end
 
   def scope(what)
