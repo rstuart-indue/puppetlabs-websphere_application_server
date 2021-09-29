@@ -178,11 +178,12 @@ Puppet::Type.newtype(:websphere_cf) do
     # Do some basic checking for the passed in QMGR params
     # Because of their number and complexity, there's only so much we can do before we let the users hurt themselves.
     munge do |value|
+      munged_values={}
       value.each do |k, v|
         # camelCase and convert our hash keys to symbols.
-        k = k.split('_').inject{|m, p| m + p.capitalize}.to_sym
+        k_sym = k.split('_').inject{|m, p| m + p.capitalize}.to_sym
 
-        case k
+        case k_sym
         when :brokerCtrlQueue, :brokerSubQueue, :brokerCCSubQueue, :brokerVersion, :brokerPubQueue, :tempTopicPrefix, :pubAckWindow, :subStore, :stateRefreshInt, :cleanupLevel, :sparesSubs, :wildcardFormat, :brokerQmgr, :clonedSubs, :msgSelection
           raise Puppet::Error "Puppet::Type::Websphere_Cf: Argument error in qmgr_data: parameter #{k} with value #{v} is incompatible with type QCF" if resource[:cf_type] == :QCF
         when :msgRetention, :rescanInterval, :tempQueuePrefix, :modelQueue, :replyWithRFH2
@@ -190,7 +191,9 @@ Puppet::Type.newtype(:websphere_cf) do
         #else
         #  super
         end
+        munged_values[k_sym] = v
       end
+      munged_values
     end
   end
 
@@ -221,7 +224,7 @@ Puppet::Type.newtype(:websphere_cf) do
 
     # camelCase and convert our hash keys to symbols.
     munge do |value|
-      value.map{|k, v| [k.split('_').inject{|m, p| m + p.capitalize}.to_sym, value] }.to_h
+      munged_values = value.map{|k, v| [k.split('_').inject{|m, p| m + p.capitalize}.to_sym, value] }.to_h
     end
   end
 
@@ -246,7 +249,7 @@ Puppet::Type.newtype(:websphere_cf) do
 
     # CamelCase and convert our hash keys to symbols.
     munge do |value|
-      value.map{|k, v| [k.split('_').inject{|m, p| m + p.capitalize}.to_sym, value] }.to_h
+      munged_values = value.map{|k, v| [k.split('_').inject{|m, p| m + p.capitalize}.to_sym, value] }.to_h
     end
   end
 
@@ -271,7 +274,7 @@ Puppet::Type.newtype(:websphere_cf) do
 
     # CamelCase and convert our hash keys to symbols.
     munge do |value|
-      value.map{|k, v| [k.split('_').inject{|m, p| m + p.capitalize}.to_sym, value] }.to_h
+      munged_values = value.map{|k, v| [k.split('_').inject{|m, p| m + p.capitalize}.to_sym, value] }.to_h
     end
   end
 
