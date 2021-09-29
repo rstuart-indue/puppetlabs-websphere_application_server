@@ -194,7 +194,7 @@ Puppet::Type.newtype(:websphere_cf) do
     end
   end
 
-  newproperty(:mapping_data, array_matching: :all) do
+  newproperty(:mapping_data) do
     desc 'A hash containing the Auth mapping data'
     default_mapping_data = { 
       :mapping_config_alias => '',
@@ -225,7 +225,7 @@ Puppet::Type.newtype(:websphere_cf) do
     end
   end
 
-  newproperty(:conn_pool_data, array_matching: :all) do
+  newproperty(:conn_pool_data) do
     desc 'A hash containing the Connection Pool settings'
     def insync?(is)
       # There will almost always be more properties on the system than
@@ -250,7 +250,7 @@ Puppet::Type.newtype(:websphere_cf) do
     end
   end
 
-  newproperty(:sess_pool_data, array_matching: :all) do
+  newproperty(:sess_pool_data) do
     desc 'A hash containing the Session Pool settings'
     def insync?(is)
       # There will almost always be more properties on the system than
