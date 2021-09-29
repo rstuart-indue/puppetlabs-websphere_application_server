@@ -89,180 +89,180 @@ Puppet::Type.type(:websphere_cf).provide(:wsadmin, parent: Puppet::Provider::Web
     cf_attrs_str = cf_attrs.to_s.tr("\"", "'")
 
     cmd = <<-END.unindent
-    import AdminUtilities
+import AdminUtilities
 
-    # Parameters we need for our Connection Factory
-    scope = '/ServerCluster:#{resource[:cluster]}/'
-    cftype = "#{resource[:cf_type]}"
-    name = "#{resource[:cf_name]}"
-    jndiName = "#{resource[:jndi_name]}"
-    attrs = #{cf_attrs_str}
+# Parameters we need for our Connection Factory
+scope = '/ServerCluster:#{resource[:cluster]}/'
+cftype = "#{resource[:cf_type]}"
+name = "#{resource[:cf_name]}"
+jndiName = "#{resource[:jndi_name]}"
+attrs = #{cf_attrs_str}
 
-    # Historical trial/error args
-    #attrs = [['description', 'Puppet PUPQCF Queue Connection Factory'], ['XAEnabled', 'true'], ['queueManager', 'PUPP.SUPP.QMGR'], ['host', 'host1.fqdn.com'], ['port', '2000'], ['channel', 'PUP'], ['transportType', 'CLIENT'], ['tempModel', 'SYSTEM.DEFAULT.MODEL.QUEUE'], ['clientID', 'mqm'], ['CCSID', '819'], ['failIfQuiesce', 'true'], ['pollingInterval', '5000'], ['rescanInterval', '5000'], ['sslResetCount', '0'], ['sslType', 'SPECIFIC'], ['sslConfiguration', 'WAS2MQ'], ['connameList', 'host1.fqdn.com(2000),host2.fqdn.com(2000)'], ['clientReconnectOptions', 'DISABLED'], ['clientReconnectTimeout', '1800']]
+# Historical trial/error args
+#attrs = [['description', 'Puppet PUPQCF Queue Connection Factory'], ['XAEnabled', 'true'], ['queueManager', 'PUPP.SUPP.QMGR'], ['host', 'host1.fqdn.com'], ['port', '2000'], ['channel', 'PUP'], ['transportType', 'CLIENT'], ['tempModel', 'SYSTEM.DEFAULT.MODEL.QUEUE'], ['clientID', 'mqm'], ['CCSID', '819'], ['failIfQuiesce', 'true'], ['pollingInterval', '5000'], ['rescanInterval', '5000'], ['sslResetCount', '0'], ['sslType', 'SPECIFIC'], ['sslConfiguration', 'WAS2MQ'], ['connameList', 'host1.fqdn.com(2000),host2.fqdn.com(2000)'], ['clientReconnectOptions', 'DISABLED'], ['clientReconnectTimeout', '1800']]
 
 
-    # Enable debug notices
-    AdminUtilities.setDebugNotices(1)
+# Enable debug notices
+AdminUtilities.setDebugNotices(1)
 
-    # Global variable within this script
-    bundleName = "com.ibm.ws.scripting.resources.scriptLibraryMessage"
-    resourceBundle = AdminUtilities.getResourceBundle(bundleName)
+# Global variable within this script
+bundleName = "com.ibm.ws.scripting.resources.scriptLibraryMessage"
+resourceBundle = AdminUtilities.getResourceBundle(bundleName)
 
-    def createWMQConnectionFactory(scope, cftype, name, jndiName, otherAttrsList=[], failonerror=AdminUtilities._BLANK_ ):
-      if (failonerror==AdminUtilities._BLANK_):
-          failonerror=AdminUtilities._FAIL_ON_ERROR_
-      #endIf
-      msgPrefix = "createWMQConnectionFactory(" + `scope` + ", " + `cftype`+ ", " + `name`+ ", " + `jndiName` + ", " + `otherAttrsList` + `failonerror`+"): "
-  
-      try:
-          #--------------------------------------------------------------------
-          # Create a WMQ Connection Factory
-          #--------------------------------------------------------------------
-          print "---------------------------------------------------------------"
-          print " AdminJMS:               createWMQConnectionFactory "
-          print " Scope:                      "
-          print "     scope:                  "+scope
-          print " Type:                       "
-          print "     type:                   "+cftype
-          print " MQConnectionFactory:        "
-          print "     name:                   "+name
-          print "     jndiName:               "+jndiName
-          print " Optional Parameters :                   "
-          print "   otherAttributesList:        %s" % otherAttrsList
-          print "     maxBatchSize            "
-          print "     brokerCCSubQueue        "
-          print "     brokerCtrlQueue         "
-          print "     brokerQmgr              "
-          print "     brokerSubQueue          "
-          print "     brokerVersion           "
-          print "     brokerPubQueue          "
-          print "     ccdtQmgrName            "
-          print "     ccdtUrl                 "
-          print "     ccsid                   "
-          print "     cleanupInterval         "
-          print "     cleanupLevel            "
-          print "     clientId                "
-          print "     clonedSubs              "
-          print "     compressHeaders         "
-          print "     compressPayload         "
-          print "     containerAuthAlias      "
-          print "     description             "
-          print "     failIfQuiescing         "
-          print "     localAddress            "
-          print "     mappingAlias            "
-          print "     modelQueue              "
-          print "     msgRetention            "
-          print "     msgSelection            "
-          print "     pollingInterval         "
-          print "     providerVersion         "
-          print "     pubAckInterval          "
-          print "     qmgrHostname            "
-          print "     qmgrName                "
-          print "     qmgrPortNumber          "
-          print "     qmgrSvrconnChannel      "
-          print "     rcvExitInitData         "
-          print "     rcvExit                 "
-          print "     replyWithRFH2           "
-          print "     rescanInterval          "
-          print "     secExitInitData         "
-          print "     secExit                 "
-          print "     sendExitInitData        "
-          print "     sendExit                "
-          print "     sparseSubs              "
-          print "     sslConfiguration        "
-          print "     sslCrl                  "
-          print "     sslPeerName             "
-          print "     sslResetCount           "
-          print "     sslType                 "
-          print "     stateRefreshInt         "
-          print "     subStore                "
-          print "     support2PCProtocol      "
-          print "     tempQueuePrefix         "
-          print "     tempTopicPrefix         "
-          print "     wildcardFormat          "
-          print "     wmqTransportType        "
-          print "     xaRecoveryAuthAlias     "
-          print " "
-          if (otherAttrsList == []):
-            print " Usage: AdminJMS.createWMQConnectionFactory(\"" + scope + "\", \"" + cftype + "\", \"" + name + "\" , \"" + jndiName + "\")"
-          else:
-            if (str(otherAttrsList).startswith("[[") > 0 and str(otherAttrsList).startswith("[[[",0,3) == 0):
-                print " Usage: AdminJMS.createWMQConnectionFactory(\"" + scope + "\", \"" + cftype + "\", \"" + name + "\" , \"" + jndiName + "\", %s)" % (otherAttrsList)
-            else:
-                # d714926 check if script syntax error
-                if (str(otherAttrsList).startswith("[",0,1) > 0 or str(otherAttrsList).startswith("[[[",0,3) > 0):
-                   raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6049E", [otherAttrsList]))
-                else:
-                   if (otherAttrsList.find("\"") > 0):
-                      otherAttrsList = otherAttrsList.replace("\"", "\'")
-                   print " Usage: AdminJMS.createWMQConnectionFactory(\"" + scope + "\", \"" + cftype + "\", \"" + name + "\" , \"" + jndiName + "\", \"" + str(otherAttrsList) + "\")"
-          print " Return: The Configuration Id of the new WMQ Connection Factory"
-          print "---------------------------------------------------------------"
-          print " "
-          print " "
+def createWMQConnectionFactory(scope, cftype, name, jndiName, otherAttrsList=[], failonerror=AdminUtilities._BLANK_ ):
+  if (failonerror==AdminUtilities._BLANK_):
+      failonerror=AdminUtilities._FAIL_ON_ERROR_
+  #endIf
+  msgPrefix = "createWMQConnectionFactory(" + `scope` + ", " + `cftype`+ ", " + `name`+ ", " + `jndiName` + ", " + `otherAttrsList` + `failonerror`+"): "
 
-          # Make sure required parameters are non-empty
-          if (len(scope) == 0):
-            raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["scope", scope]))
-          if (len(cftype) == 0):
-            raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["type", cftype]))
-          if (len(name) == 0):
-            raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["name", name]))
-          if (len(jndiName) == 0):
-            raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["jndiName", jndiName]))
-
-          # Validate the scope
-          # We will end up with a containment path for the scope - convert that to the config id which is needed.
-          if (scope.find(".xml") > 0 and AdminConfig.getObjectType(scope) == None):
-            raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6040E", ["scope", scope]))
-          scopeContainmentPath = AdminUtilities.getScopeContainmentPath(scope)
-          configIdScope = AdminConfig.getid(scopeContainmentPath)
-
-          # If at this point, we don't have a proper config id, then the scope specified was incorrect
-          if (len(configIdScope) == 0):
-            raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6040E", ["scope", scope]))
-
-          # Prepare the parameters for the AdminTask command - set the implied type of CF in this case
-          otherAttrsList = AdminUtilities.convertParamStringToList(otherAttrsList)
-          requiredParameters = [["name", name], ["jndiName", jndiName], ["type", cftype]]
-          finalAttrsList = requiredParameters + otherAttrsList
-          finalParameters = []
-          for attrs in finalAttrsList:
-            attr = ["-"+attrs[0], attrs[1]]
-            finalParameters = finalParameters+attr
-
-          # Call the corresponding AdminTask command
-          AdminUtilities.debugNotice("About to call AdminTask command with target : " + str(configIdScope))
-          AdminUtilities.debugNotice("About to call AdminTask command with parameters : " + str(finalParameters))
-
-          # And we're not ready to create that CF just yet.
-          #newObjectId = AdminTask.createWMQConnectionFactory(configIdScope, finalParameters)
-          #newObjectId = str(newObjectId)
-
-          #AdminConfig.save()
-
-          # Return the config ID of the newly created object
-          AdminUtilities.debugNotice("Returning config id of new object : " + str(newObjectId))
-          return newObjectId
-
-      except:
-        typ, val, tb = sys.exc_info()
-        if (typ==SystemExit):  raise SystemExit,`val`
-        if (failonerror != AdminUtilities._TRUE_):
-            print "Exception: %s %s " % (sys.exc_type, sys.exc_value)
-            val = "%s %s" % (sys.exc_type, sys.exc_value)
-            raise Exception("ScriptLibraryException: " + val)
+  try:
+      #--------------------------------------------------------------------
+      # Create a WMQ Connection Factory
+      #--------------------------------------------------------------------
+      print "---------------------------------------------------------------"
+      print " AdminJMS:               createWMQConnectionFactory "
+      print " Scope:                      "
+      print "     scope:                  "+scope
+      print " Type:                       "
+      print "     type:                   "+cftype
+      print " MQConnectionFactory:        "
+      print "     name:                   "+name
+      print "     jndiName:               "+jndiName
+      print " Optional Parameters :                   "
+      print "   otherAttributesList:        %s" % otherAttrsList
+      print "     maxBatchSize            "
+      print "     brokerCCSubQueue        "
+      print "     brokerCtrlQueue         "
+      print "     brokerQmgr              "
+      print "     brokerSubQueue          "
+      print "     brokerVersion           "
+      print "     brokerPubQueue          "
+      print "     ccdtQmgrName            "
+      print "     ccdtUrl                 "
+      print "     ccsid                   "
+      print "     cleanupInterval         "
+      print "     cleanupLevel            "
+      print "     clientId                "
+      print "     clonedSubs              "
+      print "     compressHeaders         "
+      print "     compressPayload         "
+      print "     containerAuthAlias      "
+      print "     description             "
+      print "     failIfQuiescing         "
+      print "     localAddress            "
+      print "     mappingAlias            "
+      print "     modelQueue              "
+      print "     msgRetention            "
+      print "     msgSelection            "
+      print "     pollingInterval         "
+      print "     providerVersion         "
+      print "     pubAckInterval          "
+      print "     qmgrHostname            "
+      print "     qmgrName                "
+      print "     qmgrPortNumber          "
+      print "     qmgrSvrconnChannel      "
+      print "     rcvExitInitData         "
+      print "     rcvExit                 "
+      print "     replyWithRFH2           "
+      print "     rescanInterval          "
+      print "     secExitInitData         "
+      print "     secExit                 "
+      print "     sendExitInitData        "
+      print "     sendExit                "
+      print "     sparseSubs              "
+      print "     sslConfiguration        "
+      print "     sslCrl                  "
+      print "     sslPeerName             "
+      print "     sslResetCount           "
+      print "     sslType                 "
+      print "     stateRefreshInt         "
+      print "     subStore                "
+      print "     support2PCProtocol      "
+      print "     tempQueuePrefix         "
+      print "     tempTopicPrefix         "
+      print "     wildcardFormat          "
+      print "     wmqTransportType        "
+      print "     xaRecoveryAuthAlias     "
+      print " "
+      if (otherAttrsList == []):
+        print " Usage: AdminJMS.createWMQConnectionFactory(\\"" + scope + "\\", \\"" + cftype + "\\", \\"" + name + "\\" , \\"" + jndiName + "\\")"
+      else:
+        if (str(otherAttrsList).startswith("[[") > 0 and str(otherAttrsList).startswith("[[[",0,3) == 0):
+            print " Usage: AdminJMS.createWMQConnectionFactory(\\"" + scope + "\\", \\"" + cftype + "\\", \\"" + name + "\\" , \\"" + jndiName + "\\", %s)" % (otherAttrsList)
         else:
-            return AdminUtilities.fail(msgPrefix+AdminUtilities.getExceptionText(typ, val, tb), failonerror)
-        #endIf
-      #endTry
-    #endDef
+            # d714926 check if script syntax error
+            if (str(otherAttrsList).startswith("[",0,1) > 0 or str(otherAttrsList).startswith("[[[",0,3) > 0):
+                raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6049E", [otherAttrsList]))
+            else:
+                if (otherAttrsList.find("\\"") > 0):
+                  otherAttrsList = otherAttrsList.replace("\\"", "\\'")
+                print " Usage: AdminJMS.createWMQConnectionFactory(\\"" + scope + "\\", \\"" + cftype + "\\", \\"" + name + "\\" , \\"" + jndiName + "\\", \\"" + str(otherAttrsList) + "\\")"
+      print " Return: The Configuration Id of the new WMQ Connection Factory"
+      print "---------------------------------------------------------------"
+      print " "
+      print " "
 
-    # And now - create the connection factory
-    createWMQConnectionFactory(scope, cftype, name, jndiName, attrs)
+      # Make sure required parameters are non-empty
+      if (len(scope) == 0):
+        raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["scope", scope]))
+      if (len(cftype) == 0):
+        raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["type", cftype]))
+      if (len(name) == 0):
+        raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["name", name]))
+      if (len(jndiName) == 0):
+        raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["jndiName", jndiName]))
 
-    END
+      # Validate the scope
+      # We will end up with a containment path for the scope - convert that to the config id which is needed.
+      if (scope.find(".xml") > 0 and AdminConfig.getObjectType(scope) == None):
+        raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6040E", ["scope", scope]))
+      scopeContainmentPath = AdminUtilities.getScopeContainmentPath(scope)
+      configIdScope = AdminConfig.getid(scopeContainmentPath)
+
+      # If at this point, we don't have a proper config id, then the scope specified was incorrect
+      if (len(configIdScope) == 0):
+        raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6040E", ["scope", scope]))
+
+      # Prepare the parameters for the AdminTask command - set the implied type of CF in this case
+      otherAttrsList = AdminUtilities.convertParamStringToList(otherAttrsList)
+      requiredParameters = [["name", name], ["jndiName", jndiName], ["type", cftype]]
+      finalAttrsList = requiredParameters + otherAttrsList
+      finalParameters = []
+      for attrs in finalAttrsList:
+        attr = ["-"+attrs[0], attrs[1]]
+        finalParameters = finalParameters+attr
+
+      # Call the corresponding AdminTask command
+      AdminUtilities.debugNotice("About to call AdminTask command with target : " + str(configIdScope))
+      AdminUtilities.debugNotice("About to call AdminTask command with parameters : " + str(finalParameters))
+
+      # And we're not ready to create that CF just yet.
+      #newObjectId = AdminTask.createWMQConnectionFactory(configIdScope, finalParameters)
+      #newObjectId = str(newObjectId)
+
+      #AdminConfig.save()
+
+      # Return the config ID of the newly created object
+      AdminUtilities.debugNotice("Returning config id of new object : " + str(newObjectId))
+      return newObjectId
+
+  except:
+    typ, val, tb = sys.exc_info()
+    if (typ==SystemExit):  raise SystemExit,`val`
+    if (failonerror != AdminUtilities._TRUE_):
+        print "Exception: %s %s " % (sys.exc_type, sys.exc_value)
+        val = "%s %s" % (sys.exc_type, sys.exc_value)
+        raise Exception("ScriptLibraryException: " + val)
+    else:
+        return AdminUtilities.fail(msgPrefix+AdminUtilities.getExceptionText(typ, val, tb), failonerror)
+    #endIf
+  #endTry
+#endDef
+
+# And now - create the connection factory
+createWMQConnectionFactory(scope, cftype, name, jndiName, attrs)
+
+END
 
     debug "Running command: #{cmd} as user: #{resource[:user]}"
     result = wsadmin(file: cmd, user: resource[:user], failonfail: false)
