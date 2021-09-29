@@ -109,18 +109,18 @@ AdminUtilities.setDebugNotices(1)
 bundleName = "com.ibm.ws.scripting.resources.scriptLibraryMessage"
 resourceBundle = AdminUtilities.getResourceBundle(bundleName)
 
-def createWMQConnectionFactory(scope, cftype, name, jndiName, otherAttrsList=[], failonerror=AdminUtilities._BLANK_ ):
+def createWMConnectionFactory(scope, cftype, name, jndiName, otherAttrsList=[], failonerror=AdminUtilities._BLANK_ ):
   if (failonerror==AdminUtilities._BLANK_):
       failonerror=AdminUtilities._FAIL_ON_ERROR_
   #endIf
-  msgPrefix = "createWMQConnectionFactory(" + `scope` + ", " + `cftype`+ ", " + `name`+ ", " + `jndiName` + ", " + `otherAttrsList` + `failonerror`+"): "
+  msgPrefix = "createWMConnectionFactory(" + `scope` + ", " + `cftype`+ ", " + `name`+ ", " + `jndiName` + ", " + `otherAttrsList` + `failonerror`+"): "
 
   try:
       #--------------------------------------------------------------------
       # Create a WMQ Connection Factory
       #--------------------------------------------------------------------
       print "---------------------------------------------------------------"
-      print " AdminJMS:               createWMQConnectionFactory "
+      print " AdminJMS:               createWMConnectionFactory "
       print " Scope:                      "
       print "     scope:                  "+scope
       print " Type:                       "
@@ -185,10 +185,10 @@ def createWMQConnectionFactory(scope, cftype, name, jndiName, otherAttrsList=[],
       print "     xaRecoveryAuthAlias     "
       print " "
       if (otherAttrsList == []):
-        print " Usage: AdminJMS.createWMQConnectionFactory(\\"" + scope + "\\", \\"" + cftype + "\\", \\"" + name + "\\" , \\"" + jndiName + "\\")"
+        print " Usage: AdminJMS.createWMConnectionFactory(\\"" + scope + "\\", \\"" + cftype + "\\", \\"" + name + "\\" , \\"" + jndiName + "\\")"
       else:
         if (str(otherAttrsList).startswith("[[") > 0 and str(otherAttrsList).startswith("[[[",0,3) == 0):
-            print " Usage: AdminJMS.createWMQConnectionFactory(\\"" + scope + "\\", \\"" + cftype + "\\", \\"" + name + "\\" , \\"" + jndiName + "\\", %s)" % (otherAttrsList)
+            print " Usage: AdminJMS.createWMConnectionFactory(\\"" + scope + "\\", \\"" + cftype + "\\", \\"" + name + "\\" , \\"" + jndiName + "\\", %s)" % (otherAttrsList)
         else:
             # d714926 check if script syntax error
             if (str(otherAttrsList).startswith("[",0,1) > 0 or str(otherAttrsList).startswith("[[[",0,3) > 0):
@@ -196,7 +196,7 @@ def createWMQConnectionFactory(scope, cftype, name, jndiName, otherAttrsList=[],
             else:
                 if (otherAttrsList.find("\\"") > 0):
                   otherAttrsList = otherAttrsList.replace("\\"", "\\'")
-                print " Usage: AdminJMS.createWMQConnectionFactory(\\"" + scope + "\\", \\"" + cftype + "\\", \\"" + name + "\\" , \\"" + jndiName + "\\", \\"" + str(otherAttrsList) + "\\")"
+                print " Usage: AdminJMS.createWMConnectionFactory(\\"" + scope + "\\", \\"" + cftype + "\\", \\"" + name + "\\" , \\"" + jndiName + "\\", \\"" + str(otherAttrsList) + "\\")"
       print " Return: The Configuration Id of the new WMQ Connection Factory"
       print "---------------------------------------------------------------"
       print " "
@@ -236,7 +236,7 @@ def createWMQConnectionFactory(scope, cftype, name, jndiName, otherAttrsList=[],
       AdminUtilities.debugNotice("About to call AdminTask command with target : " + str(configIdScope))
       AdminUtilities.debugNotice("About to call AdminTask command with parameters : " + str(finalParameters))
 
-      newObjectId = AdminTask.createWMQConnectionFactory(configIdScope, finalParameters)
+      newObjectId = AdminTask.createWMConnectionFactory(configIdScope, finalParameters)
       newObjectId = str(newObjectId)
 
       AdminConfig.save()
@@ -259,7 +259,7 @@ def createWMQConnectionFactory(scope, cftype, name, jndiName, otherAttrsList=[],
 #endDef
 
 # And now - create the connection factory
-createWMQConnectionFactory(scope, cftype, name, jndiName, attrs)
+createWMConnectionFactory(scope, cftype, name, jndiName, attrs)
 
 END
 
