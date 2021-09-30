@@ -33,7 +33,25 @@ Puppet::Type.type(:websphere_cf).provide(:wsadmin, parent: Puppet::Provider::Web
     @old_sess_pool_data = {}
     @old_mapping_data = {}
 
-    @xlate_cmd_table = {}
+    # This hash acts as a translation table between what shows up in the XML file
+    # and what the Jython parameters really are. Its format is:
+    # 'XML key' => 'Jython param'
+    #
+    # This translation table allows us to match what we find in the XML files
+    # and what we have configured via Jython and see if anything changed.
+    # For many of the Jython params, they have identical correspondents in the
+    # XML file, but some notable ones are not quite the same.
+    @xlate_cmd_table = {
+      'connameList' => 'connectionNameList',
+      'host' => 'qmgrHostName',
+      'port' => 'qmgrPortNumber',
+      'queueManager' => 'qmgrName',
+      'channel' => 'qmgrSvrconnChannel',
+      'transportType' => 'wmqTransportType',
+      'tempModel' => 'modelQueue',
+      'CCSID' => 'ccsid',
+      'clientID' => 'clientId',
+    }    
   end
 
   def scope(what)
@@ -75,22 +93,12 @@ Puppet::Type.type(:websphere_cf).provide(:wsadmin, parent: Puppet::Provider::Web
   def create
     # At the very least - we pass the description of the Conection Factory.
     cf_attrs = [["description", "#{resource[:description]}"]]
-
-    # Add to the set of CF attributes the QMGR data we may have. Convert the symbols into pure strings
-    # so that doesn't have a heart attack. Inside the Jython fragment, we further convert this array
-    # to a string, and replace all the double quotes with single quotes.
-    # This string will then appear as a preformatted array to Jython
-    var_a = resource[:qmgr_data].to_a
-    var_b = resource[:qmgr_data].map{|k,v| [k.to_s, v]}
-    var_c = resource[:qmgr_data].to_s
-
-    debug "debug: #{var_a} #{var_b} #{var_c}"
-
     cf_attrs += (resource[:qmgr_data].map{|k,v| [k.to_s, v]}).to_a unless resource[:qmgr_data].nil?
-
-    debug "CF_ATTRS: #{cf_attrs}"
     cf_attrs_str = cf_attrs.to_s.tr("\"", "'")
 
+    spool_attrs = []
+    spool_attrs = (resource[:sess_pool_data].map{|k,v| [k.to_s, v]}).to_a unless resource[:sess_pool_data].nil?
+    spool_attrs_str = spool attrs.to_s.tr("\"", "'")
     cmd = <<-END.unindent
 import AdminUtilities
 
@@ -100,6 +108,7 @@ cftype = "#{resource[:cf_type]}"
 name = "#{resource[:cf_name]}"
 jndiName = "#{resource[:jndi_name]}"
 attrs = #{cf_attrs_str}
+spool_attrs = #{spool_attrs_str}
 
 # Historical trial/error args
 #attrs = [['description', 'Puppet PUPQCF Queue Connection Factory'], ['XAEnabled', 'true'], ['queueManager', 'PUPP.SUPP.QMGR'], ['host', 'host1.fqdn.com'], ['port', '2000'], ['channel', 'PUP'], ['transportType', 'CLIENT'], ['tempModel', 'SYSTEM.DEFAULT.MODEL.QUEUE'], ['clientID', 'mqm'], ['CCSID', '819'], ['failIfQuiesce', 'true'], ['pollingInterval', '5000'], ['rescanInterval', '5000'], ['sslResetCount', '0'], ['sslType', 'SPECIFIC'], ['sslConfiguration', 'WAS2MQ'], ['connameList', 'host1.fqdn.com(2000),host2.fqdn.com(2000)'], ['clientReconnectOptions', 'DISABLED'], ['clientReconnectTimeout', '1800']]
