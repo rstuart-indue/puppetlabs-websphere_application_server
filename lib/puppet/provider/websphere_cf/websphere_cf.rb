@@ -134,7 +134,7 @@ resourceBundle = AdminUtilities.getResourceBundle(bundleName)
 
 def normalizeArgList(argList, argName):
   if (argList == []):
-    print " No " + `argName` + " parameters specified. Continuing with defaults."
+    AdminUtilities.debugNotice ("No " + `argName` + " parameters specified. Continuing with defaults.")
   else:
     if (str(argList).startswith("[[") > 0 and str(argList).startswith("[[[",0,3) == 0):
       if (str(argList).find("\\"") > 0):
@@ -154,23 +154,23 @@ def createWMConnectionFactory(scope, cftype, name, jndiName, otherAttrsList=[], 
       #--------------------------------------------------------------------
       # Create a WMQ Connection Factory
       #--------------------------------------------------------------------
-      print "---------------------------------------------------------------"
-      print " AdminJMS:               createWMQConnectionFactory "
-      print " Scope:                      "
-      print "     scope:                  "+scope
-      print " Type:                       "
-      print "     type:                   "+cftype
-      print " MQConnectionFactory:        "
-      print "     name:                   "+name
-      print "     jndiName:               "+jndiName
-      print " Optional Parameters :                   "
-      print "   otherAttributesList:          %s" % otherAttrsList
-      print "   sessionPoolAttributesList:    %s" % spoolList
-      print "   connectionPoolAttributesList: %s" % cpoolList
-      print "   mappingAttributesList:        %s" % mappingList
-      print " Return: The Configuration Id of the new WM Connection Factory"
-      print "---------------------------------------------------------------"
-      print " "
+      AdminUtilities.debugNotice ("---------------------------------------------------------------")
+      AdminUtilities.debugNotice (" AdminJMS: createWMQConnectionFactory ")
+      AdminUtilities.debugNotice (" Scope:")
+      AdminUtilities.debugNotice ("     scope:                      "+scope)
+      AdminUtilities.debugNotice (" Type:")
+      AdminUtilities.debugNotice ("     type:                       "+cftype)
+      AdminUtilities.debugNotice (" MQConnectionFactory:")
+      AdminUtilities.debugNotice ("     name:                       "+name)
+      AdminUtilities.debugNotice ("     jndiName:                   "+jndiName)
+      AdminUtilities.debugNotice (" Optional Parameters :")
+      AdminUtilities.debugNotice ("   otherAttributesList:          " +str(otherAttrsList))
+      AdminUtilities.debugNotice ("   sessionPoolAttributesList:    " +str(spoolList))
+      AdminUtilities.debugNotice ("   connectionPoolAttributesList: " +str(cpoolList))
+      AdminUtilities.debugNotice ("   mappingAttributesList:        " +str(mappingList))
+      AdminUtilities.debugNotice (" Return: The Configuration Id of the new WM Connection Factory")
+      AdminUtilities.debugNotice ("---------------------------------------------------------------")
+      AdminUtilities.debugNotice (" ")
 
       # This normalization is slightly superfluous, but, what the hey?
       otherAttrsList = normalizeArgList(otherAttrsList, "otherAttrsList")
@@ -232,6 +232,7 @@ def createWMConnectionFactory(scope, cftype, name, jndiName, otherAttrsList=[], 
 
       newObjectId = str(newObjectId)
 
+      # Save this Connection Factory
       AdminConfig.save()
 
       # Return the config ID of the newly created object
