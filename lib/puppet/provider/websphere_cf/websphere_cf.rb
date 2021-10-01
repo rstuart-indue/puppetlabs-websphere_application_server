@@ -91,6 +91,10 @@ Puppet::Type.type(:websphere_cf).provide(:wsadmin, parent: Puppet::Provider::Web
 
   # Create a Connection Factory
   def create
+
+    # Set the scope for this JMS Resource.
+    jms_scope = scope('query') 
+
     # At the very least - we pass the description of the Conection Factory.
     cf_attrs = [["description", "#{resource[:description]}"]]
     cf_attrs += (resource[:qmgr_data].map{|k,v| [k.to_s, v]}).to_a unless resource[:qmgr_data].nil?
@@ -112,7 +116,7 @@ Puppet::Type.type(:websphere_cf).provide(:wsadmin, parent: Puppet::Provider::Web
 import AdminUtilities
 
 # Parameters we need for our Connection Factory
-scope = '/ServerCluster:#{resource[:cluster]}/'
+scope = '#{jms_scope}'
 cftype = "#{resource[:cf_type]}"
 name = "#{resource[:cf_name]}"
 jndiName = "#{resource[:jndi_name]}"
@@ -125,8 +129,8 @@ mapdata_attrs = #{mapdata_attrs_str}
 #attrs = [['description', 'Puppet PUPQCF Queue Connection Factory'], ['XAEnabled', 'true'], ['queueManager', 'PUPP.SUPP.QMGR'], ['host', 'host1.fqdn.com'], ['port', '2000'], ['channel', 'PUP'], ['transportType', 'CLIENT'], ['tempModel', 'SYSTEM.DEFAULT.MODEL.QUEUE'], ['clientID', 'mqm'], ['CCSID', '819'], ['failIfQuiesce', 'true'], ['pollingInterval', '5000'], ['rescanInterval', '5000'], ['sslResetCount', '0'], ['sslType', 'SPECIFIC'], ['sslConfiguration', 'WAS2MQ'], ['connameList', 'host1.fqdn.com(2000),host2.fqdn.com(2000)'], ['clientReconnectOptions', 'DISABLED'], ['clientReconnectTimeout', '1800']]
 
 
-# Enable debug notices
-AdminUtilities.setDebugNotices(1)
+# Enable debug notices ('true'/'false')
+AdminUtilities.setDebugNotices('true')
 
 # Global variable within this script
 bundleName = "com.ibm.ws.scripting.resources.scriptLibraryMessage"
