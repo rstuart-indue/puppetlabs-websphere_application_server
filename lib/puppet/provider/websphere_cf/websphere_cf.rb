@@ -93,11 +93,7 @@ Puppet::Type.type(:websphere_cf).provide(:wsadmin, parent: Puppet::Provider::Web
   def create
 
     # Dynamic debugging
-    if options[:debug] or options[:verbose] or options[:trace]
-      jytjon_debug_state = 'true'
-    else
-      jython_debug_state = 'false'
-    end
+    jython_debug_state = Puppet::Util::Log.level == :debug
 
     # Set the scope for this JMS Resource.
     jms_scope = scope('query') 
