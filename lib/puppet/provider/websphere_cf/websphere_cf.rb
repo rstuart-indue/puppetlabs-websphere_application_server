@@ -92,6 +92,13 @@ Puppet::Type.type(:websphere_cf).provide(:wsadmin, parent: Puppet::Provider::Web
   # Create a Connection Factory
   def create
 
+    # Dynamic debugging
+    if options[:debug] or options[:verbose] or options[:trace]
+      jytjon_debug_state = 'true'
+    else
+      jython_debug_state = 'false'
+    end
+
     # Set the scope for this JMS Resource.
     jms_scope = scope('query') 
 
@@ -130,7 +137,7 @@ mapdata_attrs = #{mapdata_attrs_str}
 
 
 # Enable debug notices ('true'/'false')
-AdminUtilities.setDebugNotices('true')
+AdminUtilities.setDebugNotices('#{jython_debug_state}')
 
 # Global variable within this script
 bundleName = "com.ibm.ws.scripting.resources.scriptLibraryMessage"
