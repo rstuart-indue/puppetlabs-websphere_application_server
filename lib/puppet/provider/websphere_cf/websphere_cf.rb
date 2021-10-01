@@ -98,7 +98,16 @@ Puppet::Type.type(:websphere_cf).provide(:wsadmin, parent: Puppet::Provider::Web
 
     spool_attrs = []
     spool_attrs = (resource[:sess_pool_data].map{|k,v| [k.to_s, v]}).to_a unless resource[:sess_pool_data].nil?
-    spool_attrs_str = spool attrs.to_s.tr("\"", "'")
+    spool_attrs_str = spool_attrs.to_s.tr("\"", "'")
+
+    cpool_attrs = []
+    cpool_attrs = (resource[:conn_pool_data].map{|k,v| [k.to_s, v]}).to_a unless resource[:conn_pool_data].nil?
+    cpool_attrs_str = cpool_attrs.to_s.tr("\"", "'")
+
+    mapdata_attrs = []
+    mapdata_attrs = (resource[:mapping_data].map{|k,v| [k.to_s, v]}).to_a unless resource[:mapping_data].nil?
+    mapdata_attrs_str = mapdata_attrs.to_s.tr("\"", "'")
+
     cmd = <<-END.unindent
 import AdminUtilities
 
@@ -109,6 +118,8 @@ name = "#{resource[:cf_name]}"
 jndiName = "#{resource[:jndi_name]}"
 attrs = #{cf_attrs_str}
 spool_attrs = #{spool_attrs_str}
+cpool_attrs = #{cpool_attrs_str}
+mapdata_attrs = #{mapdata_attrs_str}
 
 # Historical trial/error args
 #attrs = [['description', 'Puppet PUPQCF Queue Connection Factory'], ['XAEnabled', 'true'], ['queueManager', 'PUPP.SUPP.QMGR'], ['host', 'host1.fqdn.com'], ['port', '2000'], ['channel', 'PUP'], ['transportType', 'CLIENT'], ['tempModel', 'SYSTEM.DEFAULT.MODEL.QUEUE'], ['clientID', 'mqm'], ['CCSID', '819'], ['failIfQuiesce', 'true'], ['pollingInterval', '5000'], ['rescanInterval', '5000'], ['sslResetCount', '0'], ['sslType', 'SPECIFIC'], ['sslConfiguration', 'WAS2MQ'], ['connameList', 'host1.fqdn.com(2000),host2.fqdn.com(2000)'], ['clientReconnectOptions', 'DISABLED'], ['clientReconnectTimeout', '1800']]
@@ -121,18 +132,30 @@ AdminUtilities.setDebugNotices(1)
 bundleName = "com.ibm.ws.scripting.resources.scriptLibraryMessage"
 resourceBundle = AdminUtilities.getResourceBundle(bundleName)
 
-def createWMConnectionFactory(scope, cftype, name, jndiName, otherAttrsList=[], failonerror=AdminUtilities._BLANK_ ):
+def normalizeArgList(argList, argName):
+  if (argList == []):
+    print " No " + `argName` + " parameters specified. Continuing with defaults."
+  else:
+    if (str(argList).startswith("[[") > 0 and str(argList).startswith("[[[",0,3) == 0):
+      if (str(argList).find("\\"") > 0):
+        argList = str(argList).replace("\\"", "\\'")
+    else:
+        raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6049E", [argList]))
+  return argList
+#endDef
+
+def createWMConnectionFactory(scope, cftype, name, jndiName, otherAttrsList=[], spoolList=[], cpoolList=[], mappingList=[], failonerror=AdminUtilities._BLANK_ ):
   if (failonerror==AdminUtilities._BLANK_):
       failonerror=AdminUtilities._FAIL_ON_ERROR_
   #endIf
-  msgPrefix = "createWMConnectionFactory(" + `scope` + ", " + `cftype`+ ", " + `name`+ ", " + `jndiName` + ", " + `otherAttrsList` + `failonerror`+"): "
+  msgPrefix = "createWMConnectionFactory(" + `scope` + ", " + `cftype`+ ", " + `name`+ ", " + `jndiName` + ", " + `otherAttrsList` + ", " + `spoolList` + ", " + `cpoolList` + ", " + `mappingList` + ", " + `failonerror`+"): "
 
   try:
       #--------------------------------------------------------------------
       # Create a WMQ Connection Factory
       #--------------------------------------------------------------------
       print "---------------------------------------------------------------"
-      print " AdminJMS:               createWMConnectionFactory "
+      print " AdminJMS:               createWMQConnectionFactory "
       print " Scope:                      "
       print "     scope:                  "+scope
       print " Type:                       "
@@ -141,79 +164,20 @@ def createWMConnectionFactory(scope, cftype, name, jndiName, otherAttrsList=[], 
       print "     name:                   "+name
       print "     jndiName:               "+jndiName
       print " Optional Parameters :                   "
-      print "   otherAttributesList:        %s" % otherAttrsList
-      print "     maxBatchSize            "
-      print "     brokerCCSubQueue        "
-      print "     brokerCtrlQueue         "
-      print "     brokerQmgr              "
-      print "     brokerSubQueue          "
-      print "     brokerVersion           "
-      print "     brokerPubQueue          "
-      print "     ccdtQmgrName            "
-      print "     ccdtUrl                 "
-      print "     ccsid                   "
-      print "     cleanupInterval         "
-      print "     cleanupLevel            "
-      print "     clientId                "
-      print "     clonedSubs              "
-      print "     compressHeaders         "
-      print "     compressPayload         "
-      print "     containerAuthAlias      "
-      print "     description             "
-      print "     failIfQuiescing         "
-      print "     localAddress            "
-      print "     mappingAlias            "
-      print "     modelQueue              "
-      print "     msgRetention            "
-      print "     msgSelection            "
-      print "     pollingInterval         "
-      print "     providerVersion         "
-      print "     pubAckInterval          "
-      print "     qmgrHostname            "
-      print "     qmgrName                "
-      print "     qmgrPortNumber          "
-      print "     qmgrSvrconnChannel      "
-      print "     rcvExitInitData         "
-      print "     rcvExit                 "
-      print "     replyWithRFH2           "
-      print "     rescanInterval          "
-      print "     secExitInitData         "
-      print "     secExit                 "
-      print "     sendExitInitData        "
-      print "     sendExit                "
-      print "     sparseSubs              "
-      print "     sslConfiguration        "
-      print "     sslCrl                  "
-      print "     sslPeerName             "
-      print "     sslResetCount           "
-      print "     sslType                 "
-      print "     stateRefreshInt         "
-      print "     subStore                "
-      print "     support2PCProtocol      "
-      print "     tempQueuePrefix         "
-      print "     tempTopicPrefix         "
-      print "     wildcardFormat          "
-      print "     wmqTransportType        "
-      print "     xaRecoveryAuthAlias     "
-      print " "
-      if (otherAttrsList == []):
-        print " Usage: AdminJMS.createWMConnectionFactory(\\"" + scope + "\\", \\"" + cftype + "\\", \\"" + name + "\\" , \\"" + jndiName + "\\")"
-      else:
-        if (str(otherAttrsList).startswith("[[") > 0 and str(otherAttrsList).startswith("[[[",0,3) == 0):
-            print " Usage: AdminJMS.createWMConnectionFactory(\\"" + scope + "\\", \\"" + cftype + "\\", \\"" + name + "\\" , \\"" + jndiName + "\\", %s)" % (otherAttrsList)
-        else:
-            # d714926 check if script syntax error
-            if (str(otherAttrsList).startswith("[",0,1) > 0 or str(otherAttrsList).startswith("[[[",0,3) > 0):
-                raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6049E", [otherAttrsList]))
-            else:
-                if (otherAttrsList.find("\\"") > 0):
-                  otherAttrsList = otherAttrsList.replace("\\"", "\\'")
-                print " Usage: AdminJMS.createWMConnectionFactory(\\"" + scope + "\\", \\"" + cftype + "\\", \\"" + name + "\\" , \\"" + jndiName + "\\", \\"" + str(otherAttrsList) + "\\")"
-      print " Return: The Configuration Id of the new WMQ Connection Factory"
+      print "   otherAttributesList:          %s" % otherAttrsList
+      print "   sessionPoolAttributesList:    %s" % spoolList
+      print "   connectionPoolAttributesList: %s" % cpoolList
+      print "   mappingAttributesList:        %s" % mappingList
+      print " Return: The Configuration Id of the new WM Connection Factory"
       print "---------------------------------------------------------------"
       print " "
-      print " "
 
+      # This normalization is slightly superfluous, but, what the hey?
+      otherAttrsList = normalizeArgList(otherAttrsList, "otherAttrsList")
+      spoolList = normalizeArgList(spoolList, "spoolList")
+      cpoolList = normalizeArgList(cpoolList, "cpoolList")
+      mappingList = normalizeArgList(mappingList, "mappingList")
+      
       # Make sure required parameters are non-empty
       if (len(scope) == 0):
         raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["scope", scope]))
@@ -248,7 +212,21 @@ def createWMConnectionFactory(scope, cftype, name, jndiName, otherAttrsList=[], 
       AdminUtilities.debugNotice("About to call AdminTask command with target : " + str(configIdScope))
       AdminUtilities.debugNotice("About to call AdminTask command with parameters : " + str(finalParameters))
 
-      newObjectId = AdminTask.createWMConnectionFactory(configIdScope, finalParameters)
+      # Create the Connection Factory
+      newObjectId = AdminTask.createWMQConnectionFactory(configIdScope, finalParameters)
+
+      # Set the Session Pool Params
+      sessionPool = AdminConfig.showAttribute(newObjectId, 'sessionPool')
+      AdminConfig.modify(sessionPool, str(spoolList))
+
+      # Set the Connection Pool Params
+      connPool = AdminConfig.showAttribute(newObjectId, 'connectionPool')
+      AdminConfig.modify(connPool, str(cpoolList))
+
+      # Set the Mappings Params/Attributes
+      mappingAttrs = AdminConfig.showAttribute(newObjectId, 'mapping')
+      AdminConfig.modify(mappingAttrs, str(mappingList))
+
       newObjectId = str(newObjectId)
 
       AdminConfig.save()
@@ -271,7 +249,7 @@ def createWMConnectionFactory(scope, cftype, name, jndiName, otherAttrsList=[], 
 #endDef
 
 # And now - create the connection factory
-createWMConnectionFactory(scope, cftype, name, jndiName, attrs)
+createWMConnectionFactory(scope, cftype, name, jndiName, attrs, spool_attrs, cpool_attrs, mapdata_attrs)
 
 END
 
