@@ -216,16 +216,19 @@ def createWMConnectionFactory(scope, cftype, name, jndiName, otherAttrsList=[], 
       newObjectId = AdminTask.createWMQConnectionFactory(configIdScope, finalParameters)
 
       # Set the Session Pool Params - the modify() takes a mangled array of arrays with no commas
-      sessionPool = AdminConfig.showAttribute(newObjectId, 'sessionPool')
-      AdminConfig.modify(sessionPool, str(spoolList).replace(',', ''))
+      if spoolList:
+        sessionPool = AdminConfig.showAttribute(newObjectId, 'sessionPool')
+        AdminConfig.modify(sessionPool, str(spoolList).replace(',', ''))
 
       # Set the Connection Pool Params - the modify() takes a mangled array of arrays with no commas
-      connPool = AdminConfig.showAttribute(newObjectId, 'connectionPool')
-      AdminConfig.modify(connPool, str(cpoolList).replace(',', ''))
+      if cpoolList:
+        connPool = AdminConfig.showAttribute(newObjectId, 'connectionPool')
+        AdminConfig.modify(connPool, str(cpoolList).replace(',', ''))
 
       # Set the Mappings Params/Attributes - the modify() takes a mangled array of arrays with no commas
-      mappingAttrs = AdminConfig.showAttribute(newObjectId, 'mapping')
-      AdminConfig.modify(mappingAttrs, str(mappingList).replace(',', ''))
+      if mappingList:
+        mappingAttrs = AdminConfig.showAttribute(newObjectId, 'mapping')
+        AdminConfig.modify(mappingAttrs, str(mappingList).replace(',', ''))
 
       newObjectId = str(newObjectId)
 
