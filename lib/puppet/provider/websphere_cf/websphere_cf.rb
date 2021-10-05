@@ -158,103 +158,103 @@ def createWMConnectionFactory(scope, cftype, name, jndiName, otherAttrsList=[], 
   msgPrefix = "createWMConnectionFactory(" + `scope` + ", " + `cftype`+ ", " + `name`+ ", " + `jndiName` + ", " + `otherAttrsList` + ", " + `spoolList` + ", " + `cpoolList` + ", " + `mappingList` + ", " + `failonerror`+"): "
 
   try:
-      #--------------------------------------------------------------------
-      # Create a WMQ Connection Factory
-      #--------------------------------------------------------------------
-      AdminUtilities.debugNotice ("---------------------------------------------------------------")
-      AdminUtilities.debugNotice (" AdminJMS: createWMQConnectionFactory ")
-      AdminUtilities.debugNotice (" Scope:")
-      AdminUtilities.debugNotice ("     scope:                      "+scope)
-      AdminUtilities.debugNotice (" Type:")
-      AdminUtilities.debugNotice ("     type:                       "+cftype)
-      AdminUtilities.debugNotice (" MQConnectionFactory:")
-      AdminUtilities.debugNotice ("     name:                       "+name)
-      AdminUtilities.debugNotice ("     jndiName:                   "+jndiName)
-      AdminUtilities.debugNotice (" Optional Parameters :")
-      AdminUtilities.debugNotice ("   otherAttributesList:          " +str(otherAttrsList))
-      AdminUtilities.debugNotice ("   sessionPoolAttributesList:    " +str(spoolList))
-      AdminUtilities.debugNotice ("   connectionPoolAttributesList: " +str(cpoolList))
-      AdminUtilities.debugNotice ("   mappingAttributesList:        " +str(mappingList))
-      AdminUtilities.debugNotice (" Return: The Configuration Id of the new WM Connection Factory")
-      AdminUtilities.debugNotice ("---------------------------------------------------------------")
-      AdminUtilities.debugNotice (" ")
+    #--------------------------------------------------------------------
+    # Create a WMQ Connection Factory
+    #--------------------------------------------------------------------
+    AdminUtilities.debugNotice ("---------------------------------------------------------------")
+    AdminUtilities.debugNotice (" AdminJMS: createWMQConnectionFactory ")
+    AdminUtilities.debugNotice (" Scope:")
+    AdminUtilities.debugNotice ("     scope:                      "+scope)
+    AdminUtilities.debugNotice (" Type:")
+    AdminUtilities.debugNotice ("     type:                       "+cftype)
+    AdminUtilities.debugNotice (" MQConnectionFactory:")
+    AdminUtilities.debugNotice ("     name:                       "+name)
+    AdminUtilities.debugNotice ("     jndiName:                   "+jndiName)
+    AdminUtilities.debugNotice (" Optional Parameters :")
+    AdminUtilities.debugNotice ("   otherAttributesList:          " +str(otherAttrsList))
+    AdminUtilities.debugNotice ("   sessionPoolAttributesList:    " +str(spoolList))
+    AdminUtilities.debugNotice ("   connectionPoolAttributesList: " +str(cpoolList))
+    AdminUtilities.debugNotice ("   mappingAttributesList:        " +str(mappingList))
+    AdminUtilities.debugNotice (" Return: The Configuration Id of the new WM Connection Factory")
+    AdminUtilities.debugNotice ("---------------------------------------------------------------")
+    AdminUtilities.debugNotice (" ")
 
-      # This normalization is slightly superfluous, but, what the hey?
-      otherAttrsList = normalizeArgList(otherAttrsList, "otherAttrsList")
-      spoolList = normalizeArgList(spoolList, "spoolList")
-      cpoolList = normalizeArgList(cpoolList, "cpoolList")
-      mappingList = normalizeArgList(mappingList, "mappingList")
-      
-      # Make sure required parameters are non-empty
-      if (len(scope) == 0):
-        raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["scope", scope]))
-      if (len(cftype) == 0):
-        raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["type", cftype]))
-      if (len(name) == 0):
-        raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["name", name]))
-      if (len(jndiName) == 0):
-        raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["jndiName", jndiName]))
+    # This normalization is slightly superfluous, but, what the hey?
+    otherAttrsList = normalizeArgList(otherAttrsList, "otherAttrsList")
+    spoolList = normalizeArgList(spoolList, "spoolList")
+    cpoolList = normalizeArgList(cpoolList, "cpoolList")
+    mappingList = normalizeArgList(mappingList, "mappingList")
+    
+    # Make sure required parameters are non-empty
+    if (len(scope) == 0):
+      raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["scope", scope]))
+    if (len(cftype) == 0):
+      raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["type", cftype]))
+    if (len(name) == 0):
+      raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["name", name]))
+    if (len(jndiName) == 0):
+      raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["jndiName", jndiName]))
 
-      # Validate the scope
-      # We will end up with a containment path for the scope - convert that to the config id which is needed.
-      if (scope.find(".xml") > 0 and AdminConfig.getObjectType(scope) == None):
-        raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6040E", ["scope", scope]))
-      scopeContainmentPath = AdminUtilities.getScopeContainmentPath(scope)
-      configIdScope = AdminConfig.getid(scopeContainmentPath)
+    # Validate the scope
+    # We will end up with a containment path for the scope - convert that to the config id which is needed.
+    if (scope.find(".xml") > 0 and AdminConfig.getObjectType(scope) == None):
+      raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6040E", ["scope", scope]))
+    scopeContainmentPath = AdminUtilities.getScopeContainmentPath(scope)
+    configIdScope = AdminConfig.getid(scopeContainmentPath)
 
-      # If at this point, we don't have a proper config id, then the scope specified was incorrect
-      if (len(configIdScope) == 0):
-        raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6040E", ["scope", scope]))
+    # If at this point, we don't have a proper config id, then the scope specified was incorrect
+    if (len(configIdScope) == 0):
+      raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6040E", ["scope", scope]))
 
-      # Prepare the parameters for the AdminTask command - set the implied type of CF in this case
-      otherAttrsList = AdminUtilities.convertParamStringToList(otherAttrsList)
-      requiredParameters = [["name", name], ["jndiName", jndiName], ["type", cftype]]
-      finalAttrsList = requiredParameters + otherAttrsList
-      finalParameters = []
-      for attrs in finalAttrsList:
-        attr = ["-"+attrs[0], attrs[1]]
-        finalParameters = finalParameters+attr
+    # Prepare the parameters for the AdminTask command - set the implied type of CF in this case
+    otherAttrsList = AdminUtilities.convertParamStringToList(otherAttrsList)
+    requiredParameters = [["name", name], ["jndiName", jndiName], ["type", cftype]]
+    finalAttrsList = requiredParameters + otherAttrsList
+    finalParameters = []
+    for attrs in finalAttrsList:
+      attr = ["-"+attrs[0], attrs[1]]
+      finalParameters = finalParameters+attr
 
-      # Call the corresponding AdminTask command
-      AdminUtilities.debugNotice("About to call AdminTask command with target : " + str(configIdScope))
-      AdminUtilities.debugNotice("About to call AdminTask command with parameters : " + str(finalParameters))
+    # Call the corresponding AdminTask command
+    AdminUtilities.debugNotice("About to call AdminTask command with target : " + str(configIdScope))
+    AdminUtilities.debugNotice("About to call AdminTask command with parameters : " + str(finalParameters))
 
-      # Create the Connection Factory
-      newObjectId = AdminTask.createWMQConnectionFactory(configIdScope, finalParameters)
+    # Create the Connection Factory
+    newObjectId = AdminTask.createWMQConnectionFactory(configIdScope, finalParameters)
 
-      # Set the Session Pool Params - the modify() takes a mangled array of arrays with no commas
-      if spoolList:
-        sessionPool = AdminConfig.showAttribute(newObjectId, 'sessionPool')
-        AdminConfig.modify(sessionPool, str(spoolList).replace(',', ''))
+    # Set the Session Pool Params - the modify() takes a mangled array of arrays with no commas
+    if spoolList:
+      sessionPool = AdminConfig.showAttribute(newObjectId, 'sessionPool')
+      AdminConfig.modify(sessionPool, str(spoolList).replace(',', ''))
 
-      # Set the Connection Pool Params - the modify() takes a mangled array of arrays with no commas
-      if cpoolList:
-        connPool = AdminConfig.showAttribute(newObjectId, 'connectionPool')
-        AdminConfig.modify(connPool, str(cpoolList).replace(',', ''))
+    # Set the Connection Pool Params - the modify() takes a mangled array of arrays with no commas
+    if cpoolList:
+      connPool = AdminConfig.showAttribute(newObjectId, 'connectionPool')
+      AdminConfig.modify(connPool, str(cpoolList).replace(',', ''))
 
-      # Set the Mappings Params/Attributes - the modify() takes a mangled array of arrays with no commas
-      if mappingList:
-        mappingAttrs = AdminConfig.showAttribute(newObjectId, 'mapping')
-        AdminConfig.modify(mappingAttrs, str(mappingList).replace(',', ''))
+    # Set the Mappings Params/Attributes - the modify() takes a mangled array of arrays with no commas
+    if mappingList:
+      mappingAttrs = AdminConfig.showAttribute(newObjectId, 'mapping')
+      AdminConfig.modify(mappingAttrs, str(mappingList).replace(',', ''))
 
-      newObjectId = str(newObjectId)
+    newObjectId = str(newObjectId)
 
-      # Save this Connection Factory
-      AdminConfig.save()
+    # Save this Connection Factory
+    AdminConfig.save()
 
-      # Return the config ID of the newly created object
-      AdminUtilities.debugNotice("Returning config id of new object : " + str(newObjectId))
-      return newObjectId
+    # Return the config ID of the newly created object
+    AdminUtilities.debugNotice("Returning config id of new object : " + str(newObjectId))
+    return newObjectId
 
   except:
     typ, val, tb = sys.exc_info()
     if (typ==SystemExit):  raise SystemExit,`val`
     if (failonerror != AdminUtilities._TRUE_):
-        print "Exception: %s %s " % (sys.exc_type, sys.exc_value)
-        val = "%s %s" % (sys.exc_type, sys.exc_value)
-        raise Exception("ScriptLibraryException: " + val)
+      print "Exception: %s %s " % (sys.exc_type, sys.exc_value)
+      val = "%s %s" % (sys.exc_type, sys.exc_value)
+      raise Exception("ScriptLibraryException: " + val)
     else:
-        return AdminUtilities.fail(msgPrefix+AdminUtilities.getExceptionText(typ, val, tb), failonerror)
+      return AdminUtilities.fail(msgPrefix+AdminUtilities.getExceptionText(typ, val, tb), failonerror)
     #endIf
   #endTry
 #endDef
@@ -414,10 +414,102 @@ END
 
   # Remove a given Connection Factory - we try to find it first
   def destroy
-    cmd = <<-END.unindent
+    # Dynamic debugging
+    jython_debug_state = Puppet::Util::Log.level == :debug
 
-    AdminConfig.save()
-    END
+    # Set the scope for this JMS Resource.
+    jms_scope = scope('query')
+    
+    cmd = <<-END.unindent
+import AdminUtilities
+import re
+
+# Parameters we need for our Connection Factory removal
+scope = '#{jms_scope}'
+name = "#{resource[:cf_name]}"
+
+# Enable debug notices ('true'/'false')
+AdminUtilities.setDebugNotices('#{jython_debug_state}')
+
+# Global variable within this script
+bundleName = "com.ibm.ws.scripting.resources.scriptLibraryMessage"
+resourceBundle = AdminUtilities.getResourceBundle(bundleName)
+
+def deleteWMConnectionFactory(scope, name, failonerror=AdminUtilities._BLANK_ ):
+  if (failonerror==AdminUtilities._BLANK_):
+      failonerror=AdminUtilities._FAIL_ON_ERROR_
+  #endIf
+  msgPrefix = "deleteWMConnectionFactory(" + `scope` + ", " + `name`+ ", " + `failonerror`+"): "
+
+  try:
+    #--------------------------------------------------------------------
+    # Delete a WMQ Connection Factory
+    #--------------------------------------------------------------------
+    AdminUtilities.debugNotice ("---------------------------------------------------------------")
+    AdminUtilities.debugNotice (" AdminJMS: deleteWMQConnectionFactory ")
+    AdminUtilities.debugNotice (" Scope:")
+    AdminUtilities.debugNotice ("     scope:                      "+scope)
+    AdminUtilities.debugNotice (" MQConnectionFactory:")
+    AdminUtilities.debugNotice ("     name:                       "+name)
+    AdminUtilities.debugNotice (" Return: NIL")
+    AdminUtilities.debugNotice ("---------------------------------------------------------------")
+    AdminUtilities.debugNotice (" ")
+
+    # Make sure required parameters are non-empty
+    if (len(scope) == 0):
+      raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["scope", scope]))
+    if (len(name) == 0):
+      raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["name", name]))
+
+    # Validate the scope
+    # We will end up with a containment path for the scope - convert that to the config id which is needed.
+    if (scope.find(".xml") > 0 and AdminConfig.getObjectType(scope) == None):
+      raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6040E", ["scope", scope]))
+    scopeContainmentPath = AdminUtilities.getScopeContainmentPath(scope)
+    configIdScope = AdminConfig.getid(scopeContainmentPath)
+
+    # If at this point, we don't have a proper config id, then the scope specified was incorrect
+    if (len(configIdScope) == 0):
+      raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6040E", ["scope", scope]))
+
+    # Get the '\\n' separated string of Connection Factories and make a proper list out of them 
+    cfList=AdminTask.listWMQConnectionFactories(configIdScope).split('\\n')
+
+    cfRegex = re.compile("%s\\(.*" % name)
+
+    target=list(filter(cfRegex.match, cfList))
+    if (len(target) == 1):
+      # Call the corresponding AdminTask command
+      AdminUtilities.debugNotice("About to call AdminTask command with scope : " + str(configIdScope))
+      AdminUtilities.debugNotice("About to call AdminTask command for target : " + str(target))
+
+      # Delete the Connection Factory
+      AdminTask.deleteWMQConnectionFactory(str(target[0]))
+
+      AdminConfig.save()
+    elif (len(target) == 0):
+      raise AttributeError("Unable to find removal target %s in scope: %s" % (name, str(configIdScope)))
+    elif (len(target) > 1):
+      raise AttributeError("Too many targets for removal found: %s" % str(target))
+    #endif
+
+  except:
+    typ, val, tb = sys.exc_info()
+    if (typ==SystemExit):  raise SystemExit,`val`
+    if (failonerror != AdminUtilities._TRUE_):
+      print "Exception: %s %s " % (sys.exc_type, sys.exc_value)
+      val = "%s %s" % (sys.exc_type, sys.exc_value)
+      raise Exception("ScriptLibraryException: " + val)
+    else:
+      return AdminUtilities.fail(msgPrefix+AdminUtilities.getExceptionText(typ, val, tb), failonerror)
+    #endIf
+  #endTry
+#endDef
+
+# And now - delete the connection factory
+deleteWMConnectionFactory(scope, name)
+
+END
 
     debug "Running #{cmd}"
     result = wsadmin(file: cmd, user: resource[:user])
