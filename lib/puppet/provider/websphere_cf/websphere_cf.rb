@@ -326,7 +326,7 @@ END
     debug "Exists? method is loading existing QMGR data attributes/values:"
     XPath.each(jms_entry, "factories[@name='#{resource[:cf_name]}']/@*")  { |attr|
       debug "#{attr.name} => #{attr.value}"
-      xlated_name = xlate_cmd_table.key?(attr.name) ? xlate_cmd_table[attr.name] : attr.name
+      xlated_name = @xlate_cmd_table.key?(attr.name) ? @xlate_cmd_table[attr.name] : attr.name
       @old_qmgr_data[xlated_name.to_sym] = attr.value
     } unless cf_entry.nil?
 
