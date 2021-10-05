@@ -128,10 +128,6 @@ spool_attrs = #{spool_attrs_str}
 cpool_attrs = #{cpool_attrs_str}
 mapdata_attrs = #{mapdata_attrs_str}
 
-# Historical trial/error args
-#attrs = [['description', 'Puppet PUPQCF Queue Connection Factory'], ['XAEnabled', 'true'], ['queueManager', 'PUPP.SUPP.QMGR'], ['host', 'host1.fqdn.com'], ['port', '2000'], ['channel', 'PUP'], ['transportType', 'CLIENT'], ['tempModel', 'SYSTEM.DEFAULT.MODEL.QUEUE'], ['clientID', 'mqm'], ['CCSID', '819'], ['failIfQuiesce', 'true'], ['pollingInterval', '5000'], ['rescanInterval', '5000'], ['sslResetCount', '0'], ['sslType', 'SPECIFIC'], ['sslConfiguration', 'WAS2MQ'], ['connameList', 'host1.fqdn.com(2000),host2.fqdn.com(2000)'], ['clientReconnectOptions', 'DISABLED'], ['clientReconnectTimeout', '1800']]
-
-
 # Enable debug notices ('true'/'false')
 AdminUtilities.setDebugNotices('#{jython_debug_state}')
 
@@ -333,19 +329,19 @@ END
     # Extract the connectionPool attributes
     XPath.each(cf_entry, "connectionPool/@*")  { |attr|
       debug "#{attr.name} => #{attr.value}"
-      @old_conn_pool_data[attr.name] = attr.value
+      @old_conn_pool_data[attr.name.to_sym] = attr.value
     } unless cf_entry.nil?
 
     # Extract the sessionPool attributes
     XPath.each(cf_entry, "sessionPool/@*")  { |attr|
       debug "#{attr.name} => #{attr.value}"
-      @old_sess_pool_data[attr.name] = attr.value
+      @old_sess_pool_data[attr.name.to_sym] = attr.value
     } unless cf_entry.nil?
 
     # Extract the Auth mapping attributes
     XPath.each(cf_entry, "mapping/@*")  { |attr|
       debug "#{attr.name} => #{attr.value}"
-      @old_mapping_data[attr.name] = attr.value
+      @old_mapping_data[attr.name.to_sym] = attr.value
     } unless cf_entry.nil?
 
     debug "Exists? method result for #{resource[:cf_name]} is: #{cf_entry}"
@@ -355,12 +351,12 @@ END
 
   # Get a CF's JNDI
   def jndi_name
-    @old_qmgr_data[:jndi_name]
+    @old_qmgr_data[:jndiName]
   end
 
   # Set a CF's JNDI
   def jndi_name=(val)
-    @property_flush[:jndi_name] = val
+    @property_flush[:jndiName] = val
   end
 
   # Get a CF's description
