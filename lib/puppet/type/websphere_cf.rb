@@ -160,9 +160,9 @@ Puppet::Type.newtype(:websphere_cf) do
       # defined in the resource. Make sure the properties in the resource
       # are insync
       should.each_pair do |prop,value|
-        return false unless is.key?(prop)
+        return false unless (value.empty? || is.key?(prop))
         # Stop after the first out of sync property
-        return false unless property_matches?(is[prop.downcase],value)
+        return false unless (property_matches?(is[prop],value) || ((is[prop].nil? || is[prop].empty?) && value.empty?)
       end
       true
     end
