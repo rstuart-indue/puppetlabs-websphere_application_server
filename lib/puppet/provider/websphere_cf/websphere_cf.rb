@@ -15,8 +15,10 @@ Puppet::Type.type(:websphere_cf).provide(:wsadmin, parent: Puppet::Provider::Web
     complex and difficult to abstract.
 
     This provider will not allow the creation of a dummy instance (i.e. no MQ server target)
-    This provider will now allow the changing of the type of a Connection Factory. You need
-    to destroy it first, then create another one of the desired type.
+    This provider will now allow the changing of:
+      * the name of the Connection Factory
+      * the type of a Connection Factory.
+    You need to destroy it first, then create another one with the desired attributes.
 
     We execute the 'wsadmin' tool to query and make changes, which interprets
     Jython. This means we need to use heredocs to satisfy whitespace sensitivity.
@@ -41,6 +43,10 @@ Puppet::Type.type(:websphere_cf).provide(:wsadmin, parent: Puppet::Provider::Web
     # and what we have configured via Jython and see if anything changed.
     # For many of the Jython params, they have identical correspondents in the
     # XML file, but some notable ones are not quite the same.
+    #
+    # TODO: It would be nice if the translation-table was extendable at runtime, so that
+    #       the user can add more translations as they see fit, instead of
+    #       waiting for someone to change the provider.
     @xlate_cmd_table = {
       'connameList' => 'connectionNameList',
       'host' => 'qmgrHostName',
@@ -51,7 +57,10 @@ Puppet::Type.type(:websphere_cf).provide(:wsadmin, parent: Puppet::Provider::Web
       'tempModel' => 'modelQueue',
       'CCSID' => 'ccsid',
       'clientID' => 'clientId',
-    }    
+    }
+
+    # Dynamic debugging
+    @jython_debug_state = Puppet::Util::Log.level == :debug
   end
 
   def scope(what)
@@ -92,9 +101,6 @@ Puppet::Type.type(:websphere_cf).provide(:wsadmin, parent: Puppet::Provider::Web
   # Create a Connection Factory
   def create
 
-    # Dynamic debugging
-    jython_debug_state = Puppet::Util::Log.level == :debug
-
     # Set the scope for this JMS Resource.
     jms_scope = scope('query') 
 
@@ -129,7 +135,7 @@ cpool_attrs = #{cpool_attrs_str}
 mapdata_attrs = #{mapdata_attrs_str}
 
 # Enable debug notices ('true'/'false')
-AdminUtilities.setDebugNotices('#{jython_debug_state}')
+AdminUtilities.setDebugNotices('#{@jython_debug_state}')
 
 # Global variable within this script
 bundleName = "com.ibm.ws.scripting.resources.scriptLibraryMessage"
@@ -411,8 +417,6 @@ END
 
   # Remove a given Connection Factory - we try to find it first
   def destroy
-    # Dynamic debugging
-    jython_debug_state = Puppet::Util::Log.level == :debug
 
     # Set the scope for this JMS Resource.
     jms_scope = scope('query')
@@ -426,7 +430,7 @@ scope = '#{jms_scope}'
 name = "#{resource[:cf_name]}"
 
 # Enable debug notices ('true'/'false')
-AdminUtilities.setDebugNotices('#{jython_debug_state}')
+AdminUtilities.setDebugNotices('#{@jython_debug_state}')
 
 # Global variable within this script
 bundleName = "com.ibm.ws.scripting.resources.scriptLibraryMessage"
@@ -514,52 +518,193 @@ END
   end
 
   def flush
-    wascmd_args = []
-    new_member_list = nil
-    new_roles_list = nil
-
     # If we haven't got anything to modify, we've got nothing to flush. Otherwise
     # parse the list of things to do
     return unless @property_flush
-    wascmd_args.push("'-description'", "'#{resource[:description]}'") if @property_flush[:description]
-    new_member_list = resource[:members] if @property_flush[:members]
-    new_roles_list = resource[:roles] if @property_flush[:roles]
+    #
+    # Ideally, only the changing params would be modified, alas, that is not how things are done.
+    #
+    # A bit of theory: It would appear that when you edit a JMS resource, the WAS UI re-applies
+    # all the params associated with that JMS resource, whether they changed or not. Whilst that
+    # seems odd, it perhaps makes sense - in order to re-validate the set of params which is now
+    # changing shape. It's not entirely clear why they've chosen to do it this way, but until
+    # proven otherwise, we're doing the same.
+    *
+    # Note: WAS will only delete/clear a param if it has a "no value" associated with it. Simply
+    #       removing it from the list of managed params will NOT delete/clear it.
+    #
+    # Set the scope for this JMS Resource.
+    jms_scope = scope('query') 
 
-    # If property_flush had something inside, but wasn't what we expected, we really
-    # need to bail, because the list of was command arguments will be empty. Ditto for
-    # new_member_list and new_roles_list.
-    return if wascmd_args.empty? && new_member_list.nil? && new_roles_list.nil?
+    # At the very least - we pass the description of the Conection Factory.
+    cf_attrs = [["description", "#{resource[:description]}"]]
+    cf_attrs += (resource[:qmgr_data].map{|k,v| [k.to_s, v]}).to_a unless resource[:qmgr_data].nil?
+    cf_attrs_str = cf_attrs.to_s.tr("\"", "'")
 
-    # If we do have to run something, prepend the grpUniqueName arguments and make a comma
-    # separated string out of the whole array.
-    arg_string = wascmd_args.unshift("'-uniqueName'", 'groupUniqueName').join(', ') unless wascmd_args.empty?
+    spool_attrs = []
+    spool_attrs = (resource[:sess_pool_data].map{|k,v| [k.to_s, v]}).to_a unless resource[:sess_pool_data].nil?
+    spool_attrs_str = spool_attrs.to_s.tr("\"", "'")
 
-    # Initialise these variables, we're going to use them even if they're empty.
-    add_members_string = ''
-    removable_members_string = ''
+    cpool_attrs = []
+    cpool_attrs = (resource[:conn_pool_data].map{|k,v| [k.to_s, v]}).to_a unless resource[:conn_pool_data].nil?
+    cpool_attrs_str = cpool_attrs.to_s.tr("\"", "'")
 
-    unless new_member_list.nil?
-      removable_members_string = (@old_member_list - new_member_list).map { |e| "'#{e}'" }.join(',')
-      add_members_string = (new_member_list - @old_member_list).map { |e| "'#{e}'" }.join(',')
-    end
-
-    add_roles_string = ''
-    removable_roles_string = ''
-
-    unless new_roles_list.nil?
-      removable_roles_string = (@old_roles_list - new_roles_list).map { |e| "'#{e}'" }.join(',')
-      add_roles_string = (new_roles_list - @old_roles_list).map { |e| "'#{e}'" }.join(',')
-    end
-
-    # If we don't have to add any members, and we don't enforce strict group membership, then
-    # we don't care about users to remove, so we bail before we execute the Jython code.
-    # However, it will complain every time it runs that the arrays look different and that
-    # it would attempt to fix them.
-    return if add_members_string.empty? && (resource[:enforce_members] != :true)
+    mapdata_attrs = []
+    mapdata_attrs = (resource[:mapping_data].map{|k,v| [k.to_s, v]}).to_a unless resource[:mapping_data].nil?
+    mapdata_attrs_str = mapdata_attrs.to_s.tr("\"", "'")
 
     cmd = <<-END.unindent
-# Change the CF configuration script
-  END
+import AdminUtilities
+import re
+
+# Parameters we need for our Connection Factory
+scope = '#{jms_scope}'
+name = "#{resource[:cf_name]}"
+jndiName = "#{resource[:jndi_name]}"
+attrs = #{cf_attrs_str}
+spool_attrs = #{spool_attrs_str}
+cpool_attrs = #{cpool_attrs_str}
+mapdata_attrs = #{mapdata_attrs_str}
+
+# Enable debug notices ('true'/'false')
+AdminUtilities.setDebugNotices('#{@jython_debug_state}')
+
+# Global variable within this script
+bundleName = "com.ibm.ws.scripting.resources.scriptLibraryMessage"
+resourceBundle = AdminUtilities.getResourceBundle(bundleName)
+
+def normalizeArgList(argList, argName):
+  if (argList == []):
+    AdminUtilities.debugNotice ("No " + `argName` + " parameters specified. Continuing with defaults.")
+  else:
+    if (str(argList).startswith("[[") > 0 and str(argList).startswith("[[[",0,3) == 0):
+      if (str(argList).find("\\"") > 0):
+        argList = str(argList).replace("\\"", "\\'")
+    else:
+        raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6049E", [argList]))
+  return argList
+#endDef
+
+def modifyWMConnectionFactory(scope, name, jndiName, otherAttrsList=[], spoolList=[], cpoolList=[], mappingList=[], failonerror=AdminUtilities._BLANK_ ):
+  if (failonerror==AdminUtilities._BLANK_):
+      failonerror=AdminUtilities._FAIL_ON_ERROR_
+  #endIf
+  msgPrefix = "modifyWMConnectionFactory(" + `scope` + ", " + `name`+ ", " + `jndiName` + ", " + `otherAttrsList` + ", " + `spoolList` + ", " + `cpoolList` + ", " + `mappingList` + ", " + `failonerror`+"): "
+
+  try:
+    #--------------------------------------------------------------------
+    # Create a WMQ Connection Factory
+    #--------------------------------------------------------------------
+    AdminUtilities.debugNotice ("---------------------------------------------------------------")
+    AdminUtilities.debugNotice (" AdminJMS: modifyWMQConnectionFactory ")
+    AdminUtilities.debugNotice (" Scope:")
+    AdminUtilities.debugNotice ("     scope:                      "+scope)
+    AdminUtilities.debugNotice (" MQConnectionFactory:")
+    AdminUtilities.debugNotice ("     name:                       "+name)
+    AdminUtilities.debugNotice ("     jndiName:                   "+jndiName)
+    AdminUtilities.debugNotice (" Optional Parameters :")
+    AdminUtilities.debugNotice ("   otherAttributesList:          " +str(otherAttrsList))
+    AdminUtilities.debugNotice ("   sessionPoolAttributesList:    " +str(spoolList))
+    AdminUtilities.debugNotice ("   connectionPoolAttributesList: " +str(cpoolList))
+    AdminUtilities.debugNotice ("   mappingAttributesList:        " +str(mappingList))
+    AdminUtilities.debugNotice (" Return: The Configuration Id of the new WM Connection Factory")
+    AdminUtilities.debugNotice ("---------------------------------------------------------------")
+    AdminUtilities.debugNotice (" ")
+
+    # This normalization is slightly superfluous, but, what the hey?
+    otherAttrsList = normalizeArgList(otherAttrsList, "otherAttrsList")
+    spoolList = normalizeArgList(spoolList, "spoolList")
+    cpoolList = normalizeArgList(cpoolList, "cpoolList")
+    mappingList = normalizeArgList(mappingList, "mappingList")
+
+    # Make sure required parameters are non-empty
+    if (len(scope) == 0):
+      raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["scope", scope]))
+    if (len(name) == 0):
+      raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["name", name]))
+    if (len(jndiName) == 0):
+      raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["jndiName", jndiName]))
+
+    # Validate the scope
+    # We will end up with a containment path for the scope - convert that to the config id which is needed.
+    if (scope.find(".xml") > 0 and AdminConfig.getObjectType(scope) == None):
+      raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6040E", ["scope", scope]))
+    scopeContainmentPath = AdminUtilities.getScopeContainmentPath(scope)
+    configIdScope = AdminConfig.getid(scopeContainmentPath)
+
+    # If at this point, we don't have a proper config id, then the scope specified was incorrect
+    if (len(configIdScope) == 0):
+      raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6040E", ["scope", scope]))
+
+    # Get the '\\n' separated string of Connection Factories and make a proper list out of them 
+    cfList=AdminTask.listWMQConnectionFactories(configIdScope).split('\\n')
+
+    cfRegex = re.compile("%s\\(.*" % name)
+
+    target=list(filter(cfRegex.match, cfList))
+    if (len(target) == 1):
+      # Call the corresponding AdminTask command
+      AdminUtilities.debugNotice("About to call AdminTask command with scope : " + str(configIdScope))
+      AdminUtilities.debugNotice("About to call AdminTask command for target : " + str(target))
+
+      # Prepare the parameters for the AdminTask command
+      otherAttrsList = AdminUtilities.convertParamStringToList(otherAttrsList)
+      requiredParameters = [["name", name], ["jndiName", jndiName]]
+
+      # Call the corresponding AdminTask command
+      AdminUtilities.debugNotice("About to call AdminTask command with parameters : " + str(finalParameters))
+  
+      # Modify the Connection Factory
+      newObjectId = AdminTask.modifyWMQConnectionFactory(str(target[0]), finalParameters)
+
+      # Set the Session Pool Params - the modify() takes a mangled array of arrays with no commas
+      if spoolList:
+        sessionPool = AdminConfig.showAttribute(newObjectId, 'sessionPool')
+        AdminConfig.modify(sessionPool, str(spoolList).replace(',', ''))
+  
+      # Set the Connection Pool Params - the modify() takes a mangled array of arrays with no commas
+      if cpoolList:
+        connPool = AdminConfig.showAttribute(newObjectId, 'connectionPool')
+        AdminConfig.modify(connPool, str(cpoolList).replace(',', ''))
+  
+      # Set the Mappings Params/Attributes - the modify() takes a mangled array of arrays with no commas
+      if mappingList:
+        mappingAttrs = AdminConfig.showAttribute(newObjectId, 'mapping')
+        AdminConfig.modify(mappingAttrs, str(mappingList).replace(',', ''))
+  
+      newObjectId = str(newObjectId)
+  
+      # Save this Connection Factory
+      AdminConfig.save()
+  
+      # Return the config ID of the newly created object
+      AdminUtilities.debugNotice("Returning config id of new object : " + str(newObjectId))
+      return newObjectId
+
+      AdminConfig.save()
+    elif (len(target) == 0):
+      raise AttributeError("Unable to find modification target %s in scope: %s" % (name, str(configIdScope)))
+    elif (len(target) > 1):
+      raise AttributeError("Too many targets for modification found: %s" % str(target))
+    #endif
+
+  except:
+    typ, val, tb = sys.exc_info()
+    if (typ==SystemExit):  raise SystemExit,`val`
+    if (failonerror != AdminUtilities._TRUE_):
+      print "Exception: %s %s " % (sys.exc_type, sys.exc_value)
+      val = "%s %s" % (sys.exc_type, sys.exc_value)
+      raise Exception("ScriptLibraryException: " + val)
+    else:
+      return AdminUtilities.fail(msgPrefix+AdminUtilities.getExceptionText(typ, val, tb), failonerror)
+    #endIf
+  #endTry
+#endDef
+
+# And now - modify the connection factory - remember, we cannot change the type, once created.
+modifyWMConnectionFactory(scope, name, jndiName, attrs, spool_attrs, cpool_attrs, mapdata_attrs)
+
+END
     debug "Running #{cmd}"
     result = wsadmin(file: cmd, user: resource[:user])
     debug "result: #{result}"
