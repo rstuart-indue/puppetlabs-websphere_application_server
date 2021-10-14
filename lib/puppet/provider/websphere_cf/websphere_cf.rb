@@ -650,10 +650,15 @@ def modifyWMConnectionFactory(scope, name, jndiName, otherAttrsList=[], spoolLis
       # Prepare the parameters for the AdminTask command
       otherAttrsList = AdminUtilities.convertParamStringToList(otherAttrsList)
       requiredParameters = [["name", name], ["jndiName", jndiName]]
-
+      finalAttrsList = requiredParameters + otherAttrsList
+      finalParameters = []
+      for attrs in finalAttrsList:
+        attr = ["-"+attrs[0], attrs[1]]
+        finalParameters = finalParameters+attr
+  
       # Call the corresponding AdminTask command
       AdminUtilities.debugNotice("About to call AdminTask command with parameters : " + str(finalParameters))
-  
+
       # Modify the Connection Factory
       newObjectId = AdminTask.modifyWMQConnectionFactory(str(target[0]), finalParameters)
 
