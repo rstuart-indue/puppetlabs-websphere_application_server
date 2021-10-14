@@ -529,7 +529,7 @@ END
     # seems odd, it perhaps makes sense - in order to re-validate the set of params which is now
     # changing shape. It's not entirely clear why they've chosen to do it this way, but until
     # proven otherwise, we're doing the same.
-    *
+    #
     # Note: WAS will only delete/clear a param if it has a "no value" associated with it. Simply
     #       removing it from the list of managed params will NOT delete/clear it.
     #
