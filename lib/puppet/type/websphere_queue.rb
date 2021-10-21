@@ -227,6 +227,65 @@ Puppet::Type.newtype(:websphere_queue) do
     desc 'Optional. This parameter specifies the read ahead close method for the message consumer.'
   end
 
+  # ------------------------------------
+  newproperty(:q_data) do
+    default_q_data = { 
+      :persistence => '',
+      :priority => '',
+      :expiry => '',
+      :ccsid => '',
+      :use_native_encoding => '',
+      :integer_encoding => '',
+      :decimal_encoding => '',
+      :floating_point_encoding => '',
+      :use_RFH2 => '',
+      :send_async => '',
+      :read_ahead => '',
+      :read_ahead_close => 'DELIVERALL'
+    }
+    defaultto default_mapping_data 
+    desc "A hash table containing the Queue settings data to apply to the Queue resource. See createWMQQueue() manual"
+
+    def insync?(is)
+      # There will almost always be more properties on the system than
+      # defined in the resource. Make sure the properties in the resource
+      # are insync
+      should.each_pair do |prop,value|
+        return false unless (value.to_s.empty? || is.key?(prop))
+        # Stop after the first out of sync property
+        return false unless (property_matches?(is[prop],value) || ((is[prop].nil? || is[prop].empty?) && value.to_s.empty?))
+      end
+      true
+    end
+
+    # Whilst we can create a CF with not a lot of data, what's the point?
+    # Bail out if the value passed is not a hash or if the hash is empty.
+    # At the very least force the user to reflect for their choices in life.
+    validate do |value|
+      raise Puppet::Error, 'Puppet::Type::Websphere_queue: qmgr_data property must be a hash' unless value.kind_of?(Hash)
+      #raise Puppet::Error  'Puppet::Type::Websphere_queue: qmgr_data property cannot be empty' if value.empty?
+    end
+
+    # Do some basic checking for the passed in Q params
+    # Because of their number and complexity, there's only so much we can do before we let the users hurt themselves.
+    munge do |value|
+      munged_values={}
+      value.each do |k, v|
+        # camelCase and convert our hash keys to symbols.
+        k_sym = k.split('_').inject{|m, p| m + p.capitalize}.to_sym
+
+        case k_sym
+        when :brokerCtrlQueue, :brokerSubQueue, :brokerCCSubQueue, :brokerVersion, :brokerPubQueue, :tempTopicPrefix, :pubAckWindow, :subStore, :stateRefreshInt, :cleanupLevel, :sparesSubs, :wildcardFormat, :brokerQmgr, :clonedSubs, :msgSelection
+          raise Puppet::Error "Puppet::Type::Websphere_Cf: Argument error in qmgr_data: parameter #{k} with value #{v} is incompatible with type QCF" if resource[:cf_type] == :QCF
+        when :msgRetention, :rescanInterval, :tempQueuePrefix, :modelQueue, :replyWithRFH2
+          raise Puppet::Error "Puppet::Type::Websphere_Cf: Argument error in qmgr_data: parameter #{k} with value #{v} is incompatible with type TCF" if resource[:cf_type] == :TCF
+        end
+        munged_values[k_sym] = v
+      end
+      munged_values
+    end
+  end
+  # ------------------------------------
 
   newproperty(:custom_properties) do
     desc "A hash table containing the custom properties to be passed to the WebSphere MQ messaging provider queue type destination implementation. See createWMQQueue() manual"
@@ -332,8 +391,7 @@ Puppet::Type.newtype(:websphere_queue) do
 
   newparam(:profile_base) do
     isnamevar
-    desc "The base directory where profiles are stored.
-      Example: /opt/IBM/WebSphere/AppServer/profiles"
+    desc "The base directory where profiles are stored. Example: /opt/IBM/WebSphere/AppServer/profiles"
   end
 
   newparam(:user) do
