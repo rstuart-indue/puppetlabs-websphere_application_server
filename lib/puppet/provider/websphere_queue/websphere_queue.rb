@@ -29,6 +29,7 @@ Puppet::Type.type(:websphere_queue).provide(:wsadmin, parent: Puppet::Provider::
   def initialize(val = {})
     super(val)
     @property_flush = {}
+    @old_q_data = {}
     @old_custom_properties = {}
 
     # This hash acts as a translation table between what shows up in the XML file
@@ -99,35 +100,25 @@ Puppet::Type.type(:websphere_queue).provide(:wsadmin, parent: Puppet::Provider::
     # Set the scope for this JMS Resource.
     jms_scope = scope('query') 
 
-    # At the very least - we pass the description of the Conection Factory.
-    cf_attrs = [["description", "#{resource[:description]}"]]
-    cf_attrs += (resource[:qmgr_data].map{|k,v| [k.to_s, v]}).to_a unless resource[:qmgr_data].nil?
-    cf_attrs_str = cf_attrs.to_s.tr("\"", "'")
+    # At the very least - we pass the basics of the Queue.
+    q_attrs = [["queueName", "#{resource[:queue_name]}"],["description", "#{resource[:description]}"]]
+    q_attrs += (resource[:q_data].map{|k,v| [k.to_s, v]}).to_a unless resource[:q_data].nil?
+    q_attrs_str = q_attrs.to_s.tr("\"", "'")
 
-    spool_attrs = []
-    spool_attrs = (resource[:sess_pool_data].map{|k,v| [k.to_s, v]}).to_a unless resource[:sess_pool_data].nil?
-    spool_attrs_str = spool_attrs.to_s.tr("\"", "'")
-
-    cpool_attrs = []
-    cpool_attrs = (resource[:conn_pool_data].map{|k,v| [k.to_s, v]}).to_a unless resource[:conn_pool_data].nil?
-    cpool_attrs_str = cpool_attrs.to_s.tr("\"", "'")
-
-    mapdata_attrs = []
-    mapdata_attrs = (resource[:mapping_data].map{|k,v| [k.to_s, v]}).to_a unless resource[:mapping_data].nil?
-    mapdata_attrs_str = mapdata_attrs.to_s.tr("\"", "'")
+    custom_attrs = []
+    custom_attrs = (resource[:custom_properties].map{|k,v| [k.to_s, v]}).to_a unless resource[:custom_properties].nil?
+    custom_attrs_str = custom_attrs.to_s.tr("\"", "'")
 
     cmd = <<-END.unindent
 import AdminUtilities
 
 # Parameters we need for our Connection Factory
 scope = '#{jms_scope}'
-cftype = "#{resource[:cf_type]}"
-name = "#{resource[:cf_name]}"
+name = "#{resource[:q_name]}"
 jndiName = "#{resource[:jndi_name]}"
-attrs = #{cf_attrs_str}
-spool_attrs = #{spool_attrs_str}
-cpool_attrs = #{cpool_attrs_str}
-mapdata_attrs = #{mapdata_attrs_str}
+queueName = "#{resource[:queue_name]}"
+attrs = #{q_attrs_str}
+custom_attrs = #{spool_attrs_str}
 
 # Enable debug notices ('true'/'false')
 AdminUtilities.setDebugNotices('#{@jython_debug_state}')
@@ -148,7 +139,7 @@ def normalizeArgList(argList, argName):
   return argList
 #endDef
 
-def createWMConnectionFactory(scope, cftype, name, jndiName, otherAttrsList=[], spoolList=[], cpoolList=[], mappingList=[], failonerror=AdminUtilities._BLANK_ ):
+def createWMConnectionFactory(scope, name, jndiName, queueName, attrsList=[], customAttrsList=[], failonerror=AdminUtilities._BLANK_ ):
   if (failonerror==AdminUtilities._BLANK_):
       failonerror=AdminUtilities._FAIL_ON_ERROR_
   #endIf
@@ -257,7 +248,7 @@ def createWMConnectionFactory(scope, cftype, name, jndiName, otherAttrsList=[], 
 #endDef
 
 # And now - create the connection factory
-createWMConnectionFactory(scope, cftype, name, jndiName, attrs, spool_attrs, cpool_attrs, mapdata_attrs)
+createWMConnectionFactory(scope, name, jndiName, queueName, attrs, custom_attrs)
 
 END
 

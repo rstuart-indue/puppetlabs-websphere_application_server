@@ -147,103 +147,7 @@ Puppet::Type.newtype(:websphere_queue) do
     desc 'Required. A meanigful description of the Queue object.'
   end
 
-  newproperty(:qmgr) do
-    desc 'Optional. The queue manager that hosts the WebSphere MQ queue.'
-  end
-
-  newproperty(:persistence) do
-    defaultto :APP
-    newvalues(:APP, :QDEF, :PERS, :NON, :HIGH)
-    desc 'Optional. This parameter determines the level of persistence used to store messages sent to this destination.'
-  end
-
-  newproperty(:priority) do
-    defaultto :APP
-    newvalues(:APP, :QDEF, 0..9)
-    desc 'Optional. The priority level to assign to messages sent to this destination.'
-  end
-
-  newproperty(:expiry) do
-    defaultto :APP
-    newvalues(:APP, :UNLIM, 0..Integer::INFINITY)
-    desc 'Optional. The length of time after which messages sent to this destination expire and are dealt with according to their disposition options.'
-  end
-
-  newproperty(:ccsid) do
-    defaultto 1208
-
-    validate do |value|
-      raise Puppet::Error, 'Puppet::Type::Websphere_queue: ccsid property must be an integer' unless value.kind_of?(Integer)
-      raise Puppet::Error  'Puppet::Type::Websphere_queue: ccsid property cannot be negative' if value < 0
-    end
-    desc 'Optional. The coded character set identifier (CCSID).'
-  end
-
-  newproperty(:native_encoding) do
-    defaultto :true
-    newvalues(:true, :false)
-    desc 'Optional.This parameter specifies whether to use native encoding or not. It can take a value true or false. If true, the values of the integer_encoding, decimal_encoding and fp_encoding attributes are ignored'
-  end
-
-  newproperty(:integer_encoding) do
-    defaultto :Normal
-    newvalues(:Normal, :Reversed)
-    desc 'Optional. The integer encoding setting for this queue.'
-  end
-
-  newproperty(:decimal_encoding) do
-    defaultto :Normal
-    newvalues(:Normal, :Reversed)
-    desc 'Optional. The decimal encoding setting for this queue.'
-  end
-
-  newproperty(:fp_encoding) do
-    defaultto :IEEENormal
-    newvalues(:IEEENormal, :IEEEReversed, :'z/OS')
-    desc 'Optional. The floating point encoding setting for this queue.'
-  end
-
-  newproperty(:use_rfh2) do
-    defaultto :true
-    newvalues(:true, :false)
-    desc 'Optional. This parameter determines whether an RFH version 2 header is appended to messages sent to this destination, also know as targetClient'
-  end
-
-  newproperty(:send_async) do
-    defaultto :QDEF
-    newvalues(:YES, :NO, :QDEF)
-    desc 'Optional. This parameter determines whether messages can be sent to this destination without queue manager acknowledging that they have arrived.'
-  end
-
-  newproperty(:read_ahead) do
-    defaultto :QDEF
-    newvalues(:YES, :NO, :QDEF)
-    desc 'Optional. This parameter determines whether messages for non-persistent consumers can be read ahead and cached.'
-  end
-
-  newproperty(:read_ahead_close) do
-    defaultto :DELIVERALL
-    newvalues(:DELIVERALL, :DELIVERCURRENT)
-    desc 'Optional. This parameter specifies the read ahead close method for the message consumer.'
-  end
-
-  # ------------------------------------
   newproperty(:q_data) do
-    default_q_data = { 
-      :persistence => '',
-      :priority => '',
-      :expiry => '',
-      :ccsid => '',
-      :use_native_encoding => '',
-      :integer_encoding => '',
-      :decimal_encoding => '',
-      :floating_point_encoding => '',
-      :use_RFH2 => '',
-      :send_async => '',
-      :read_ahead => '',
-      :read_ahead_close => 'DELIVERALL'
-    }
-    defaultto default_mapping_data 
     desc "A hash table containing the Queue settings data to apply to the Queue resource. See createWMQQueue() manual"
 
     def insync?(is)
@@ -258,34 +162,25 @@ Puppet::Type.newtype(:websphere_queue) do
       true
     end
 
-    # Whilst we can create a CF with not a lot of data, what's the point?
-    # Bail out if the value passed is not a hash or if the hash is empty.
-    # At the very least force the user to reflect for their choices in life.
+    # Bail out if the value passed is not a hash.
+    # Because of their number and complexity, there's only so much we can do before we let the users hurt themselves.
     validate do |value|
       raise Puppet::Error, 'Puppet::Type::Websphere_queue: qmgr_data property must be a hash' unless value.kind_of?(Hash)
       #raise Puppet::Error  'Puppet::Type::Websphere_queue: qmgr_data property cannot be empty' if value.empty?
     end
 
-    # Do some basic checking for the passed in Q params
-    # Because of their number and complexity, there's only so much we can do before we let the users hurt themselves.
+    # We accept properties in any format - but if they're underscore separated, we transform them into camelCase.
+    # So a string like some__key_string becomes someKeyString
     munge do |value|
       munged_values={}
       value.each do |k, v|
         # camelCase and convert our hash keys to symbols.
         k_sym = k.split('_').inject{|m, p| m + p.capitalize}.to_sym
-
-        case k_sym
-        when :brokerCtrlQueue, :brokerSubQueue, :brokerCCSubQueue, :brokerVersion, :brokerPubQueue, :tempTopicPrefix, :pubAckWindow, :subStore, :stateRefreshInt, :cleanupLevel, :sparesSubs, :wildcardFormat, :brokerQmgr, :clonedSubs, :msgSelection
-          raise Puppet::Error "Puppet::Type::Websphere_Cf: Argument error in qmgr_data: parameter #{k} with value #{v} is incompatible with type QCF" if resource[:cf_type] == :QCF
-        when :msgRetention, :rescanInterval, :tempQueuePrefix, :modelQueue, :replyWithRFH2
-          raise Puppet::Error "Puppet::Type::Websphere_Cf: Argument error in qmgr_data: parameter #{k} with value #{v} is incompatible with type TCF" if resource[:cf_type] == :TCF
-        end
         munged_values[k_sym] = v
       end
       munged_values
     end
   end
-  # ------------------------------------
 
   newproperty(:custom_properties) do
     desc "A hash table containing the custom properties to be passed to the WebSphere MQ messaging provider queue type destination implementation. See createWMQQueue() manual"
@@ -303,18 +198,18 @@ Puppet::Type.newtype(:websphere_queue) do
     end
 
     # Passed argument must be a hash
+    # Because of their number and complexity, there's only so much we can do before we let the users hurt themselves.
     validate do |value|
       raise Puppet::Error, 'Puppet::Type::Websphere_Queue: custom_properties property must be a hash' unless value.kind_of?(Hash)
     end
 
-    # Do some basic checking for the passed in custom properties params
-    # Because of their number and complexity, there's only so much we can do before we let the users hurt themselves.
+    # We accept properties in any format - but if they're underscore separated, we transform them into camelCase.
+    # So a string like some__key_string becomes someKeyString
     munge do |value|
       munged_values={}
       value.each do |k, v|
         # camelCase and convert our hash keys to symbols. Not sure we need this.
-        #k_sym = k.split('_').inject{|m, p| m + p.capitalize}.to_sym
-
+        k_sym = k.split('_').inject{|m, p| m + p.capitalize}.to_sym
         munged_values[k.to_sym] = v
       end
       munged_values
