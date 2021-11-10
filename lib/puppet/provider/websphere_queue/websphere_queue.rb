@@ -100,8 +100,8 @@ Puppet::Type.type(:websphere_queue).provide(:wsadmin, parent: Puppet::Provider::
     # Set the scope for this JMS Resource.
     jms_scope = scope('query') 
 
-    # At the very least - we pass the basics of the Queue.
-    q_attrs = [["queueName", "#{resource[:queue_name]}"],["description", "#{resource[:description]}"]]
+    # At the very least - we pass the description of the Queue.
+    q_attrs = [["description", "#{resource[:description]}"]]
     q_attrs += (resource[:q_data].map{|k,v| [k.to_s, v]}).to_a unless resource[:q_data].nil?
     q_attrs_str = q_attrs.to_s.tr("\"", "'")
 
@@ -112,13 +112,13 @@ Puppet::Type.type(:websphere_queue).provide(:wsadmin, parent: Puppet::Provider::
     cmd = <<-END.unindent
 import AdminUtilities
 
-# Parameters we need for our Connection Factory
+# Parameters we need for our Queue
 scope = '#{jms_scope}'
 name = "#{resource[:q_name]}"
 jndiName = "#{resource[:jndi_name]}"
 queueName = "#{resource[:queue_name]}"
 attrs = #{q_attrs_str}
-custom_attrs = #{spool_attrs_str}
+custom_attrs = #{custom_attrs_str}
 
 # Enable debug notices ('true'/'false')
 AdminUtilities.setDebugNotices('#{@jython_debug_state}')
@@ -139,49 +139,44 @@ def normalizeArgList(argList, argName):
   return argList
 #endDef
 
-def createWMConnectionFactory(scope, name, jndiName, queueName, attrsList=[], customAttrsList=[], failonerror=AdminUtilities._BLANK_ ):
+def createWMQQueue(scope, name, jndiName, queueName, attrsList=[], customAttrsList=[], failonerror=AdminUtilities._BLANK_ ):
   if (failonerror==AdminUtilities._BLANK_):
       failonerror=AdminUtilities._FAIL_ON_ERROR_
   #endIf
-  msgPrefix = "createWMConnectionFactory(" + `scope` + ", " + `cftype`+ ", " + `name`+ ", " + `jndiName` + ", " + `otherAttrsList` + ", " + `spoolList` + ", " + `cpoolList` + ", " + `mappingList` + ", " + `failonerror`+"): "
+  msgPrefix = "createWMQQueue(" + `scope` + ", " + `name`+ ", " + `jndiName` + ", " + `queueName` + ", " + `attrsList` + ", " + `customAttrsList` + ", " + ", " + `failonerror`+"): "
 
   try:
     #--------------------------------------------------------------------
-    # Create a WMQ Connection Factory
+    # Create a WMQ Queue
     #--------------------------------------------------------------------
     AdminUtilities.debugNotice ("---------------------------------------------------------------")
-    AdminUtilities.debugNotice (" AdminJMS: createWMQConnectionFactory ")
+    AdminUtilities.debugNotice (" AdminJMS: createWMQQueue")
     AdminUtilities.debugNotice (" Scope:")
     AdminUtilities.debugNotice ("     scope:                      "+scope)
-    AdminUtilities.debugNotice (" Type:")
-    AdminUtilities.debugNotice ("     type:                       "+cftype)
-    AdminUtilities.debugNotice (" MQConnectionFactory:")
+    AdminUtilities.debugNotice (" MQQueue:")
     AdminUtilities.debugNotice ("     name:                       "+name)
     AdminUtilities.debugNotice ("     jndiName:                   "+jndiName)
+    AdminUtilities.debugNotice ("     queueName:                  "+queueName)
     AdminUtilities.debugNotice (" Optional Parameters :")
-    AdminUtilities.debugNotice ("   otherAttributesList:          " +str(otherAttrsList))
-    AdminUtilities.debugNotice ("   sessionPoolAttributesList:    " +str(spoolList))
-    AdminUtilities.debugNotice ("   connectionPoolAttributesList: " +str(cpoolList))
-    AdminUtilities.debugNotice ("   mappingAttributesList:        " +str(mappingList))
-    AdminUtilities.debugNotice (" Return: The Configuration Id of the new WM Connection Factory")
+    AdminUtilities.debugNotice ("     AttributesList:             " +str(attrsList))
+    AdminUtilities.debugNotice ("     CustomAttributesList:       " +str(customAttrsList))
+    AdminUtilities.debugNotice (" Return: The Configuration Id of the new WMQ Queue")
     AdminUtilities.debugNotice ("---------------------------------------------------------------")
     AdminUtilities.debugNotice (" ")
 
     # This normalization is slightly superfluous, but, what the hey?
-    otherAttrsList = normalizeArgList(otherAttrsList, "otherAttrsList")
-    spoolList = normalizeArgList(spoolList, "spoolList")
-    cpoolList = normalizeArgList(cpoolList, "cpoolList")
-    mappingList = normalizeArgList(mappingList, "mappingList")
+    attrsList = normalizeArgList(attrsList, "attrsList")
+    customAttrsList = normalizeArgList(customAttrsList, "customAttrsList")
     
     # Make sure required parameters are non-empty
     if (len(scope) == 0):
       raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["scope", scope]))
-    if (len(cftype) == 0):
-      raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["type", cftype]))
     if (len(name) == 0):
       raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["name", name]))
     if (len(jndiName) == 0):
       raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["jndiName", jndiName]))
+    if (len(cftype) == 0):
+      raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["queueName", queueName]))
 
     # Validate the scope
     # We will end up with a containment path for the scope - convert that to the config id which is needed.
@@ -194,10 +189,11 @@ def createWMConnectionFactory(scope, name, jndiName, queueName, attrsList=[], cu
     if (len(configIdScope) == 0):
       raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6040E", ["scope", scope]))
 
-    # Prepare the parameters for the AdminTask command - set the implied type of CF in this case
-    otherAttrsList = AdminUtilities.convertParamStringToList(otherAttrsList)
-    requiredParameters = [["name", name], ["jndiName", jndiName], ["type", cftype]]
-    finalAttrsList = requiredParameters + otherAttrsList
+    # Prepare the parameters for the AdminTask command.
+    attrsList = AdminUtilities.convertParamStringToList(attrsList)
+
+    requiredParameters = [["name", name], ["jndiName", jndiName], ["queueName", queueName]]
+    finalAttrsList = requiredParameters + attrsList
     finalParameters = []
     for attrs in finalAttrsList:
       attr = ["-"+attrs[0], attrs[1]]
@@ -207,27 +203,17 @@ def createWMConnectionFactory(scope, name, jndiName, queueName, attrsList=[], cu
     AdminUtilities.debugNotice("About to call AdminTask command with target : " + str(configIdScope))
     AdminUtilities.debugNotice("About to call AdminTask command with parameters : " + str(finalParameters))
 
-    # Create the Connection Factory
-    newObjectId = AdminTask.createWMQConnectionFactory(configIdScope, finalParameters)
+    # Create the Queue
+    newObjectId = AdminTask.createWMQQueue(configIdScope, finalParameters)
 
-    # Set the Session Pool Params - the modify() takes a mangled array of arrays with no commas
-    if spoolList:
-      sessionPool = AdminConfig.showAttribute(newObjectId, 'sessionPool')
-      AdminConfig.modify(sessionPool, str(spoolList).replace(',', ''))
-
-    # Set the Connection Pool Params - the modify() takes a mangled array of arrays with no commas
-    if cpoolList:
-      connPool = AdminConfig.showAttribute(newObjectId, 'connectionPool')
-      AdminConfig.modify(connPool, str(cpoolList).replace(',', ''))
-
-    # Set the Mappings Params/Attributes - the modify() takes a mangled array of arrays with no commas
-    if mappingList:
-      mappingAttrs = AdminConfig.showAttribute(newObjectId, 'mapping')
-      AdminConfig.modify(mappingAttrs, str(mappingList).replace(',', ''))
-
+#    # Set the custom Attributes list - the parameter takes a mangled array of arrays with no commas
+#    if customAttrsList:
+#      sessionPool = AdminConfig.showAttribute(newObjectId, 'sessionPool')
+#      AdminConfig.modify(sessionPool, str(spoolList).replace(',', ''))
+#
     newObjectId = str(newObjectId)
 
-    # Save this Connection Factory
+    # Save this Queue
     AdminConfig.save()
 
     # Return the config ID of the newly created object
@@ -247,8 +233,8 @@ def createWMConnectionFactory(scope, name, jndiName, queueName, attrsList=[], cu
   #endTry
 #endDef
 
-# And now - create the connection factory
-createWMConnectionFactory(scope, name, jndiName, queueName, attrs, custom_attrs)
+# And now - create the queue
+createWMQQueue(scope, name, jndiName, queueName, attrs, custom_attrs)
 
 END
 
@@ -260,7 +246,7 @@ END
       ## This usually indicates that the server isn't ready on the DMGR yet -
       ## the DMGR needs to do another Puppet run, probably.
       err = <<-EOT
-      Could not create Connection Factory: #{resource[:cf_name]} of type #{resource[:cf_type]}
+      Could not create Queuee: #{resource[:q_name]}
       This appears to be due to the remote resource not being available.
       Ensure that all the necessary services have been created and are running
       on this host and the DMGR. If this is the first run, the cluster member
@@ -274,7 +260,7 @@ END
     debug result
   end
 
-  # Check to see if a Connection Factory exists - must return a boolean.
+  # Check to see if a Queue exists - must return a boolean.
   def exists?
     unless File.exist?(scope('file'))
       return false
@@ -302,43 +288,43 @@ END
       xml_content = File.open(scope('file'))
     end
 
-    debug "Retrieving value of #{resource[:jms_provider]}/#{resource[:cf_name]} from #{scope('file')}"
+    debug "Retrieving value of #{resource[:jms_provider]}/#{resource[:q_name]} from #{scope('file')}"
     doc = REXML::Document.new(xml_content)
 
-    # We're looking for Connection Factory entries matching our cf_name. We have to ensure we're looking under the
+    # We're looking for Queue entries matching our q_name. We have to ensure we're looking under the
     # correct provider entry.
     jms_entry = XPath.first(doc, "/xmi:XMI[@xmlns:resources.jms.mqseries]/resources.jms:JMSProvider[@xmi:id='#{resource[:jms_provider]}']")
-    cf_entry = XPath.first(jms_entry, "factories[@name='#{resource[:cf_name]}']") unless jms_entry.nil?
+    q_entry = XPath.first(jms_entry, "factories[@name='#{resource[:q_name]}']") unless jms_entry.nil?
 
     # Populate the @old_qmgr_data by discovering what are the params for the given Connection Factory
-    debug "Exists? method is loading existing QMGR data attributes/values:"
-    XPath.each(jms_entry, "factories[@name='#{resource[:cf_name]}']/@*")  { |attr|
+    debug "Exists? method is loading existing Queue data attributes/values:"
+    XPath.each(jms_entry, "factories[@name='#{resource[:q_name]}']/@*")  { |attr|
       debug "#{attr.name} => #{attr.value}"
       xlated_name = @xlate_cmd_table.key?(attr.name) ? @xlate_cmd_table[attr.name] : attr.name
       @old_qmgr_data[xlated_name.to_sym] = attr.value
-    } unless cf_entry.nil?
+    } unless q_entry.nil?
 
     # Extract the connectionPool attributes
-    XPath.each(cf_entry, "connectionPool/@*")  { |attr|
+    XPath.each(q_entry, "connectionPool/@*")  { |attr|
       debug "#{attr.name} => #{attr.value}"
       @old_conn_pool_data[attr.name.to_sym] = attr.value
-    } unless cf_entry.nil?
+    } unless q_entry.nil?
 
     # Extract the sessionPool attributes
-    XPath.each(cf_entry, "sessionPool/@*")  { |attr|
+    XPath.each(q_entry, "sessionPool/@*")  { |attr|
       debug "#{attr.name} => #{attr.value}"
       @old_sess_pool_data[attr.name.to_sym] = attr.value
-    } unless cf_entry.nil?
+    } unless q_entry.nil?
 
     # Extract the Auth mapping attributes
-    XPath.each(cf_entry, "mapping/@*")  { |attr|
+    XPath.each(q_entry, "mapping/@*")  { |attr|
       debug "#{attr.name} => #{attr.value}"
       @old_mapping_data[attr.name.to_sym] = attr.value
-    } unless cf_entry.nil?
+    } unless q_entry.nil?
 
-    debug "Exists? method result for #{resource[:cf_name]} is: #{cf_entry}"
+    debug "Exists? method result for #{resource[:cf_name]} is: #{q_entry}"
 
-    !cf_entry.nil?
+    !q_entry.nil?
   end
 
   # Get a CF's JNDI

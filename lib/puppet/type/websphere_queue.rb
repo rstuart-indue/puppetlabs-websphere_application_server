@@ -126,7 +126,7 @@ Puppet::Type.newtype(:websphere_queue) do
     desc <<-EOT
     Required. The administrative name assigned to this WebSphere MQ messaging provider queue type destination to create/modify/remove.
     
-    Example: `QCFEvents`
+    Example: `QEvents`
     EOT
   end
 
