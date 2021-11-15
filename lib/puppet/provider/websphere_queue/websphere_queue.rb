@@ -294,42 +294,30 @@ END
     # We're looking for Queue entries matching our q_name. We have to ensure we're looking under the
     # correct provider entry.
     jms_entry = XPath.first(doc, "/xmi:XMI[@xmlns:resources.jms.mqseries]/resources.jms:JMSProvider[@xmi:id='#{resource[:jms_provider]}']")
-    q_entry = XPath.first(jms_entry, "factories[@name='#{resource[:q_name]}']") unless jms_entry.nil?
+    q_entry = XPath.first(jms_entry, "factories[@xmi:type='resources.jms.mqseries:MQQueue'][@name='#{resource[:q_name]}']") unless jms_entry.nil?
 
-    # Populate the @old_qmgr_data by discovering what are the params for the given Connection Factory
+    # Populate the @old_q_data by discovering what are the params for the given Connection Factory
     debug "Exists? method is loading existing Queue data attributes/values:"
-    XPath.each(jms_entry, "factories[@name='#{resource[:q_name]}']/@*")  { |attr|
+    XPath.each(q_entry, "@*")  { |attr|
       debug "#{attr.name} => #{attr.value}"
       xlated_name = @xlate_cmd_table.key?(attr.name) ? @xlate_cmd_table[attr.name] : attr.name
-      @old_qmgr_data[xlated_name.to_sym] = attr.value
+      @old_q_data[xlated_name.to_sym] = attr.value
     } unless q_entry.nil?
 
     # Extract the connectionPool attributes
-    XPath.each(q_entry, "connectionPool/@*")  { |attr|
-      debug "#{attr.name} => #{attr.value}"
-      @old_conn_pool_data[attr.name.to_sym] = attr.value
-    } unless q_entry.nil?
+    #XPath.each(q_entry, "connectionPool/@*")  { |attr|
+    #  debug "#{attr.name} => #{attr.value}"
+    #  @old_conn_pool_data[attr.name.to_sym] = attr.value
+    #} unless q_entry.nil?
 
-    # Extract the sessionPool attributes
-    XPath.each(q_entry, "sessionPool/@*")  { |attr|
-      debug "#{attr.name} => #{attr.value}"
-      @old_sess_pool_data[attr.name.to_sym] = attr.value
-    } unless q_entry.nil?
-
-    # Extract the Auth mapping attributes
-    XPath.each(q_entry, "mapping/@*")  { |attr|
-      debug "#{attr.name} => #{attr.value}"
-      @old_mapping_data[attr.name.to_sym] = attr.value
-    } unless q_entry.nil?
-
-    debug "Exists? method result for #{resource[:cf_name]} is: #{q_entry}"
+    debug "Exists? method result for #{resource[:q_name]} is: #{q_entry}"
 
     !q_entry.nil?
   end
 
   # Get a CF's JNDI
   def jndi_name
-    @old_qmgr_data[:jndiName]
+    @old_q_data[:jndiName]
   end
 
   # Set a CF's JNDI
@@ -339,7 +327,7 @@ END
 
   # Get a CF's description
   def description
-    @old_qmgr_data[:description]
+    @old_q_data[:description]
   end
 
   # Set a CF's description
@@ -348,13 +336,13 @@ END
   end
 
   # Get a CF's QMGR Settings
-  def qmgr_data
-    @old_qmgr_data
+  def q_data
+    @old_q_data
   end
 
   # Set a CF's QMGR Settings
-  def qmgr_data=(val)
-    @property_flush[:qmgr_data] = val
+  def q_data=(val)
+    @property_flush[:q_data] = val
   end
 
   # Get a CF's Auth mapping data
@@ -399,7 +387,7 @@ import re
 
 # Parameters we need for our Connection Factory removal
 scope = '#{jms_scope}'
-name = "#{resource[:cf_name]}"
+name = "#{resource[:q_name]}"
 
 # Enable debug notices ('true'/'false')
 AdminUtilities.setDebugNotices('#{@jython_debug_state}')
@@ -510,7 +498,7 @@ END
 
     # At the very least - we pass the description of the Conection Factory.
     cf_attrs = [["description", "#{resource[:description]}"]]
-    cf_attrs += (resource[:qmgr_data].map{|k,v| [k.to_s, v]}).to_a unless resource[:qmgr_data].nil?
+    cf_attrs += (resource[:q_data].map{|k,v| [k.to_s, v]}).to_a unless resource[:q_data].nil?
     cf_attrs_str = cf_attrs.to_s.tr("\"", "'")
 
     spool_attrs = []
@@ -531,7 +519,7 @@ import re
 
 # Parameters we need for our Connection Factory
 scope = '#{jms_scope}'
-name = "#{resource[:cf_name]}"
+name = "#{resource[:q_name]}"
 jndiName = "#{resource[:jndi_name]}"
 attrs = #{cf_attrs_str}
 spool_attrs = #{spool_attrs_str}
