@@ -351,7 +351,7 @@ END
   end
 
   # Set a Queue's custom properties
-  def ustom_properties=(val)
+  def custom_properties=(val)
     @property_flush[:custom_properties] = val
   end
 
