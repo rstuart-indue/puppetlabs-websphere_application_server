@@ -461,6 +461,7 @@ END
     # If we haven't got anything to modify, we've got nothing to flush. Otherwise
     # parse the list of things to do
     return unless @property_flush
+    debug @property_flush
     #
     # Ideally, only the changing params would be modified, alas, that is not how things are done.
     #
@@ -534,7 +535,7 @@ def modifyWMQQueue(scope, name, jndiName, qAttrsList=[], customAttrsList=[], fai
     AdminUtilities.debugNotice ("     jndiName:                   "+jndiName)
     AdminUtilities.debugNotice (" Optional Parameters :")
     AdminUtilities.debugNotice ("   otherAttributesList:          " +str(qAttrsList))
-    AdminUtilities.debugNotice ("   sessionPoolAttributesList:    " +str(customAttrsList))
+    AdminUtilities.debugNotice ("   CustomAttributesList:         " +str(customAttrsList))
     AdminUtilities.debugNotice (" Return: The Configuration Id of the new WM Queue")
     AdminUtilities.debugNotice ("---------------------------------------------------------------")
     AdminUtilities.debugNotice (" ")
