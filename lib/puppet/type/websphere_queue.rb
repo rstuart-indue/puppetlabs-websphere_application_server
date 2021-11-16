@@ -137,6 +137,9 @@ Puppet::Type.newtype(:websphere_queue) do
 
   newproperty(:queue_name) do
     desc 'Required. The name of the WebSphere MQ queue to use to store messages for the WebSphere MQ messaging provider queue type destination definition.'
+    validate do |value|
+      raise Puppet::Error, 'Puppet::Type::Websphere_queue: queue_name property must not be empty' if (value.nil? || value.empty?)
+    end
   end
 
   newproperty(:jndi_name) do
@@ -165,8 +168,8 @@ Puppet::Type.newtype(:websphere_queue) do
     # Bail out if the value passed is not a hash.
     # Because of their number and complexity, there's only so much we can do before we let the users hurt themselves.
     validate do |value|
-      raise Puppet::Error, 'Puppet::Type::Websphere_queue: qmgr_data property must be a hash' unless value.kind_of?(Hash)
-      #raise Puppet::Error  'Puppet::Type::Websphere_queue: qmgr_data property cannot be empty' if value.empty?
+      raise Puppet::Error, 'Puppet::Type::Websphere_queue: q_data property must be a hash' unless value.kind_of?(Hash)
+      #raise Puppet::Error  'Puppet::Type::Websphere_queue: q_data property cannot be empty' if value.empty?
     end
 
     # We accept properties in any format - but if they're underscore separated, we transform them into camelCase.
