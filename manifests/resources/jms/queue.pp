@@ -6,6 +6,7 @@
 #   websphere_application_server::resources::jms::queue { 'PUPQ':
 #     ensure       => 'present',
 #     jndi_name    => 'jms/PUPQ',
+#     queue_name   => 'PUPPET.TESTQ',
 #     description  => 'Puppet Queue',
 #     q_data       => $q_data_hash,
 #     scope        => 'cluster',
@@ -51,6 +52,7 @@
 #   Optional. The password for `wsadmin` authentication if security is enabled.
 # lint:endignore
 define websphere_application_server::resources::jms::queue (
+  String $queue_name,
   String $description,
   Stdlib::Absolutepath $profile_base,
   String $dmgr_profile,
@@ -72,6 +74,7 @@ define websphere_application_server::resources::jms::queue (
     ensure            => $ensure,
     description       => $description,
     jndi_name         => $jndi_name,
+    queue_name        => $queue_name,
     q_data            => $q_data,
     custom_properties => $custom_properties,
     scope             => $scope,
