@@ -175,7 +175,7 @@ def createWMQQueue(scope, name, jndiName, queueName, attrsList=[], customAttrsLi
       raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["name", name]))
     if (len(jndiName) == 0):
       raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["jndiName", jndiName]))
-    if (len(cftype) == 0):
+    if (len(queueName) == 0):
       raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["queueName", queueName]))
 
     # Validate the scope
@@ -323,6 +323,16 @@ END
   # Set a Queue's JNDI
   def jndi_name=(val)
     @property_flush[:jndiName] = val
+  end
+
+  # Get a Queue's Queue Name
+  def queue_name
+    @old_q_data[:queueName]
+  end
+
+  # Set a Queue's Queue Name
+  def queue_name=(val)
+    @property_flush[:queueName] = val
   end
 
   # Get a Queue's description
@@ -493,6 +503,7 @@ import re
 scope = '#{jms_scope}'
 name = "#{resource[:q_name]}"
 jndiName = "#{resource[:jndi_name]}"
+queueName = "#{resource[:queue_name]}"
 attrs = #{q_attrs_str}
 custom_attrs = #{custom_attrs_str}
 
@@ -515,11 +526,11 @@ def normalizeArgList(argList, argName):
   return argList
 #endDef
 
-def modifyWMQQueue(scope, name, jndiName, qAttrsList=[], customAttrsList=[], failonerror=AdminUtilities._BLANK_ ):
+def modifyWMQQueue(scope, name, jndiName, queueName, attrsList=[], customAttrsList=[], failonerror=AdminUtilities._BLANK_ ):
   if (failonerror==AdminUtilities._BLANK_):
       failonerror=AdminUtilities._FAIL_ON_ERROR_
   #endIf
-  msgPrefix = "modifyWMQQueue(" + `scope` + ", " + `name`+ ", " + `jndiName` + ", " + `qAttrsList` + ", " + `customAttrsList` + `failonerror`+"): "
+  msgPrefix = "modifyWMQQueue(" + `scope` + ", " + `name`+ ", " + `jndiName` + ", " + `queueName` + ", " + `attrsList` + ", " + `customAttrsList` + ", " + ", " + `failonerror`+"): "
 
   try:
     #--------------------------------------------------------------------
@@ -532,15 +543,16 @@ def modifyWMQQueue(scope, name, jndiName, qAttrsList=[], customAttrsList=[], fai
     AdminUtilities.debugNotice (" MQQueue:")
     AdminUtilities.debugNotice ("     name:                       "+name)
     AdminUtilities.debugNotice ("     jndiName:                   "+jndiName)
+    AdminUtilities.debugNotice ("     queueName:                  "+queueName)
     AdminUtilities.debugNotice (" Optional Parameters :")
-    AdminUtilities.debugNotice ("   otherAttributesList:          " +str(qAttrsList))
+    AdminUtilities.debugNotice ("   otherAttributesList:          " +str(attrsList))
     AdminUtilities.debugNotice ("   CustomAttributesList:         " +str(customAttrsList))
     AdminUtilities.debugNotice (" Return: The Configuration Id of the new WM Queue")
     AdminUtilities.debugNotice ("---------------------------------------------------------------")
     AdminUtilities.debugNotice (" ")
 
     # This normalization is slightly superfluous, but, what the hey?
-    qAttrsList = normalizeArgList(qAttrsList, "qAttrsList")
+    attrsList = normalizeArgList(attrsList, "attrsList")
     customAttrsList = normalizeArgList(customAttrsList, "customAttrsList")
 
     # Make sure required parameters are non-empty
@@ -550,6 +562,8 @@ def modifyWMQQueue(scope, name, jndiName, qAttrsList=[], customAttrsList=[], fai
       raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["name", name]))
     if (len(jndiName) == 0):
       raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["jndiName", jndiName]))
+    if (len(queueName) == 0):
+      raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["queueName", queueName]))
 
     # Validate the scope
     # We will end up with a containment path for the scope - convert that to the config id which is needed.
@@ -574,9 +588,9 @@ def modifyWMQQueue(scope, name, jndiName, qAttrsList=[], customAttrsList=[], fai
       AdminUtilities.debugNotice("About to call AdminTask command for target : " + str(target))
 
       # Prepare the parameters for the AdminTask command
-      qAttrsList = AdminUtilities.convertParamStringToList(qAttrsList)
-      requiredParameters = [["name", name], ["jndiName", jndiName]]
-      finalAttrsList = requiredParameters + qAttrsList
+      attrsList = AdminUtilities.convertParamStringToList(attrsList)
+      requiredParameters = [["name", name], ["jndiName", jndiName], ["queueName", queueName]]
+      finalAttrsList = requiredParameters + attrsList
       finalParameters = []
       for attrs in finalAttrsList:
         attr = ["-"+attrs[0], attrs[1]]
@@ -623,7 +637,7 @@ def modifyWMQQueue(scope, name, jndiName, qAttrsList=[], customAttrsList=[], fai
 #endDef
 
 # And now - modify the Queue.
-modifyWMQQueue(scope, name, jndiName, attrs, custom_attrs)
+modifyWMQQueue(scope, name, jndiName, queueName, attrs, custom_attrs)
 
 END
     debug "Running #{cmd}"
