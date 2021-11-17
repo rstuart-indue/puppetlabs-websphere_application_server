@@ -138,6 +138,7 @@ Puppet::Type.newtype(:websphere_queue) do
   newproperty(:queue_name) do
     desc 'Required. The name of the WebSphere MQ queue to use to store messages for the WebSphere MQ messaging provider queue type destination definition.'
     validate do |value|
+      debug "Queue name: #{value}"
       raise Puppet::Error, 'Puppet::Type::Websphere_queue: queue_name property must not be empty' if (value.nil? || value.empty?)
     end
   end
