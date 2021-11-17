@@ -111,6 +111,8 @@ Puppet::Type.newtype(:websphere_queue) do
     raise ArgumentError, 'cluster is required when scope is cluster' if self[:cluster].nil? && self[:scope] =~ %r{^cluster$}
     raise ArgumentError, "Invalid profile_base #{self[:profile_base]}" unless Pathname.new(self[:profile_base]).absolute?
 
+    raise Puppet::Error, 'Puppet::Type::Websphere_queue: queue_name property must not be empty' if (self[:queue_name].nil? || self[:queue_name].empty?)
+
     if self[:profile].nil?
       raise ArgumentError, 'profile is required' unless self[:dmgr_profile]
       self[:profile] = self[:dmgr_profile]
