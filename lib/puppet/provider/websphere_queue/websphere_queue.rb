@@ -53,6 +53,7 @@ Puppet::Type.type(:websphere_queue).provide(:wsadmin, parent: Puppet::Provider::
 
     @xlate_cmd_table = {
       'CCSID' => 'ccsid',
+      'baseQueueName' => 'queueName',
     }
 
     # Dynamic debugging
@@ -576,8 +577,8 @@ def modifyWMQQueue(scope, name, jndiName, queueName, attrsList=[], customAttrsLi
     if (len(configIdScope) == 0):
       raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6040E", ["scope", scope]))
 
-    # Get the '\\n' separated string of Connection Factories and make a proper list out of them 
-    qList=AdminTask.listWMQConnectionFactories(configIdScope).split('\\n')
+    # Get the '\\n' separated string of Queues and make a proper list out of them 
+    qList=AdminTask.listWMQQueues(configIdScope).split('\\n')
 
     qRegex = re.compile("%s\\(.*" % name)
 
