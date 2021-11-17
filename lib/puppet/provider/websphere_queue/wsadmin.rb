@@ -3,7 +3,7 @@
 require 'English'
 require_relative '../websphere_helper'
 
-Puppet::Type.type(:websphere_queue).provide(:websphere_queue, parent: Puppet::Provider::Websphere_Helper) do
+Puppet::Type.type(:websphere_queue).provide(:wsadmin, parent: Puppet::Provider::Websphere_Helper) do
   desc <<-DESC
     Provider to manage or create a JMS Queue for the IBM MQ messaging provider at a specific scope.
 
