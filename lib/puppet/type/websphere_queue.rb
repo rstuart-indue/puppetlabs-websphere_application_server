@@ -112,8 +112,6 @@ Puppet::Type.newtype(:websphere_queue) do
     raise ArgumentError, "Invalid profile_base #{self[:profile_base]}" unless Pathname.new(self[:profile_base]).absolute?
 
     raise Puppet::Error, 'Puppet::Type::Websphere_queue: queue_name property must not be empty' if (self[:queue_name].nil? || self[:queue_name].empty?)
-    raise Puppet::Error, 'Puppet::Type::Websphere_Queue: q_data property must be a hash' unless self[:q_data].kind_of?(Hash)
-    raise Puppet::Error, 'Puppet::Type::Websphere_Queue: custom_properties property must be a hash' unless self[:custom_properties].kind_of?(Hash)
 
     if self[:profile].nil?
       raise ArgumentError, 'profile is required' unless self[:dmgr_profile]
@@ -166,6 +164,13 @@ Puppet::Type.newtype(:websphere_queue) do
       true
     end
 
+    # Bail out if the value passed is not a hash.
+    # Because of their number and complexity, there's only so much we can do before we let the users hurt themselves.
+    validate do |value|
+      raise Puppet::Error, 'Puppet::Type::Websphere_queue: q_data property must be a hash' unless value.kind_of?(Hash)
+      #raise Puppet::Error  'Puppet::Type::Websphere_queue: q_data property cannot be empty' if value.empty?
+    end
+
     # We accept properties in any format - but if they're underscore separated, we transform them into camelCase.
     # So a string like some__key_string becomes someKeyString
     munge do |value|
@@ -192,6 +197,12 @@ Puppet::Type.newtype(:websphere_queue) do
         return false unless (property_matches?(is[prop],value) || ((is[prop].nil? || is[prop].empty?) && value.to_s.empty?))
       end
       true
+    end
+
+    # Passed argument must be a hash
+    # Because of their number and complexity, there's only so much we can do before we let the users hurt themselves.
+    validate do |value|
+      raise Puppet::Error, 'Puppet::Type::Websphere_Queue: custom_properties property must be a hash' unless value.kind_of?(Hash)
     end
 
     # We accept properties in any format - but if they're underscore separated, we transform them into camelCase.
