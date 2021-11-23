@@ -128,12 +128,21 @@ Puppet::Type.newtype(:websphere_cf) do
     # At the very least force the user to reflect for their choices in life.
     raise Puppet::Error, 'Puppet::Type::Websphere_Cf: qmgr_data property must be a hash' unless self[:qmgr_data].kind_of?(Hash)
     raise Puppet::Error  'Puppet::Type::Websphere_Cf: qmgr_data property cannot be empty' if self[:qmgr_data].empty?
-    self[:qmgr_data].each do |k, v|
-      case k
-      when :brokerCtrlQueue, :brokerSubQueue, :brokerCCSubQueue, :brokerVersion, :brokerPubQueue, :tempTopicPrefix, :pubAckWindow, :subStore, :stateRefreshInt, :cleanupLevel, :sparesSubs, :wildcardFormat, :brokerQmgr, :clonedSubs, :msgSelection
-        raise Puppet::Error, "Puppet::Type::Websphere_Cf: Argument error in qmgr_data: parameter #{k} with value #{v} is incompatible with type QCF" if self[:cf_type] == :QCF
-      when :msgRetention, :rescanInterval, :tempQueuePrefix, :modelQueue, :replyWithRFH2
-        raise Puppet::Error, "Puppet::Type::Websphere_Cf: Argument error in qmgr_data: parameter #{k} with value #{v} is incompatible with type TCF" if self[:cf_type] == :TCF
+
+    # If we are not using a Unified Connection Factory (CF), we need to verify the params passed to the CF creator.
+    if self[:cf_type] == :QCF || self[:cf_type] == :TCF
+      tcf_arr = [:brokerCtrlQueue, :brokerSubQueue, :brokerCCSubQueue, :brokerVersion, :brokerPubQueue, :tempTopicPrefix, :pubAckWindow, :subStore, :stateRefreshInt, :cleanupLevel, :sparesSubs, :wildcardFormat, :brokerQmgr, :clonedSubs, :msgSelection]
+      qcf_arr = [:msgRetention, :rescanInterval, :tempQueuePrefix, :modelQueue, :replyWithRFH2]
+      tcf_options = tcf_arr.map {|x| [x,true]}.to_h
+      qcf_options = qcf_arr.map {|x| [x,true]}.to_h
+
+      self[:qmgr_data].keys do |k|
+        case k
+        when self[:cf_type] == :QCF && tcf_options.key?(k)
+          raise Puppet::Error, "Puppet::Type::Websphere_Cf: Argument error in qmgr_data: parameter #{k} with value #{v} is incompatible with type QCF"
+        when self[:cf_type] == :TCF && qcf_options.key?(k)
+          raise Puppet::Error, "Puppet::Type::Websphere_Cf: Argument error in qmgr_data: parameter #{k} with value #{v} is incompatible with type TCF"
+        end
       end
     end
   end
