@@ -2,17 +2,17 @@
 
 require 'pathname'
 
-Puppet::Type.newtype(:websphere_queue) do
+Puppet::Type.newtype(:websphere_topic) do
   @doc = <<-DOC
-    @summary This manages a WebSphere JMS Queue resource.
+    @summary This manages a WebSphere JMS Topic resource.
 
     @example
-      websphere_queue { 'was_q':
+      websphere_topic { 'was_t':
         ensure          => 'present',
         jms_provider    => 'builtin_mqprovider',
-        description     => 'Websphere Queue',
-        jndi_name       => 'jms/PUPQ',
-        queue_name      => 'SOME.PUPQUEUE.NAME',
+        description     => 'Websphere Topic',
+        jndi_name       => 'jms/PUPT',
+        topic_name      => 'SOME.PUPTOPIC.NAME',
         profile_base    => '/opt/IBM/WebSphere/AppServer/profiles',
         dmgr_profile    => 'PROFILE_DMGR_01',
         cell            => 'CELL_01',
@@ -32,64 +32,64 @@ Puppet::Type.newtype(:websphere_queue) do
       [
         %r{^([^:]+)$},
         [
-          [:q_name],
+          [:t_name],
         ],
       ],
       # /opt/IBM/WebSphere/AppServer/profiles:QName
       [
-        %r{^([^:]+):([^:]+)$},
+        %r{^(.*):(.*)$},
         [
           [:profile_base],
-          [:q_name],
+          [:t_name],
         ],
       ],
       # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:QName
       [
-        %r{^([^:]+):([^:]+):([^:]+)$},
+        %r{^(.*):(.*):(.*)$},
         [
           [:profile_base],
           [:dmgr_profile],
-          [:q_name],
+          [:t_name],
         ],
       ],
       # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:cell:CELL_01:QName
       [
-        %r{^([^:]+):([^:]+):(cell):([^:]+):([^:]+)$},
+        %r{^(.*):(.*):(cell):(.*):(.*)$},
         [
           [:profile_base],
           [:dmgr_profile],
           [:scope],
           [:cell],
-          [:q_name],
+          [:t_name],
         ],
       ],
       # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:cluster:CELL_01:TEST_CLUSTER_01:QName
       [
-        %r{^([^:]+):([^:]+):(cluster):([^:]+):([^:]+):([^:]+)$},
+        %r{^(.*):(.*):(cluster):(.*):(.*):(.*)$},
         [
           [:profile_base],
           [:dmgr_profile],
           [:scope],
           [:cell],
           [:cluster],
-          [:q_name],
+          [:t_name],
         ],
       ],
       # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:node:CELL_01:AppNode01:QName
       [
-        %r{^([^:]+):([^:]+):(node):([^:]+):([^:]+):([^:]+)$},
+        %r{^(.*):(.*):(node):(.*):(.*):(.*)$},
         [
           [:profile_base],
           [:dmgr_profile],
           [:scope],
           [:cell],
           [:node_name],
-          [:q_name],
+          [:t_name],
         ],
       ],
       # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:server:CELL_01:AppNode01:AppServer01:QName
       [
-        %r{^([^:]+):([^:]+):(server):([^:]+):([^:]+):([^:]+)$},
+        %r{^(.*):(.*):(server):(.*):(.*):(.*)$},
         [
           [:profile_base],
           [:dmgr_profile],
@@ -97,7 +97,7 @@ Puppet::Type.newtype(:websphere_queue) do
           [:cell],
           [:node_name],
           [:server],
-          [:q_name],
+          [:t_name],
         ],
       ],
     ]
@@ -111,22 +111,22 @@ Puppet::Type.newtype(:websphere_queue) do
     raise ArgumentError, 'cluster is required when scope is cluster' if self[:cluster].nil? && self[:scope] =~ %r{^cluster$}
     raise ArgumentError, "Invalid profile_base #{self[:profile_base]}" unless Pathname.new(self[:profile_base]).absolute?
 
-    raise Puppet::Error, 'Puppet::Type::Websphere_queue: queue_name property must not be empty' if (self[:queue_name].nil? || self[:queue_name].empty?)
+    raise Puppet::Error, 'Puppet::Type::Websphere_topic: topic_name property must not be empty' if (self[:topic_name].nil? || self[:topic_name].empty?)
 
     if self[:profile].nil?
       raise ArgumentError, 'profile is required' unless self[:dmgr_profile]
       self[:profile] = self[:dmgr_profile]
     end
 
-    [:q_name, :server, :cell, :node_name, :cluster, :profile, :user].each do |value|
+    [:t_name, :server, :cell, :node_name, :cluster, :profile, :user].each do |value|
       raise ArgumentError, "Invalid #{value} #{self[:value]}" unless %r{^[-0-9A-Za-z._]+$}.match?(value)
     end
   end
 
-  newparam(:q_name) do
+  newparam(:t_name) do
     isnamevar
     desc <<-EOT
-    Required. The administrative name assigned to this WebSphere MQ messaging provider queue type destination to create/modify/remove.
+    Required. The administrative name assigned to this WebSphere MQ messaging provider topic type destination to create/modify/remove.
     
     Example: `QEvents`
     EOT
@@ -134,11 +134,11 @@ Puppet::Type.newtype(:websphere_queue) do
 
   newparam(:jms_provider) do
     defaultto 'builtin_mqprovider'
-    desc 'Optional. The JMS Provider the Queue should be using. Defaults to `builtin_mqprovider`'
+    desc 'Optional. The JMS Provider the Topic should be using. Defaults to `builtin_mqprovider`'
   end
 
-  newproperty(:queue_name) do
-    desc 'Required. The name of the WebSphere MQ queue to use to store messages for the WebSphere MQ messaging provider queue type destination definition.'
+  newproperty(:topic_name) do
+    desc 'Required. The name of the WebSphere MQ topic to use to store messages for the WebSphere MQ messaging provider topic type destination definition.'
   end
 
   newproperty(:jndi_name) do
@@ -146,11 +146,11 @@ Puppet::Type.newtype(:websphere_queue) do
   end
 
   newproperty(:description) do
-    desc 'Required. A meanigful description of the Queue object.'
+    desc 'Required. A meanigful description of the Topic object.'
   end
 
-  newproperty(:q_data) do
-    desc "A hash table containing the Queue settings data to apply to the Queue resource. See createWMQQueue() manual"
+  newproperty(:t_data) do
+    desc "A hash table containing the Topic settings data to apply to the Topic resource. See createWMQTopic() manual"
 
     def insync?(is)
       # There will almost always be more properties on the system than
@@ -167,8 +167,8 @@ Puppet::Type.newtype(:websphere_queue) do
     # Bail out if the value passed is not a hash.
     # Because of their number and complexity, there's only so much we can do before we let the users hurt themselves.
     validate do |value|
-      raise Puppet::Error, 'Puppet::Type::Websphere_queue: q_data property must be a hash' unless value.kind_of?(Hash)
-      #raise Puppet::Error  'Puppet::Type::Websphere_queue: q_data property cannot be empty' if value.empty?
+      raise Puppet::Error, 'Puppet::Type::Websphere_topic: t_data property must be a hash' unless value.kind_of?(Hash)
+      #raise Puppet::Error  'Puppet::Type::Websphere_topic: t_data property cannot be empty' if value.empty?
     end
 
     # We accept properties in any format - but if they're underscore separated, we transform them into camelCase.
@@ -185,7 +185,7 @@ Puppet::Type.newtype(:websphere_queue) do
   end
 
   newproperty(:custom_properties) do
-    desc "A hash table containing the custom properties to be passed to the WebSphere MQ messaging provider queue type destination implementation. See createWMQQueue() manual"
+    desc "A hash table containing the custom properties to be passed to the WebSphere MQ messaging provider topic type destination implementation. See createWMQTopic() manual"
 
     def insync?(is)
       # There will almost always be more properties on the system than
@@ -202,7 +202,7 @@ Puppet::Type.newtype(:websphere_queue) do
     # Passed argument must be a hash
     # Because of their number and complexity, there's only so much we can do before we let the users hurt themselves.
     validate do |value|
-      raise Puppet::Error, 'Puppet::Type::Websphere_Queue: custom_properties property must be a hash' unless value.kind_of?(Hash)
+      raise Puppet::Error, 'Puppet::Type::Websphere_Topic: custom_properties property must be a hash' unless value.kind_of?(Hash)
     end
 
     # We accept properties in any format - but if they're underscore separated, we transform them into camelCase.
@@ -228,7 +228,7 @@ Puppet::Type.newtype(:websphere_queue) do
     defaultto ['zip','xml']
     desc <<-EOT 
     Optional. An array of name suffixes for objects which were found stored as resourceProperties and severely impeding the performance of
-    Queue resource discovery.
+    Topic resource discovery.
     
     If listed and the `sanitize` attribute is set to `true`, any resourceProperty containing any of them in its name will be ignored.
 
@@ -244,29 +244,29 @@ Puppet::Type.newtype(:websphere_queue) do
   newparam(:scope) do
     isnamevar
     desc <<-EOT
-    The scope for the Queue.
+    The scope for the Topic.
     Valid values: cell, cluster, node, or server
     EOT
   end
 
   newparam(:server) do
     isnamevar
-    desc 'The server for which this Queue should be set in'
+    desc 'The server for which this Topic should be set in'
   end
 
   newparam(:cell) do
     isnamevar
-    desc 'The cell for which this Queue should be set in'
+    desc 'The cell for which this Topic should be set in'
   end
 
   newparam(:node_name) do
     isnamevar
-    desc 'The node name for which this Queue should be set in'
+    desc 'The node name for which this Topic should be set in'
   end
 
   newparam(:cluster) do
     isnamevar
-    desc 'The cluster for which this Queue should be set in'
+    desc 'The cluster for which this Topic should be set in'
   end
 
   newparam(:profile) do
@@ -277,7 +277,7 @@ Puppet::Type.newtype(:websphere_queue) do
     isnamevar
     defaultto { @resource[:profile] }
     desc <<-EOT
-    The DMGR profile for which this Queue should be set under.  Basically, where
+    The DMGR profile for which this Topic should be set under.  Basically, where
     are we finding `wsadmin`
 
     This is synonymous with the 'profile' parameter.

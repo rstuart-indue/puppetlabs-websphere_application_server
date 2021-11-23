@@ -3,20 +3,20 @@
 require 'English'
 require_relative '../websphere_helper'
 
-Puppet::Type.type(:websphere_queue).provide(:wsadmin, parent: Puppet::Provider::Websphere_Helper) do
+Puppet::Type.type(:websphere_topic).provide(:wsadmin, parent: Puppet::Provider::Websphere_Helper) do
   desc <<-DESC
-    Provider to manage or create a JMS Queue for the IBM MQ messaging provider at a specific scope.
+    Provider to manage or create a JMS Topic for the IBM MQ messaging provider at a specific scope.
 
     Please see the IBM documentation available at:
-    https://www.ibm.com/docs/en/was/9.0.5?topic=scripting-createwmqqueue-command
+    https://www.ibm.com/docs/en/was/9.0.5?topic=scripting-createwmqtopic-command
     https://www.ibm.com/docs/en/was-nd/9.0.5?topic=cws-mapping-administrative-console-panel-names-command-names-mq-names
 
-    It is recommended to consult the IBM documentation as the JMS queue subject is relatively complex and difficult to abstract.
+    It is recommended to consult the IBM documentation as the JMS topic subject is relatively complex and difficult to abstract.
 
     This provider will not allow the creation of a dummy instance (i.e. no MQ server target)
     This provider will now allow the changing of:
-      * the name of the Queue
-      * the scope of the Queue.
+      * the name of the Topic
+      * the scope of the Topic.
     You need to destroy it first, then create another one with the desired attributes.
 
     We execute the 'wsadmin' tool to query and make changes, which interprets
@@ -29,7 +29,7 @@ Puppet::Type.type(:websphere_queue).provide(:wsadmin, parent: Puppet::Provider::
   def initialize(val = {})
     super(val)
     @property_flush = {}
-    @old_q_data = {}
+    @old_t_data = {}
     @old_custom_properties = {}
 
     # This hash acts as a translation table between what shows up in the XML file
@@ -53,7 +53,7 @@ Puppet::Type.type(:websphere_queue).provide(:wsadmin, parent: Puppet::Provider::
 
     @xlate_cmd_table = {
       'CCSID' => 'ccsid',
-      'baseQueueName' => 'queueName',
+      'baseTopicName' => 'topicName',
     }
 
     # Dynamic debugging
@@ -95,16 +95,16 @@ Puppet::Type.type(:websphere_queue).provide(:wsadmin, parent: Puppet::Provider::
     end
   end
 
-  # Create a JMS Queue
+  # Create a JMS Topic
   def create
 
     # Set the scope for this JMS Resource.
     jms_scope = scope('query') 
 
-    # At the very least - we pass the description of the Queue.
-    q_attrs = [["description", "#{resource[:description]}"]]
-    q_attrs += (resource[:q_data].map{|k,v| [k.to_s, v]}).to_a unless resource[:q_data].nil?
-    q_attrs_str = q_attrs.to_s.tr("\"", "'")
+    # At the very least - we pass the description of the Topic.
+    t_attrs = [["description", "#{resource[:description]}"]]
+    t_attrs += (resource[:t_data].map{|k,v| [k.to_s, v]}).to_a unless resource[:t_data].nil?
+    t_attrs_str = t_attrs.to_s.tr("\"", "'")
 
     custom_attrs = []
     custom_attrs = (resource[:custom_properties].map{|k,v| [k.to_s, v]}).to_a unless resource[:custom_properties].nil?
@@ -113,12 +113,12 @@ Puppet::Type.type(:websphere_queue).provide(:wsadmin, parent: Puppet::Provider::
     cmd = <<-END.unindent
 import AdminUtilities
 
-# Parameters we need for our Queue
+# Parameters we need for our Topic
 scope = '#{jms_scope}'
-name = "#{resource[:q_name]}"
+name = "#{resource[:t_name]}"
 jndiName = "#{resource[:jndi_name]}"
-queueName = "#{resource[:queue_name]}"
-attrs = #{q_attrs_str}
+topicName = "#{resource[:topic_name]}"
+attrs = #{t_attrs_str}
 custom_attrs = #{custom_attrs_str}
 
 # Enable debug notices ('true'/'false')
@@ -140,28 +140,28 @@ def normalizeArgList(argList, argName):
   return argList
 #endDef
 
-def createWMQQueue(scope, name, jndiName, queueName, attrsList=[], customAttrsList=[], failonerror=AdminUtilities._BLANK_ ):
+def createWMQTopic(scope, name, jndiName, topicName, attrsList=[], customAttrsList=[], failonerror=AdminUtilities._BLANK_ ):
   if (failonerror==AdminUtilities._BLANK_):
       failonerror=AdminUtilities._FAIL_ON_ERROR_
   #endIf
-  msgPrefix = "createWMQQueue(" + `scope` + ", " + `name`+ ", " + `jndiName` + ", " + `queueName` + ", " + `attrsList` + ", " + `customAttrsList` + ", " + ", " + `failonerror`+"): "
+  msgPrefix = "createWMQTopic(" + `scope` + ", " + `name`+ ", " + `jndiName` + ", " + `topicName` + ", " + `attrsList` + ", " + `customAttrsList` + ", " + ", " + `failonerror`+"): "
 
   try:
     #--------------------------------------------------------------------
-    # Create a WMQ Queue
+    # Create a WMQ Topic
     #--------------------------------------------------------------------
     AdminUtilities.debugNotice ("---------------------------------------------------------------")
-    AdminUtilities.debugNotice (" AdminJMS: createWMQQueue")
+    AdminUtilities.debugNotice (" AdminJMS: createWMQTopic")
     AdminUtilities.debugNotice (" Scope:")
     AdminUtilities.debugNotice ("     scope:                      "+scope)
-    AdminUtilities.debugNotice (" MQQueue:")
+    AdminUtilities.debugNotice (" MQTopic:")
     AdminUtilities.debugNotice ("     name:                       "+name)
     AdminUtilities.debugNotice ("     jndiName:                   "+jndiName)
-    AdminUtilities.debugNotice ("     queueName:                  "+queueName)
+    AdminUtilities.debugNotice ("     topicName:                  "+topicName)
     AdminUtilities.debugNotice (" Optional Parameters :")
     AdminUtilities.debugNotice ("     AttributesList:             " +str(attrsList))
     AdminUtilities.debugNotice ("     CustomAttributesList:       " +str(customAttrsList))
-    AdminUtilities.debugNotice (" Return: The Configuration Id of the new WMQ Queue")
+    AdminUtilities.debugNotice (" Return: The Configuration Id of the new WMQ Topic")
     AdminUtilities.debugNotice ("---------------------------------------------------------------")
     AdminUtilities.debugNotice (" ")
 
@@ -176,8 +176,8 @@ def createWMQQueue(scope, name, jndiName, queueName, attrsList=[], customAttrsLi
       raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["name", name]))
     if (len(jndiName) == 0):
       raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["jndiName", jndiName]))
-    if (len(queueName) == 0):
-      raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["queueName", queueName]))
+    if (len(topicName) == 0):
+      raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["topicName", topicName]))
 
     # Validate the scope
     # We will end up with a containment path for the scope - convert that to the config id which is needed.
@@ -193,7 +193,7 @@ def createWMQQueue(scope, name, jndiName, queueName, attrsList=[], customAttrsLi
     # Prepare the parameters for the AdminTask command.
     attrsList = AdminUtilities.convertParamStringToList(attrsList)
 
-    requiredParameters = [["name", name], ["jndiName", jndiName], ["queueName", queueName]]
+    requiredParameters = [["name", name], ["jndiName", jndiName], ["topicName", topicName]]
     finalAttrsList = requiredParameters + attrsList
     finalParameters = []
     for attrs in finalAttrsList:
@@ -204,8 +204,8 @@ def createWMQQueue(scope, name, jndiName, queueName, attrsList=[], customAttrsLi
     AdminUtilities.debugNotice("About to call AdminTask command with target : " + str(configIdScope))
     AdminUtilities.debugNotice("About to call AdminTask command with parameters : " + str(finalParameters))
 
-    # Create the Queue
-    newObjectId = AdminTask.createWMQQueue(configIdScope, finalParameters)
+    # Create the Topic
+    newObjectId = AdminTask.createWMQTopic(configIdScope, finalParameters)
 
 #    # Set the custom Attributes list - the parameter takes a mangled array of arrays with no commas
 #    if customAttrsList:
@@ -214,7 +214,7 @@ def createWMQQueue(scope, name, jndiName, queueName, attrsList=[], customAttrsLi
 #
     newObjectId = str(newObjectId)
 
-    # Save this Queue
+    # Save this Topic
     AdminConfig.save()
 
     # Return the config ID of the newly created object
@@ -234,8 +234,8 @@ def createWMQQueue(scope, name, jndiName, queueName, attrsList=[], customAttrsLi
   #endTry
 #endDef
 
-# And now - create the queue
-createWMQQueue(scope, name, jndiName, queueName, attrs, custom_attrs)
+# And now - create the topic
+createWMQTopic(scope, name, jndiName, topicName, attrs, custom_attrs)
 
 END
 
@@ -247,7 +247,7 @@ END
       ## This usually indicates that the server isn't ready on the DMGR yet -
       ## the DMGR needs to do another Puppet run, probably.
       err = <<-EOT
-      Could not create Queue: #{resource[:q_name]}
+      Could not create Topic: #{resource[:t_name]}
       This appears to be due to the remote resource not being available.
       Ensure that all the necessary services have been created and are running
       on this host and the DMGR. If this is the first run, the cluster member
@@ -261,7 +261,7 @@ END
     debug result
   end
 
-  # Check to see if a Queue exists - must return a boolean.
+  # Check to see if a Topic exists - must return a boolean.
   def exists?
     unless File.exist?(scope('file'))
       return false
@@ -289,84 +289,84 @@ END
       xml_content = File.open(scope('file'))
     end
 
-    debug "Retrieving value of #{resource[:jms_provider]}/#{resource[:q_name]} from #{scope('file')}"
+    debug "Retrieving value of #{resource[:jms_provider]}/#{resource[:t_name]} from #{scope('file')}"
     doc = REXML::Document.new(xml_content)
 
-    # We're looking for Queue entries matching our q_name. We have to ensure we're looking under the
+    # We're looking for Topic entries matching our t_name. We have to ensure we're looking under the
     # correct provider entry.
     jms_entry = XPath.first(doc, "/xmi:XMI[@xmlns:resources.jms.mqseries]/resources.jms:JMSProvider[@xmi:id='#{resource[:jms_provider]}']")
-    q_entry = XPath.first(jms_entry, "factories[@xmi:type='resources.jms.mqseries:MQQueue'][@name='#{resource[:q_name]}']") unless jms_entry.nil?
+    t_entry = XPath.first(jms_entry, "factories[@xmi:type='resources.jms.mqseries:MQTopic'][@name='#{resource[:t_name]}']") unless jms_entry.nil?
 
-    # Populate the @old_q_data by discovering what are the params for the given Queue
-    debug "Exists? method is loading existing Queue data attributes/values:"
-    XPath.each(q_entry, "@*")  { |attr|
+    # Populate the @old_t_data by discovering what are the params for the given Topic
+    debug "Exists? method is loading existing Topic data attributes/values:"
+    XPath.each(t_entry, "@*")  { |attr|
       debug "#{attr.name} => #{attr.value}"
       xlated_name = @xlate_cmd_table.key?(attr.name) ? @xlate_cmd_table[attr.name] : attr.name
-      @old_q_data[xlated_name.to_sym] = attr.value
-    } unless q_entry.nil?
+      @old_t_data[xlated_name.to_sym] = attr.value
+    } unless t_entry.nil?
 
     # Extract the connectionPool attributes
-    #XPath.each(q_entry, "connectionPool/@*")  { |attr|
+    #XPath.each(t_entry, "connectionPool/@*")  { |attr|
     #  debug "#{attr.name} => #{attr.value}"
     #  @old_conn_pool_data[attr.name.to_sym] = attr.value
-    #} unless q_entry.nil?
+    #} unless t_entry.nil?
 
-    debug "Exists? method result for #{resource[:q_name]} is: #{q_entry}"
+    debug "Exists? method result for #{resource[:t_name]} is: #{t_entry}"
 
-    !q_entry.nil?
+    !t_entry.nil?
   end
 
-  # Get a Queue's JNDI
+  # Get a Topic's JNDI
   def jndi_name
-    @old_q_data[:jndiName]
+    @old_t_data[:jndiName]
   end
 
-  # Set a Queue's JNDI
+  # Set a Topic's JNDI
   def jndi_name=(val)
     @property_flush[:jndiName] = val
   end
 
-  # Get a Queue's Queue Name
-  def queue_name
-    @old_q_data[:queueName]
+  # Get a Topic's Topic Name
+  def topic_name
+    @old_t_data[:topicName]
   end
 
-  # Set a Queue's Queue Name
-  def queue_name=(val)
-    @property_flush[:queueName] = val
+  # Set a Topic's Topic Name
+  def topic_name=(val)
+    @property_flush[:topicName] = val
   end
 
-  # Get a Queue's description
+  # Get a Topic's description
   def description
-    @old_q_data[:description]
+    @old_t_data[:description]
   end
 
-  # Set a Queue's description
+  # Set a Topic's description
   def description=(val)
     @property_flush[:description] = val
   end
 
-  # Get a Queue's QMGR Settings
-  def q_data
-    @old_q_data
+  # Get a Topic's QMGR Settings
+  def t_data
+    @old_t_data
   end
 
-  # Set a Queue's QMGR Settings
-  def q_data=(val)
-    @property_flush[:q_data] = val
+  # Set a Topic's QMGR Settings
+  def t_data=(val)
+    @property_flush[:t_data] = val
   end
 
-  # Get a Queue's custom properties
+  # Get a Topic's custom properties
   def custom_properties
     @custom_properties
   end
 
-  # Set a Queue's custom properties
+  # Set a Topic's custom properties
   def custom_properties=(val)
     @property_flush[:custom_properties] = val
   end
 
-  # Remove a given Queue - we try to find it first
+  # Remove a given Topic - we try to find it first
   def destroy
 
     # Set the scope for this JMS Resource.
@@ -376,9 +376,9 @@ END
 import AdminUtilities
 import re
 
-# Parameters we need for our Queue removal
+# Parameters we need for our Topic removal
 scope = '#{jms_scope}'
-name = "#{resource[:q_name]}"
+name = "#{resource[:t_name]}"
 
 # Enable debug notices ('true'/'false')
 AdminUtilities.setDebugNotices('#{@jython_debug_state}')
@@ -387,21 +387,21 @@ AdminUtilities.setDebugNotices('#{@jython_debug_state}')
 bundleName = "com.ibm.ws.scripting.resources.scriptLibraryMessage"
 resourceBundle = AdminUtilities.getResourceBundle(bundleName)
 
-def deleteWMQQueue(scope, name, failonerror=AdminUtilities._BLANK_ ):
+def deleteWMQTopic(scope, name, failonerror=AdminUtilities._BLANK_ ):
   if (failonerror==AdminUtilities._BLANK_):
       failonerror=AdminUtilities._FAIL_ON_ERROR_
   #endIf
-  msgPrefix = "deleteWMQQueue(" + `scope` + ", " + `name`+ ", " + `failonerror`+"): "
+  msgPrefix = "deleteWMQTopic(" + `scope` + ", " + `name`+ ", " + `failonerror`+"): "
 
   try:
     #--------------------------------------------------------------------
-    # Delete a WMQ Queue
+    # Delete a WMQ Topic
     #--------------------------------------------------------------------
     AdminUtilities.debugNotice ("---------------------------------------------------------------")
-    AdminUtilities.debugNotice (" AdminJMS: deleteWMQQueue ")
+    AdminUtilities.debugNotice (" AdminJMS: deleteWMQTopic ")
     AdminUtilities.debugNotice (" Scope:")
     AdminUtilities.debugNotice ("     scope:                      "+scope)
-    AdminUtilities.debugNotice (" MQQueue:")
+    AdminUtilities.debugNotice (" MQTopic:")
     AdminUtilities.debugNotice ("     name:                       "+name)
     AdminUtilities.debugNotice (" Return: NIL")
     AdminUtilities.debugNotice ("---------------------------------------------------------------")
@@ -424,19 +424,19 @@ def deleteWMQQueue(scope, name, failonerror=AdminUtilities._BLANK_ ):
     if (len(configIdScope) == 0):
       raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6040E", ["scope", scope]))
 
-    # Get the '\\n' separated string of queues and make a proper list out of them 
-    qList=AdminTask.listWMQQueues(configIdScope).split('\\n')
+    # Get the '\\n' separated string of topics and make a proper list out of them 
+    tList=AdminTask.listWMQTopics(configIdScope).split('\\n')
 
-    qRegex = re.compile("%s\\(.*" % name)
+    tRegex = re.compile("%s\\(.*" % name)
 
-    target=list(filter(qRegex.match, qList))
+    target=list(filter(tRegex.match, tList))
     if (len(target) == 1):
       # Call the corresponding AdminTask command
       AdminUtilities.debugNotice("About to call AdminTask command with scope : " + str(configIdScope))
       AdminUtilities.debugNotice("About to call AdminTask command for target : " + str(target))
 
-      # Delete the Queue
-      AdminTask.deleteWMQQueue(str(target[0]))
+      # Delete the Topic
+      AdminTask.deleteWMQTopic(str(target[0]))
 
       AdminConfig.save()
     elif (len(target) == 0):
@@ -458,8 +458,8 @@ def deleteWMQQueue(scope, name, failonerror=AdminUtilities._BLANK_ ):
   #endTry
 #endDef
 
-# And now - delete the queue
-deleteWMQQueue(scope, name)
+# And now - delete the topic
+deleteWMQTopic(scope, name)
 
 END
 
@@ -487,10 +487,10 @@ END
     # Set the scope for this JMS Resource.
     jms_scope = scope('query') 
 
-    # At the very least - we pass the description of the Queue.
-    q_attrs = [["description", "#{resource[:description]}"]]
-    q_attrs += (resource[:q_data].map{|k,v| [k.to_s, v]}).to_a unless resource[:q_data].nil?
-    q_attrs_str = q_attrs.to_s.tr("\"", "'")
+    # At the very least - we pass the description of the Topic.
+    t_attrs = [["description", "#{resource[:description]}"]]
+    t_attrs += (resource[:t_data].map{|k,v| [k.to_s, v]}).to_a unless resource[:t_data].nil?
+    t_attrs_str = t_attrs.to_s.tr("\"", "'")
 
     custom_attrs = []
     custom_attrs = (resource[:custom_properties].map{|k,v| [k.to_s, v]}).to_a unless resource[:custom_properties].nil?
@@ -500,12 +500,12 @@ END
 import AdminUtilities
 import re
 
-# Parameters we need for our Queue
+# Parameters we need for our Topic
 scope = '#{jms_scope}'
-name = "#{resource[:q_name]}"
+name = "#{resource[:t_name]}"
 jndiName = "#{resource[:jndi_name]}"
-queueName = "#{resource[:queue_name]}"
-attrs = #{q_attrs_str}
+topicName = "#{resource[:topic_name]}"
+attrs = #{t_attrs_str}
 custom_attrs = #{custom_attrs_str}
 
 # Enable debug notices ('true'/'false')
@@ -527,28 +527,28 @@ def normalizeArgList(argList, argName):
   return argList
 #endDef
 
-def modifyWMQQueue(scope, name, jndiName, queueName, attrsList=[], customAttrsList=[], failonerror=AdminUtilities._BLANK_ ):
+def modifyWMQTopic(scope, name, jndiName, topicName, attrsList=[], customAttrsList=[], failonerror=AdminUtilities._BLANK_ ):
   if (failonerror==AdminUtilities._BLANK_):
       failonerror=AdminUtilities._FAIL_ON_ERROR_
   #endIf
-  msgPrefix = "modifyWMQQueue(" + `scope` + ", " + `name`+ ", " + `jndiName` + ", " + `queueName` + ", " + `attrsList` + ", " + `customAttrsList` + ", " + ", " + `failonerror`+"): "
+  msgPrefix = "modifyWMQTopic(" + `scope` + ", " + `name`+ ", " + `jndiName` + ", " + `topicName` + ", " + `attrsList` + ", " + `customAttrsList` + ", " + ", " + `failonerror`+"): "
 
   try:
     #--------------------------------------------------------------------
-    # Modify a WMQ Queue
+    # Modify a WMQ Topic
     #--------------------------------------------------------------------
     AdminUtilities.debugNotice ("---------------------------------------------------------------")
-    AdminUtilities.debugNotice (" AdminJMS: modifyWMQQueue ")
+    AdminUtilities.debugNotice (" AdminJMS: modifyWMQTopic ")
     AdminUtilities.debugNotice (" Scope:")
     AdminUtilities.debugNotice ("     scope:                      "+scope)
-    AdminUtilities.debugNotice (" MQQueue:")
+    AdminUtilities.debugNotice (" MQTopic:")
     AdminUtilities.debugNotice ("     name:                       "+name)
     AdminUtilities.debugNotice ("     jndiName:                   "+jndiName)
-    AdminUtilities.debugNotice ("     queueName:                  "+queueName)
+    AdminUtilities.debugNotice ("     topicName:                  "+topicName)
     AdminUtilities.debugNotice (" Optional Parameters :")
     AdminUtilities.debugNotice ("   otherAttributesList:          " +str(attrsList))
     AdminUtilities.debugNotice ("   CustomAttributesList:         " +str(customAttrsList))
-    AdminUtilities.debugNotice (" Return: The Configuration Id of the new WM Queue")
+    AdminUtilities.debugNotice (" Return: The Configuration Id of the new WM Topic")
     AdminUtilities.debugNotice ("---------------------------------------------------------------")
     AdminUtilities.debugNotice (" ")
 
@@ -563,8 +563,8 @@ def modifyWMQQueue(scope, name, jndiName, queueName, attrsList=[], customAttrsLi
       raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["name", name]))
     if (len(jndiName) == 0):
       raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["jndiName", jndiName]))
-    if (len(queueName) == 0):
-      raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["queueName", queueName]))
+    if (len(topicName) == 0):
+      raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["topicName", topicName]))
 
     # Validate the scope
     # We will end up with a containment path for the scope - convert that to the config id which is needed.
@@ -577,12 +577,12 @@ def modifyWMQQueue(scope, name, jndiName, queueName, attrsList=[], customAttrsLi
     if (len(configIdScope) == 0):
       raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6040E", ["scope", scope]))
 
-    # Get the '\\n' separated string of Queues and make a proper list out of them 
-    qList=AdminTask.listWMQQueues(configIdScope).split('\\n')
+    # Get the '\\n' separated string of Topics and make a proper list out of them 
+    tList=AdminTask.listWMQTopics(configIdScope).split('\\n')
 
-    qRegex = re.compile("%s\\(.*" % name)
+    tRegex = re.compile("%s\\(.*" % name)
 
-    target=list(filter(qRegex.match, qList))
+    target=list(filter(tRegex.match, tList))
     if (len(target) == 1):
       # Call the corresponding AdminTask command
       AdminUtilities.debugNotice("About to call AdminTask command with scope : " + str(configIdScope))
@@ -590,7 +590,7 @@ def modifyWMQQueue(scope, name, jndiName, queueName, attrsList=[], customAttrsLi
 
       # Prepare the parameters for the AdminTask command
       attrsList = AdminUtilities.convertParamStringToList(attrsList)
-      requiredParameters = [["name", name], ["jndiName", jndiName], ["queueName", queueName]]
+      requiredParameters = [["name", name], ["jndiName", jndiName], ["topicName", topicName]]
       finalAttrsList = requiredParameters + attrsList
       finalParameters = []
       for attrs in finalAttrsList:
@@ -600,8 +600,8 @@ def modifyWMQQueue(scope, name, jndiName, queueName, attrsList=[], customAttrsLi
       # Call the corresponding AdminTask command
       AdminUtilities.debugNotice("About to call AdminTask command with parameters : " + str(finalParameters))
 
-      # Modify the Queue
-      newObjectId = AdminTask.modifyWMQQueue(str(target[0]), finalParameters)
+      # Modify the Topic
+      newObjectId = AdminTask.modifyWMQTopic(str(target[0]), finalParameters)
 
       # Set the custom attributes list - the modify() takes a mangled array of arrays with no commas
       #if customAttrsList:
@@ -610,7 +610,7 @@ def modifyWMQQueue(scope, name, jndiName, queueName, attrsList=[], customAttrsLi
 
       newObjectId = str(newObjectId)
   
-      # Save this Queue
+      # Save this Topic
       AdminConfig.save()
   
       # Return the config ID of the newly created object
@@ -637,8 +637,8 @@ def modifyWMQQueue(scope, name, jndiName, queueName, attrsList=[], customAttrsLi
   #endTry
 #endDef
 
-# And now - modify the Queue.
-modifyWMQQueue(scope, name, jndiName, queueName, attrs, custom_attrs)
+# And now - modify the Topic.
+modifyWMQTopic(scope, name, jndiName, topicName, attrs, custom_attrs)
 
 END
     debug "Running #{cmd}"
