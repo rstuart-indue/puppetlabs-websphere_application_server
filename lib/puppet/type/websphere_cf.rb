@@ -48,7 +48,6 @@ Puppet::Type.newtype(:websphere_cf) do
       ],
       # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:CFName
       [
-        #%r{^(.*):(.*):(.*)$},
         %r{^([^:]+):([^:]+):([^:]+)$},
         [
           [:profile_base],
@@ -58,7 +57,7 @@ Puppet::Type.newtype(:websphere_cf) do
       ],
       # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:cell:CELL_01:CFName
       [
-        %r{^(.*):(.*):(cell):(.*):(.*)$},
+        %r{^([^:]+):([^:]+):(cell):([^:]+):([^:]+)$},
         [
           [:profile_base],
           [:dmgr_profile],
@@ -69,7 +68,7 @@ Puppet::Type.newtype(:websphere_cf) do
       ],
       # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:cluster:CELL_01:TEST_CLUSTER_01:CFName
       [
-        %r{^(.*):(.*):(cluster):(.*):(.*):(.*)$},
+        %r{^([^:]+):([^:]+):(cluster):([^:]+):([^:]+):([^:]+)$},
         [
           [:profile_base],
           [:dmgr_profile],
@@ -81,7 +80,7 @@ Puppet::Type.newtype(:websphere_cf) do
       ],
       # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:node:CELL_01:AppNode01:CFName
       [
-        %r{^(.*):(.*):(node):(.*):(.*):(.*)$},
+        %r{^([^:]+):([^:]+):(node):([^:]+):([^:]+):([^:]+)$},
         [
           [:profile_base],
           [:dmgr_profile],
@@ -93,7 +92,7 @@ Puppet::Type.newtype(:websphere_cf) do
       ],
       # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:server:CELL_01:AppNode01:AppServer01:CFName
       [
-        %r{^(.*):(.*):(server):(.*):(.*):(.*)$},
+        %r{^([^:]+):([^:]+):(server):([^:]+):([^:]+):([^:]+)$},
         [
           [:profile_base],
           [:dmgr_profile],
