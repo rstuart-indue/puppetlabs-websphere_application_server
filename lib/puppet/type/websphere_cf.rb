@@ -129,10 +129,7 @@ Puppet::Type.newtype(:websphere_cf) do
     raise Puppet::Error, 'Puppet::Type::Websphere_Cf: qmgr_data property must be a hash' unless self[:qmgr_data].kind_of?(Hash)
     raise Puppet::Error  'Puppet::Type::Websphere_Cf: qmgr_data property cannot be empty' if self[:qmgr_data].empty?
     self[:qmgr_data].each do |k, v|
-      # camelCase and convert our hash keys to symbols.
-      k_sym = k.split('_').inject{|m, p| m + p.capitalize}.to_sym
-
-      case k_sym
+      case k
       when :brokerCtrlQueue, :brokerSubQueue, :brokerCCSubQueue, :brokerVersion, :brokerPubQueue, :tempTopicPrefix, :pubAckWindow, :subStore, :stateRefreshInt, :cleanupLevel, :sparesSubs, :wildcardFormat, :brokerQmgr, :clonedSubs, :msgSelection
         raise Puppet::Error "Puppet::Type::Websphere_Cf: Argument error in qmgr_data: parameter #{k} with value #{v} is incompatible with type QCF" if self[:cf_type] == :QCF
       when :msgRetention, :rescanInterval, :tempQueuePrefix, :modelQueue, :replyWithRFH2
