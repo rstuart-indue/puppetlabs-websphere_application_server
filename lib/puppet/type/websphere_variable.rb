@@ -101,6 +101,10 @@ Puppet::Type.newtype(:websphere_variable) do
 
   validate do
 
+    debug "Profile base: #{self[:profile_base]}"
+    debug "DMGR Profile:#{self[:dmgr_profile]}"
+    debug "Variable:    #{self[:variable]}"
+
     raise ArgumentError, "Invalid scope #{self[:scope]}: Must be cell, cluster, node, or server" unless %r{^(cell|cluster|node|server)$}.match?(self[:scope])
     raise ArgumentError, 'server is required when scope is server' if self[:server].nil? && self[:scope] == 'server'
     raise ArgumentError, 'cell is required' if self[:cell].nil?
