@@ -139,9 +139,9 @@ Puppet::Type.newtype(:websphere_cf) do
       self[:qmgr_data].keys do |k|
         case k
         when self[:cf_type] == :QCF && tcf_options.key?(k)
-          raise Puppet::Error, "Puppet::Type::Websphere_Cf: Argument error in qmgr_data: parameter #{k} with value #{v} is incompatible with type QCF"
+          raise Puppet::Error, "Puppet::Type::Websphere_Cf: Argument error in qmgr_data: parameter #{k} is incompatible with a connection factory of type QCF"
         when self[:cf_type] == :TCF && qcf_options.key?(k)
-          raise Puppet::Error, "Puppet::Type::Websphere_Cf: Argument error in qmgr_data: parameter #{k} with value #{v} is incompatible with type TCF"
+          raise Puppet::Error, "Puppet::Type::Websphere_Cf: Argument error in qmgr_data: parameter #{k} is incompatible with a connection factory of type TCF"
         end
       end
     end
