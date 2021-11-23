@@ -122,6 +122,23 @@ Puppet::Type.newtype(:websphere_cf) do
     [:cf_name, :server, :cell, :node_name, :cluster, :profile, :user].each do |value|
       raise ArgumentError, "Invalid #{value} #{self[:value]}" unless %r{^[-0-9A-Za-z._]+$}.match?(value)
     end
+
+    # Whilst we can create a CF with not a lot of data, what's the point?
+    # Bail out if the value passed is not a hash or if the hash is empty.
+    # At the very least force the user to reflect for their choices in life.
+    raise Puppet::Error, 'Puppet::Type::Websphere_Cf: qmgr_data property must be a hash' unless self[:qmgr_data].kind_of?(Hash)
+    raise Puppet::Error  'Puppet::Type::Websphere_Cf: qmgr_data property cannot be empty' if self[:qmgr_data].empty?
+    self[:qmgr_data].each do |k, v|
+      # camelCase and convert our hash keys to symbols.
+      k_sym = k.split('_').inject{|m, p| m + p.capitalize}.to_sym
+
+      case k_sym
+      when :brokerCtrlQueue, :brokerSubQueue, :brokerCCSubQueue, :brokerVersion, :brokerPubQueue, :tempTopicPrefix, :pubAckWindow, :subStore, :stateRefreshInt, :cleanupLevel, :sparesSubs, :wildcardFormat, :brokerQmgr, :clonedSubs, :msgSelection
+        raise Puppet::Error "Puppet::Type::Websphere_Cf: Argument error in qmgr_data: parameter #{k} with value #{v} is incompatible with type QCF" if self[:cf_type] == :QCF
+      when :msgRetention, :rescanInterval, :tempQueuePrefix, :modelQueue, :replyWithRFH2
+        raise Puppet::Error "Puppet::Type::Websphere_Cf: Argument error in qmgr_data: parameter #{k} with value #{v} is incompatible with type TCF" if self[:cf_type] == :TCF
+      end
+    end
   end
 
   newparam(:cf_name) do
@@ -167,14 +184,6 @@ Puppet::Type.newtype(:websphere_cf) do
       true
     end
 
-    # Whilst we can create a CF with not a lot of data, what's the point?
-    # Bail out if the value passed is not a hash or if the hash is empty.
-    # At the very least force the user to reflect for their choices in life.
-    validate do |value|
-      raise Puppet::Error, 'Puppet::Type::Websphere_Cf: qmgr_data property must be a hash' unless value.kind_of?(Hash)
-      raise Puppet::Error  'Puppet::Type::Websphere_Cf: qmgr_data property cannot be empty' if value.empty?
-    end
-
     # Do some basic checking for the passed in QMGR params
     # Because of their number and complexity, there's only so much we can do before we let the users hurt themselves.
     munge do |value|
@@ -182,15 +191,6 @@ Puppet::Type.newtype(:websphere_cf) do
       value.each do |k, v|
         # camelCase and convert our hash keys to symbols.
         k_sym = k.split('_').inject{|m, p| m + p.capitalize}.to_sym
-
-        case k_sym
-        when :brokerCtrlQueue, :brokerSubQueue, :brokerCCSubQueue, :brokerVersion, :brokerPubQueue, :tempTopicPrefix, :pubAckWindow, :subStore, :stateRefreshInt, :cleanupLevel, :sparesSubs, :wildcardFormat, :brokerQmgr, :clonedSubs, :msgSelection
-          raise Puppet::Error "Puppet::Type::Websphere_Cf: Argument error in qmgr_data: parameter #{k} with value #{v} is incompatible with type QCF" if self[:cf_type] == 'QCF'
-        when :msgRetention, :rescanInterval, :tempQueuePrefix, :modelQueue, :replyWithRFH2
-          raise Puppet::Error "Puppet::Type::Websphere_Cf: Argument error in qmgr_data: parameter #{k} with value #{v} is incompatible with type TCF" if self[:cf_type] == 'TCF'
-        #else
-        #  super
-        end
         munged_values[k_sym] = v
       end
       munged_values
