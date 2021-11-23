@@ -142,6 +142,8 @@ Puppet::Type.newtype(:websphere_cf) do
     defaultto :CF
     newvalues(:CF, :QCF, :TCF)
     desc 'Optional. The Connection Factory type. Can be one of CF, QCF or TCF. Defaults to CF.'
+    debug "CF Type: #{resource[:cf_type]}"
+    debug "CF Type: #{self[:cf_type]}"
   end
 
   newproperty(:jndi_name) do
@@ -185,9 +187,9 @@ Puppet::Type.newtype(:websphere_cf) do
 
         case k_sym
         when :brokerCtrlQueue, :brokerSubQueue, :brokerCCSubQueue, :brokerVersion, :brokerPubQueue, :tempTopicPrefix, :pubAckWindow, :subStore, :stateRefreshInt, :cleanupLevel, :sparesSubs, :wildcardFormat, :brokerQmgr, :clonedSubs, :msgSelection
-          raise Puppet::Error "Puppet::Type::Websphere_Cf: Argument error in qmgr_data: parameter #{k} with value #{v} is incompatible with type QCF" if resource[:cf_type] == 'QCF'
+          raise Puppet::Error "Puppet::Type::Websphere_Cf: Argument error in qmgr_data: parameter #{k} with value #{v} is incompatible with type QCF" if self[:cf_type] == 'QCF'
         when :msgRetention, :rescanInterval, :tempQueuePrefix, :modelQueue, :replyWithRFH2
-          raise Puppet::Error "Puppet::Type::Websphere_Cf: Argument error in qmgr_data: parameter #{k} with value #{v} is incompatible with type TCF" if resource[:cf_type] == 'TCF'
+          raise Puppet::Error "Puppet::Type::Websphere_Cf: Argument error in qmgr_data: parameter #{k} with value #{v} is incompatible with type TCF" if self[:cf_type] == 'TCF'
         #else
         #  super
         end
