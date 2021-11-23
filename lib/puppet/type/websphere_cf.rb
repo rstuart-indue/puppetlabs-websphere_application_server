@@ -40,7 +40,7 @@ Puppet::Type.newtype(:websphere_cf) do
       ],
       # /opt/IBM/WebSphere/AppServer/profiles:CFName
       [
-        %r{^(.*):(.*)$},
+        %r{^([^:]+):([^:]+)$},
         [
           [:profile_base],
           [:cf_name],
@@ -48,7 +48,8 @@ Puppet::Type.newtype(:websphere_cf) do
       ],
       # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:CFName
       [
-        %r{^(.*):(.*):(.*)$},
+        #%r{^(.*):(.*):(.*)$},
+        %r{^([^:]+):([^:]+):([^:]+)$},
         [
           [:profile_base],
           [:dmgr_profile],
