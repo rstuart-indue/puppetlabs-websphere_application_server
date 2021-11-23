@@ -37,7 +37,7 @@ Puppet::Type.newtype(:websphere_queue) do
       ],
       # /opt/IBM/WebSphere/AppServer/profiles:QName
       [
-        %r{^(.*):(.*)$},
+        %r{^([^:]+):([^:]+)$},
         [
           [:profile_base],
           [:q_name],
@@ -45,7 +45,7 @@ Puppet::Type.newtype(:websphere_queue) do
       ],
       # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:QName
       [
-        %r{^(.*):(.*):(.*)$},
+        %r{^([^:]+):([^:]+):([^:]+)$},
         [
           [:profile_base],
           [:dmgr_profile],
@@ -54,7 +54,7 @@ Puppet::Type.newtype(:websphere_queue) do
       ],
       # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:cell:CELL_01:QName
       [
-        %r{^(.*):(.*):(cell):(.*):(.*)$},
+        %r{^([^:]+):([^:]+):(cell):([^:]+):([^:]+)$},
         [
           [:profile_base],
           [:dmgr_profile],
@@ -65,7 +65,7 @@ Puppet::Type.newtype(:websphere_queue) do
       ],
       # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:cluster:CELL_01:TEST_CLUSTER_01:QName
       [
-        %r{^(.*):(.*):(cluster):(.*):(.*):(.*)$},
+        %r{^([^:]+):([^:]+):(cluster):([^:]+):([^:]+):([^:]+)$},
         [
           [:profile_base],
           [:dmgr_profile],
@@ -77,7 +77,7 @@ Puppet::Type.newtype(:websphere_queue) do
       ],
       # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:node:CELL_01:AppNode01:QName
       [
-        %r{^(.*):(.*):(node):(.*):(.*):(.*)$},
+        %r{^([^:]+):([^:]+):(node):([^:]+):([^:]+):([^:]+)$},
         [
           [:profile_base],
           [:dmgr_profile],
@@ -89,7 +89,7 @@ Puppet::Type.newtype(:websphere_queue) do
       ],
       # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:server:CELL_01:AppNode01:AppServer01:QName
       [
-        %r{^(.*):(.*):(server):(.*):(.*):(.*)$},
+        %r{^([^:]+):([^:]+):(server):([^:]+):([^:]+):([^:]+)$},
         [
           [:profile_base],
           [:dmgr_profile],
