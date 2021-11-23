@@ -142,7 +142,6 @@ Puppet::Type.newtype(:websphere_cf) do
     defaultto :CF
     newvalues(:CF, :QCF, :TCF)
     desc 'Optional. The Connection Factory type. Can be one of CF, QCF or TCF. Defaults to CF.'
-    debug "CF Type: #{self[:cf_type]}"
   end
 
   newproperty(:jndi_name) do
