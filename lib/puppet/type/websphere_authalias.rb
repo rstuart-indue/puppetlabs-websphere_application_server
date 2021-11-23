@@ -43,7 +43,7 @@ Puppet::Type.newtype(:websphere_authalias) do
       ],
       # /opt/IBM/WebSphere/AppServer/profiles:aliasid
       [
-        %r{^(.*):(.*)$},
+        %r{^([^:]+):([^:]+)$},
         [
           [:profile_base],
           [:aliasid],
@@ -51,7 +51,7 @@ Puppet::Type.newtype(:websphere_authalias) do
       ],
       # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:aliasid
       [
-        %r{^(.*):(.*):(.*)$},
+        %r{^([^:]+):([^:]+):([^:]+)$},
         [
           [:profile_base],
           [:dmgr_profile],
@@ -60,7 +60,7 @@ Puppet::Type.newtype(:websphere_authalias) do
       ],
       # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:CELL_01:aliasid
       [
-        %r{^(.*):(.*):(.*):(.*)$},
+        %r{^([^:]+):([^:]+):([^:]+):([^:]+)$},
         [
           [:profile_base],
           [:dmgr_profile],
