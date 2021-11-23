@@ -104,8 +104,7 @@ Puppet::Type.newtype(:websphere_variable) do
     #Debugging:
     debug "Self:"
     debug self.methods
-    debug self.local_variables
-    debug self.global_variables
+    debug self.instance_variables
 
     raise ArgumentError, "Invalid scope #{self[:scope]}: Must be cell, cluster, node, or server" unless %r{^(cell|cluster|node|server)$}.match?(self[:scope])
     raise ArgumentError, 'server is required when scope is server' if self[:server].nil? && self[:scope] == 'server'
