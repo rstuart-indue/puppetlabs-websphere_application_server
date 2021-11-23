@@ -37,7 +37,7 @@ Puppet::Type.newtype(:websphere_group) do
       ],
       # /opt/IBM/WebSphere/AppServer/profiles:groupID
       [
-        %r{^(.*):(.*)$},
+        %r{^([^:]+):([^:]+)$},
         [
           [:profile_base],
           [:groupid],
@@ -45,7 +45,7 @@ Puppet::Type.newtype(:websphere_group) do
       ],
       # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:groupID
       [
-        %r{^(.*):(.*):(.*)$},
+        %r{^([^:]+):([^:]+):([^:]+)$},
         [
           [:profile_base],
           [:dmgr_profile],
@@ -54,7 +54,7 @@ Puppet::Type.newtype(:websphere_group) do
       ],
       # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:CELL_01:groupID
       [
-        %r{^(.*):(.*):(.*):(.*)$},
+        %r{^([^:]+):([^:]+):([^:]+):([^:]+)$},
         [
           [:profile_base],
           [:dmgr_profile],
