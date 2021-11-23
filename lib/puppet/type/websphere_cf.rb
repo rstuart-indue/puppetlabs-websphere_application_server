@@ -131,9 +131,9 @@ Puppet::Type.newtype(:websphere_cf) do
     self[:qmgr_data].each do |k, v|
       case k
       when :brokerCtrlQueue, :brokerSubQueue, :brokerCCSubQueue, :brokerVersion, :brokerPubQueue, :tempTopicPrefix, :pubAckWindow, :subStore, :stateRefreshInt, :cleanupLevel, :sparesSubs, :wildcardFormat, :brokerQmgr, :clonedSubs, :msgSelection
-        raise Puppet::Error "Puppet::Type::Websphere_Cf: Argument error in qmgr_data: parameter #{k} with value #{v} is incompatible with type QCF" if self[:cf_type] == :QCF
+        raise Puppet::Error, "Puppet::Type::Websphere_Cf: Argument error in qmgr_data: parameter #{k} with value #{v} is incompatible with type QCF" if self[:cf_type] == :QCF
       when :msgRetention, :rescanInterval, :tempQueuePrefix, :modelQueue, :replyWithRFH2
-        raise Puppet::Error "Puppet::Type::Websphere_Cf: Argument error in qmgr_data: parameter #{k} with value #{v} is incompatible with type TCF" if self[:cf_type] == :TCF
+        raise Puppet::Error, "Puppet::Type::Websphere_Cf: Argument error in qmgr_data: parameter #{k} with value #{v} is incompatible with type TCF" if self[:cf_type] == :TCF
       end
     end
   end
