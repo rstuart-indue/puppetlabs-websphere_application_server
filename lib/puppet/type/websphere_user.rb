@@ -43,7 +43,7 @@ Puppet::Type.newtype(:websphere_user) do
       ],
       # /opt/IBM/WebSphere/AppServer/profiles:userID
       [
-        %r{^(.*):(.*)$},
+        %r{^([^:]+):([^:]+)$},
         [
           [:profile_base],
           [:userid],
@@ -51,7 +51,7 @@ Puppet::Type.newtype(:websphere_user) do
       ],
       # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:userID
       [
-        %r{^(.*):(.*):(.*)$},
+        %r{^([^:]+):([^:]+):([^:]+)$},
         [
           [:profile_base],
           [:dmgr_profile],
@@ -60,7 +60,7 @@ Puppet::Type.newtype(:websphere_user) do
       ],
       # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:CELL_01:userID
       [
-        %r{^(.*):(.*):(.*):(.*)$},
+        %r{^([^:]+):([^:]+):([^:]+):([^:]+)$},
         [
           [:profile_base],
           [:dmgr_profile],
