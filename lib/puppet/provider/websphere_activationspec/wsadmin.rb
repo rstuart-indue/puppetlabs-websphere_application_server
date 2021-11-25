@@ -315,7 +315,7 @@ END
       debug "#{name_prop.value} :: #{value_prop.value}"
       xlated_name = @xlate_cmd_table.key?(name_prop.value) ? @xlate_cmd_table[name_prop.value] : name_prop.value
       @old_qmgr_data[xlated_name.to_sym] = value_prop.value
-    } unless jms_entry.nil?
+    } unless as_entry.nil?
     
     debug "Exists? method result for #{resource[:as_name]} is: #{as_entry}"
 
