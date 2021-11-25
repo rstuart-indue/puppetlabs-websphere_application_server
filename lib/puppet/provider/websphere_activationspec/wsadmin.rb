@@ -142,23 +142,23 @@ def normalizeArgList(argList, argName):
   return argList
 #endDef
 
-def createWMActivationSpecs(scope, name, jndiName, dType, destJndiName, qmgrList=[], failonerror=AdminUtilities._BLANK_ ):
+def createWMActivationSpec(scope, name, jndiName, dType, destJndiName, qmgrList=[], failonerror=AdminUtilities._BLANK_ ):
   if (failonerror==AdminUtilities._BLANK_):
       failonerror=AdminUtilities._FAIL_ON_ERROR_
   #endIf
-  msgPrefix = "createWMActivationSpecs(" + `scope` +  ", " + `name`+ ", " + `jndiName` + ", " + `dType` + ", " + `destJndiName` +  ", " + `qmgrList` + ", " + `failonerror`+"): "
+  msgPrefix = "createWMActivationSpec(" + `scope` +  ", " + `name`+ ", " + `jndiName` + ", " + `dType` + ", " + `destJndiName` +  ", " + `qmgrList` + ", " + `failonerror`+"): "
 
   try:
     #--------------------------------------------------------------------
     # Create a WMQ Activation Specs
     #--------------------------------------------------------------------
     AdminUtilities.debugNotice ("---------------------------------------------------------------")
-    AdminUtilities.debugNotice (" AdminJMS: createWMQActivationSpecs ")
+    AdminUtilities.debugNotice (" AdminJMS: createWMQActivationSpec ")
     AdminUtilities.debugNotice (" Scope:")
     AdminUtilities.debugNotice ("     scope:                      "+scope)
     AdminUtilities.debugNotice (" Type:")
     AdminUtilities.debugNotice ("     type:                       "+dType)
-    AdminUtilities.debugNotice (" MQActivationSpecs:")
+    AdminUtilities.debugNotice (" MQActivationSpec:")
     AdminUtilities.debugNotice ("     name:                       "+name)
     AdminUtilities.debugNotice ("     jndiName:                   "+jndiName)
     AdminUtilities.debugNotice ("     destinationJndiName:        "+destJndiName)
@@ -211,7 +211,7 @@ def createWMActivationSpecs(scope, name, jndiName, dType, destJndiName, qmgrList
     AdminUtilities.debugNotice("About to call AdminTask command with parameters : " + str(finalParameters))
 
     # Create the Activation Specs
-    newObjectId = AdminTask.createWMQActivationSpecs(configIdScope, finalParameters)
+    newObjectId = AdminTask.createWMQActivationSpec(configIdScope, finalParameters)
 
     newObjectId = str(newObjectId)
 
@@ -236,7 +236,7 @@ def createWMActivationSpecs(scope, name, jndiName, dType, destJndiName, qmgrList
 #endDef
 
 # And now - create the activation specs
-createWMActivationSpecs(scope, name, jndiName, dest_type, dest_jndi, qmgr_attrs)
+createWMActivationSpec(scope, name, jndiName, dest_type, dest_jndi, qmgr_attrs)
 
 END
 
@@ -393,21 +393,21 @@ AdminUtilities.setDebugNotices('#{@jython_debug_state}')
 bundleName = "com.ibm.ws.scripting.resources.scriptLibraryMessage"
 resourceBundle = AdminUtilities.getResourceBundle(bundleName)
 
-def deleteWMActivationSpecs(scope, name, failonerror=AdminUtilities._BLANK_ ):
+def deleteWMActivationSpec(scope, name, failonerror=AdminUtilities._BLANK_ ):
   if (failonerror==AdminUtilities._BLANK_):
       failonerror=AdminUtilities._FAIL_ON_ERROR_
   #endIf
-  msgPrefix = "deleteWMActivationSpecs(" + `scope` + ", " + `name`+ ", " + `failonerror`+"): "
+  msgPrefix = "deleteWMActivationSpec(" + `scope` + ", " + `name`+ ", " + `failonerror`+"): "
 
   try:
     #--------------------------------------------------------------------
     # Delete a WMQ Activation Specs
     #--------------------------------------------------------------------
     AdminUtilities.debugNotice ("---------------------------------------------------------------")
-    AdminUtilities.debugNotice (" AdminJMS: deleteWMQActivationSpecs ")
+    AdminUtilities.debugNotice (" AdminJMS: deleteWMQActivationSpec ")
     AdminUtilities.debugNotice (" Scope:")
     AdminUtilities.debugNotice ("     scope:                      "+scope)
-    AdminUtilities.debugNotice (" MQActivationSpecs:")
+    AdminUtilities.debugNotice (" MQActivationSpec:")
     AdminUtilities.debugNotice ("     name:                       "+name)
     AdminUtilities.debugNotice (" Return: NIL")
     AdminUtilities.debugNotice ("---------------------------------------------------------------")
@@ -431,7 +431,7 @@ def deleteWMActivationSpecs(scope, name, failonerror=AdminUtilities._BLANK_ ):
       raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6040E", ["scope", scope]))
 
     # Get the '\\n' separated string of Activation Specs and make a proper list out of them 
-    asList=AdminTask.listWMQActivationSpecs(configIdScope).split('\\n')
+    asList=AdminTask.listWMQActivationSpec(configIdScope).split('\\n')
 
     asRegex = re.compile("%s\\(.*" % name)
 
@@ -442,7 +442,7 @@ def deleteWMActivationSpecs(scope, name, failonerror=AdminUtilities._BLANK_ ):
       AdminUtilities.debugNotice("About to call AdminTask command for target : " + str(target))
 
       # Delete the Activation Specs
-      AdminTask.deleteWMQActivationSpecs(str(target[0]))
+      AdminTask.deleteWMQActivationSpec(str(target[0]))
 
       AdminConfig.save()
     elif (len(target) == 0):
@@ -465,7 +465,7 @@ def deleteWMActivationSpecs(scope, name, failonerror=AdminUtilities._BLANK_ ):
 #endDef
 
 # And now - delete the activation specs
-deleteWMActivationSpecs(scope, name)
+deleteWMActivationSpec(scope, name)
 
 END
 
@@ -530,21 +530,21 @@ def normalizeArgList(argList, argName):
   return argList
 #endDef
 
-def modifyWMActivationSpecs(scope, name, jndiName, qmgrList=[], spoolList=[], cpoolList=[], mappingList=[], failonerror=AdminUtilities._BLANK_ ):
+def modifyWMActivationSpec(scope, name, jndiName, qmgrList=[], spoolList=[], cpoolList=[], mappingList=[], failonerror=AdminUtilities._BLANK_ ):
   if (failonerror==AdminUtilities._BLANK_):
       failonerror=AdminUtilities._FAIL_ON_ERROR_
   #endIf
-  msgPrefix = "modifyWMActivationSpecs(" + `scope` + ", " + `name`+ ", " + `jndiName` + ", " + `qmgrList` + ", " + `spoolList` + ", " + `cpoolList` + ", " + `mappingList` + ", " + `failonerror`+"): "
+  msgPrefix = "modifyWMActivationSpec(" + `scope` + ", " + `name`+ ", " + `jndiName` + ", " + `qmgrList` + ", " + `spoolList` + ", " + `cpoolList` + ", " + `mappingList` + ", " + `failonerror`+"): "
 
   try:
     #--------------------------------------------------------------------
     # Create a WMQ Activation Specs
     #--------------------------------------------------------------------
     AdminUtilities.debugNotice ("---------------------------------------------------------------")
-    AdminUtilities.debugNotice (" AdminJMS: modifyWMQActivationSpecs ")
+    AdminUtilities.debugNotice (" AdminJMS: modifyWMQActivationSpec ")
     AdminUtilities.debugNotice (" Scope:")
     AdminUtilities.debugNotice ("     scope:                      "+scope)
-    AdminUtilities.debugNotice (" MQActivationSpecs:")
+    AdminUtilities.debugNotice (" MQActivationSpec:")
     AdminUtilities.debugNotice ("     name:                       "+name)
     AdminUtilities.debugNotice ("     jndiName:                   "+jndiName)
     AdminUtilities.debugNotice (" Optional Parameters :")
@@ -576,7 +576,7 @@ def modifyWMActivationSpecs(scope, name, jndiName, qmgrList=[], spoolList=[], cp
       raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6040E", ["scope", scope]))
 
     # Get the '\\n' separated string of Activation Specs and make a proper list out of them 
-    asList=AdminTask.listWMQActivationSpecs(configIdScope).split('\\n')
+    asList=AdminTask.listWMQActivationSpec(configIdScope).split('\\n')
 
     asRegex = re.compile("%s\\(.*" % name)
 
@@ -599,7 +599,7 @@ def modifyWMActivationSpecs(scope, name, jndiName, qmgrList=[], spoolList=[], cp
       AdminUtilities.debugNotice("About to call AdminTask command with parameters : " + str(finalParameters))
 
       # Modify the Activation Specs
-      newObjectId = AdminTask.modifyWMQActivationSpecs(str(target[0]), finalParameters)
+      newObjectId = AdminTask.modifyWMQActivationSpec(str(target[0]), finalParameters)
 
       # Set the Session Pool Params - the modify() takes a mangled array of arrays with no commas
       if spoolList:
@@ -646,7 +646,7 @@ def modifyWMActivationSpecs(scope, name, jndiName, qmgrList=[], spoolList=[], cp
 #endDef
 
 # And now - modify the activation specs - remember, we cannot change the type, once created.
-modifyWMActivationSpecs(scope, name, jndiName, attrs, spool_attrs, cpool_attrs, mapdata_attrs)
+modifyWMActivationSpec(scope, name, jndiName, attrs, spool_attrs, cpool_attrs, mapdata_attrs)
 
 END
     debug "Running #{cmd}"
