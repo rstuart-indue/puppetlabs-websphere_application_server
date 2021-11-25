@@ -57,8 +57,8 @@ Puppet::Type.type(:websphere_activationspec).provide(:wsadmin, parent: Puppet::P
       'failIfQuiesce'=> 'failIfQuiescing',
       'brokerControlQueue' => 'brokerCtrlQueue',
       'subscriptionStore' => 'subStore',
-      'statusRefreshInterval' = 'stateRefreshInt',
-      'sparseSubscriptions' = 'sparseSub',
+      'statusRefreshInterval' => 'stateRefreshInt',
+      'sparseSubscriptions' => 'sparseSub',
       'cloneSupport' => 'cloneSubs',
     }
 
