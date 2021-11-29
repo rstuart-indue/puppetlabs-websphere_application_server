@@ -332,7 +332,7 @@ END
           k,v = aProp.split('=')
           puts "Adding Arbitrary Properties: #{k} #{v}"
           xlated_name = @xlate_cmd_table.key?(k) ? @xlate_cmd_table[k] : k
-          @old_qmgr_data[xlated_name.to_sym] = v
+          @old_qmgr_data[xlated_name.to_sym] = v.delete('"')
         }
       else  
         xlated_name = @xlate_cmd_table.key?(name_prop.value) ? @xlate_cmd_table[name_prop.value] : name_prop.value
