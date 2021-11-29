@@ -204,7 +204,7 @@ Puppet::Type.newtype(:websphere_activationspec) do
         # camelCase and convert our hash keys to symbols.
         # also - any unquote values which are the true/false literals - quote them because jython wants them quoted.
         k_sym = k.split('_').inject{|m, p| m + p.capitalize}.to_sym
-        v = /^(true|false)$/.match?(v.to_s)? "'#{v}'" : v
+        #v = /^(true|false)$/.match?(v.to_s)? "'#{v}'" : v
         munged_values[k_sym] = v
       end
       munged_values
