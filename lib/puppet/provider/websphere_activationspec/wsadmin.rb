@@ -330,7 +330,7 @@ END
         aProp_arr = value_prop.value.split(',')
         aProp_arr.each { |aProp|
           k,v = aProp.split('=')
-          puts "Adding Arbitrary Properties: #{k} #{v}"
+          debug "Adding Arbitrary Properties: #{k} => #{v}"
           xlated_name = @xlate_cmd_table.key?(k) ? @xlate_cmd_table[k] : k
           @old_qmgr_data[xlated_name.to_sym] = v.delete('"')
         }
