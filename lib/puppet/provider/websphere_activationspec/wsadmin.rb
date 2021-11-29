@@ -60,6 +60,8 @@ Puppet::Type.type(:websphere_activationspec).provide(:wsadmin, parent: Puppet::P
       'statusRefreshInterval' => 'stateRefreshInt',
       'sparseSubscriptions' => 'sparseSub',
       'cloneSupport' => 'cloneSubs',
+      'was_stopEndpointIfDeliveryFails' => 'stopEndpointIfDeliveryFails',
+      'was_failureDeliveryCount' => 'failureDeliveryCount',
     }
 
     # Dynamic debugging
@@ -150,7 +152,7 @@ def createWMActivationSpec(scope, name, jndiName, dType, destJndiName, qmgrList=
 
   try:
     #--------------------------------------------------------------------
-    # Create a WMQ Activation Specs
+    # Create a WMQ Activation Spec
     #--------------------------------------------------------------------
     AdminUtilities.debugNotice ("---------------------------------------------------------------")
     AdminUtilities.debugNotice (" AdminJMS: createWMQActivationSpec ")
@@ -313,8 +315,29 @@ END
     XPath.each(as_entry, "*")  { |prop|
       name_prop, value_prop = XPath.match(prop, "@*[local-name()='name' or local-name()='value']")
       debug "#{name_prop.value} :: #{value_prop.value}"
-      xlated_name = @xlate_cmd_table.key?(name_prop.value) ? @xlate_cmd_table[name_prop.value] : name_prop.value
-      @old_qmgr_data[xlated_name.to_sym] = value_prop.value
+
+      # For no reason at all, a bunch of SSL params are thrown into the "arbitraryProperties" category.
+      # So we have to fish them out and translate their names because they're not what they went it as.
+      # The params are saved something similar to this:
+      # arbitraryProperties => was_stopEndpointIfDeliveryFails="false",was_failureDeliveryCount="0",sslType="SPECIFIC",sslConfiguration="WAS2MQ"
+      # and they need to become:
+      #   :stopEndpointIfDeliveryFails => "false"
+      #   :was_failureDeliveryCount    => "0"
+      #   :sslType                     => "SPECIFIC"
+      #   :sslConfiguration            => "SSLConfig"
+      #
+      if name_prop.value == 'arbitraryProperties'
+        aProp_arr = value_prop.value.split(',')
+        aProp_arr.each { |aProp|
+          k,v = aProp.split('=')
+          puts "Adding Arbitrary Properties: #{k} #{v}"
+          xlated_name = @xlate_cmd_table.key?(k) ? @xlate_cmd_table[k] : k
+          @old_qmgr_data[xlated_name.to_sym] = v
+        }
+      else  
+        xlated_name = @xlate_cmd_table.key?(name_prop.value) ? @xlate_cmd_table[name_prop.value] : name_prop.value
+        @old_qmgr_data[xlated_name.to_sym] = value_prop.value
+      end
     } unless as_entry.nil?
     
     debug "Exists? method result for #{resource[:as_name]} is: #{as_entry}"
@@ -401,7 +424,7 @@ def deleteWMActivationSpec(scope, name, failonerror=AdminUtilities._BLANK_ ):
 
   try:
     #--------------------------------------------------------------------
-    # Delete a WMQ Activation Specs
+    # Delete a WMQ Activation Spec
     #--------------------------------------------------------------------
     AdminUtilities.debugNotice ("---------------------------------------------------------------")
     AdminUtilities.debugNotice (" AdminJMS: deleteWMQActivationSpec ")
@@ -506,10 +529,9 @@ import re
 scope = '#{jms_scope}'
 name = "#{resource[:as_name]}"
 jndiName = "#{resource[:jndi_name]}"
-attrs = #{as_attrs_str}
-spool_attrs = #{spool_attrs_str}
-cpool_attrs = #{cpool_attrs_str}
-mapdata_attrs = #{mapdata_attrs_str}
+dest_type = "#{resource[:destination_type]}"
+dest_jndi = "#{resource[:destination_jndi]}"
+qmgr_attrs = #{as_attrs_str}
 
 # Enable debug notices ('true'/'false')
 AdminUtilities.setDebugNotices('#{@jython_debug_state}')
@@ -530,32 +552,35 @@ def normalizeArgList(argList, argName):
   return argList
 #endDef
 
-def modifyWMActivationSpec(scope, name, jndiName, qmgrList=[], spoolList=[], cpoolList=[], mappingList=[], failonerror=AdminUtilities._BLANK_ ):
+def modifyWMActivationSpec(scope, name, jndiName, dType, destJndiName, qmgrList=[], failonerror=AdminUtilities._BLANK_ ):
   if (failonerror==AdminUtilities._BLANK_):
       failonerror=AdminUtilities._FAIL_ON_ERROR_
   #endIf
-  msgPrefix = "modifyWMActivationSpec(" + `scope` + ", " + `name`+ ", " + `jndiName` + ", " + `qmgrList` + ", " + `spoolList` + ", " + `cpoolList` + ", " + `mappingList` + ", " + `failonerror`+"): "
+  msgPrefix = "modifyWMActivationSpec(" + `scope` +  ", " + `name`+ ", " + `jndiName` + ", " + `dType` + ", " + `destJndiName` +  ", " + `qmgrList` + ", " + `failonerror`+"): "
 
   try:
     #--------------------------------------------------------------------
-    # Create a WMQ Activation Specs
+    # Modify a WMQ Activation Spec
     #--------------------------------------------------------------------
     AdminUtilities.debugNotice ("---------------------------------------------------------------")
     AdminUtilities.debugNotice (" AdminJMS: modifyWMQActivationSpec ")
     AdminUtilities.debugNotice (" Scope:")
     AdminUtilities.debugNotice ("     scope:                      "+scope)
+    AdminUtilities.debugNotice (" Type:")
+    AdminUtilities.debugNotice ("     type:                       "+dType)
     AdminUtilities.debugNotice (" MQActivationSpec:")
     AdminUtilities.debugNotice ("     name:                       "+name)
     AdminUtilities.debugNotice ("     jndiName:                   "+jndiName)
-    AdminUtilities.debugNotice (" Optional Parameters :")
-    AdminUtilities.debugNotice ("   qmgrAttributesList:           " +str(qmgrList))
+    AdminUtilities.debugNotice ("     destinationJndiName:        "+destJndiName)
+    AdminUtilities.debugNotice (" QMGR Parameters :")
+    AdminUtilities.debugNotice ("   qmgrAttributesList:           "+str(qmgrList))
     AdminUtilities.debugNotice (" Return: The Configuration Id of the new WM Activation Specs")
     AdminUtilities.debugNotice ("---------------------------------------------------------------")
     AdminUtilities.debugNotice (" ")
 
     # This normalization is slightly superfluous, but, what the hey?
     qmgrList = normalizeArgList(qmgrList, "qmgrList")
-
+    
     # Make sure required parameters are non-empty
     if (len(scope) == 0):
       raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["scope", scope]))
@@ -563,6 +588,10 @@ def modifyWMActivationSpec(scope, name, jndiName, qmgrList=[], spoolList=[], cpo
       raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["name", name]))
     if (len(jndiName) == 0):
       raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["jndiName", jndiName]))
+    if (len(dType) == 0):
+      raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["type", dType]))
+    if (len(destJndiName) == 0):
+      raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["destJndiName", destJndiName]))
 
     # Validate the scope
     # We will end up with a containment path for the scope - convert that to the config id which is needed.
@@ -588,7 +617,7 @@ def modifyWMActivationSpec(scope, name, jndiName, qmgrList=[], spoolList=[], cpo
 
       # Prepare the parameters for the AdminTask command
       qmgrList = AdminUtilities.convertParamStringToList(qmgrList)
-      requiredParameters = [["name", name], ["jndiName", jndiName]]
+      requiredParameters = [["name", name], ["jndiName", jndiName], ["destinationType", dType], ["destinationJndiName", destJndiName]]
       finalAttrsList = requiredParameters + qmgrList
       finalParameters = []
       for attrs in finalAttrsList:
@@ -600,21 +629,6 @@ def modifyWMActivationSpec(scope, name, jndiName, qmgrList=[], spoolList=[], cpo
 
       # Modify the Activation Specs
       newObjectId = AdminTask.modifyWMQActivationSpec(str(target[0]), finalParameters)
-
-      # Set the Session Pool Params - the modify() takes a mangled array of arrays with no commas
-      if spoolList:
-        sessionPool = AdminConfig.showAttribute(newObjectId, 'sessionPool')
-        AdminConfig.modify(sessionPool, str(spoolList).replace(',', ''))
-  
-      # Set the Connection Pool Params - the modify() takes a mangled array of arrays with no commas
-      if cpoolList:
-        connPool = AdminConfig.showAttribute(newObjectId, 'connectionPool')
-        AdminConfig.modify(connPool, str(cpoolList).replace(',', ''))
-  
-      # Set the Mappings Params/Attributes - the modify() takes a mangled array of arrays with no commas
-      if mappingList:
-        mappingAttrs = AdminConfig.showAttribute(newObjectId, 'mapping')
-        AdminConfig.modify(mappingAttrs, str(mappingList).replace(',', ''))
   
       newObjectId = str(newObjectId)
   
@@ -645,8 +659,8 @@ def modifyWMActivationSpec(scope, name, jndiName, qmgrList=[], spoolList=[], cpo
   #endTry
 #endDef
 
-# And now - modify the activation specs - remember, we cannot change the type, once created.
-modifyWMActivationSpec(scope, name, jndiName, attrs, spool_attrs, cpool_attrs, mapdata_attrs)
+# And now - modify the activation specs.
+modifyWMActivationSpec(scope, name, jndiName, dest_type, dest_jndi, qmgr_attrs)
 
 END
     debug "Running #{cmd}"
