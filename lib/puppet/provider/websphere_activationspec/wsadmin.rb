@@ -454,7 +454,7 @@ def deleteWMActivationSpec(scope, name, failonerror=AdminUtilities._BLANK_ ):
       raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6040E", ["scope", scope]))
 
     # Get the '\\n' separated string of Activation Specs and make a proper list out of them 
-    asList=AdminTask.listWMQActivationSpec(configIdScope).split('\\n')
+    asList=AdminTask.listWMQActivationSpecs(configIdScope).split('\\n')
 
     asRegex = re.compile("%s\\(.*" % name)
 
@@ -605,7 +605,7 @@ def modifyWMActivationSpec(scope, name, jndiName, dType, destJndiName, qmgrList=
       raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6040E", ["scope", scope]))
 
     # Get the '\\n' separated string of Activation Specs and make a proper list out of them 
-    asList=AdminTask.listWMQActivationSpec(configIdScope).split('\\n')
+    asList=AdminTask.listWMQActivationSpecs(configIdScope).split('\\n')
 
     asRegex = re.compile("%s\\(.*" % name)
 
