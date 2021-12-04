@@ -28,33 +28,33 @@ Puppet::Type.newtype(:websphere_topic) do
   # composite namevars.
   def self.title_patterns
     [
-      # QName
+      # TName
       [
         %r{^([^:]+)$},
         [
           [:t_name],
         ],
       ],
-      # /opt/IBM/WebSphere/AppServer/profiles:QName
+      # /opt/IBM/WebSphere/AppServer/profiles:TName
       [
-        %r{^(.*):(.*)$},
+        %r{^([^:]+):([^:]+)$},
         [
           [:profile_base],
           [:t_name],
         ],
       ],
-      # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:QName
+      # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:TName
       [
-        %r{^(.*):(.*):(.*)$},
+        %r{^([^:]+):([^:]+):([^:]+)$},
         [
           [:profile_base],
           [:dmgr_profile],
           [:t_name],
         ],
       ],
-      # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:cell:CELL_01:QName
+      # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:cell:CELL_01:TName
       [
-        %r{^(.*):(.*):(cell):(.*):(.*)$},
+        %r{^([^:]+):([^:]+):(cell):([^:]+):([^:]+)$},
         [
           [:profile_base],
           [:dmgr_profile],
@@ -63,9 +63,9 @@ Puppet::Type.newtype(:websphere_topic) do
           [:t_name],
         ],
       ],
-      # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:cluster:CELL_01:TEST_CLUSTER_01:QName
+      # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:cluster:CELL_01:TEST_CLUSTER_01:TName
       [
-        %r{^(.*):(.*):(cluster):(.*):(.*):(.*)$},
+        %r{^([^:]+):([^:]+):(cluster):([^:]+):([^:]+):([^:]+)$},
         [
           [:profile_base],
           [:dmgr_profile],
@@ -75,9 +75,9 @@ Puppet::Type.newtype(:websphere_topic) do
           [:t_name],
         ],
       ],
-      # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:node:CELL_01:AppNode01:QName
+      # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:node:CELL_01:AppNode01:TName
       [
-        %r{^(.*):(.*):(node):(.*):(.*):(.*)$},
+        %r{^([^:]+):([^:]+):(node):([^:]+):([^:]+):([^:]+)$},
         [
           [:profile_base],
           [:dmgr_profile],
@@ -87,9 +87,9 @@ Puppet::Type.newtype(:websphere_topic) do
           [:t_name],
         ],
       ],
-      # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:server:CELL_01:AppNode01:AppServer01:QName
+      # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:server:CELL_01:AppNode01:AppServer01:TName
       [
-        %r{^(.*):(.*):(server):(.*):(.*):(.*)$},
+        %r{^([^:]+):([^:]+):(server):([^:]+):([^:]+):([^:]+)$},
         [
           [:profile_base],
           [:dmgr_profile],
