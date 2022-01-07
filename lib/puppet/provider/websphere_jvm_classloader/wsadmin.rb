@@ -181,7 +181,7 @@ END
     #   }
     # If anyone knows a better way to do this, I'm all ears.
     # We're looking for Class Loader entries. We have to ensure we're looking under the correct components entry.
-    component_entry = XPath.first(doc,"/process:Server[@clusterName='#{resource[:cluster]}']/components[@xmi:type='applicationserver:ApplicationServer']")
+    cl_entry = XPath.first(doc,"/process:Server[@clusterName='#{resource[:cluster]}']/components[@xmi:type='applicationserver:ApplicationServer']")
 
     # Let's say we found a "classloader"
     XPath.each(cl_entry, "classloaders[contains(@xmi:id, 'Classloader_')]")  { |cl|
@@ -224,7 +224,7 @@ END
             @old_classloader_data[cl_mode_s][:target_add] = add_diff
             @old_classloader_data[cl_mode_s][:target_del] = del_diff
         end   
-    } unless component_entry.nil?
+    } unless cl_entry.nil?
 
     # This detects whether we are OK *over all* the classloaders in the expected mode
     # By substracting the "detected" classloaders from the "expected" classloaders, we see if we've
