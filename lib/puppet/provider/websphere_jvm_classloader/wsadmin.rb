@@ -90,11 +90,12 @@ try:
 
   # Create a Classloader inside the AppserverID
   classloader = AdminConfig.create('Classloader', appserver, [['mode', mode]])
+  AdminUtilities.debugNotice("Created classloader: " + str(classloader))
 
   # Cycle through the array of shared libs and create references for every one of them.
   for libref in shared_libs:
     result = AdminConfig.create('LibraryRef', classloader, [['libraryName', libref], ['sharedClassloader', 'true']])
-    AdminUtilities.debugNotice("Created shared lib: " + str(result))
+    AdminUtilities.debugNotice("Created shared lib reference: " + str(result))
   #endFor
 
   AdminConfig.save()
@@ -188,9 +189,13 @@ END
         cl_mode_s = cl_mode.value.to_sym
         cl_name_s = cl_name.value.to_sym
 
+        debug "Discovered Classloader ID: #{cl_name.value} with mode: #{cl_mode.value}"
+
         # Extract an array of shared libs configured for this Classloader. We don't care if it contains
         # duplicates, apparently it's quite OK.
         shared_libs = (XPath.match(cl, "libraries/@libraryName")).map{ |shlib| shlib_val = shlib.value }
+
+        debug "Discovered library refs ID: #{shared_libs.to_s}"
 
         # TODO: This may need to move into the ruby type
         #       Or maybe the Ruby type just uses the score
@@ -266,7 +271,8 @@ END
 
     # TODO: 
     # Ok, so I'm cheating a little - not much, but a little.
-    # Set the scope for this.
+    # Set the scope for this. This is so that we don't have to look
+    # for it all the time.
     classloader_scope = scope('mod') + "|server.xml#" + classloader_id
     
     cmd = <<-END.unindent
@@ -277,18 +283,14 @@ AdminUtilities.setDebugNotices('#{@jython_debug_state}')
 
 # Parameters we need for our ClassLoader creation
 mode = '#{resource[:mode]}'
-appserver_scope = '#{appserver_scope}'
-shared_libs = #{shared_libs_str}
 classloader_scope = '(#{classloader_scope})'
 
 msgPrefix = 'WASClassloader destroy:'
 
 try:
-  # Get the AppserverID from the assembled scope
-  appserver = AdminConfig.getid(appserver_scope)
-
-  # Remove an instance of a Classloader from inside the AppserverID
-  classloader = AdminConfig.remove(classloader)
+  # Remove an instance of a Classloader
+  result = AdminConfig.remove(classloader_scope)
+  AdminUtilities.debugNotice("Removed classloader: " + str(classloader_scope))
 
   AdminConfig.save()
 except:
