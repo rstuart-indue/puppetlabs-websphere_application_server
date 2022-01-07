@@ -181,8 +181,8 @@ END
     #   }
     # If anyone knows a better way to do this, I'm all ears.
     # We're looking for Class Loader entries. We have to ensure we're looking under the correct components entry.
-    component_entry = XPath.first(doc,"/process:Server[@clusterName='#{resource[:cluster]}']/components[@xmi:type='applicationserver:ApplicationServer']")
-
+    component_entry = XPath.first(doc, "/process:Server[@clusterName='#{resource[:cluster]}']/components[@xmi:type='applicationserver:ApplicationServer']")
+    debug "Looking for:: /process:Server[@clusterName='#{resource[:cluster]}']/components[@xmi:type='applicationserver:ApplicationServer']"
     debug "Discovered component_entry: #{component_entry}"
     
     # Let's say we found a "classloader"
