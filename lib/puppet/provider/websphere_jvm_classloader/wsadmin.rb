@@ -82,19 +82,34 @@ mode = '#{resource[:mode]}'
 appserver_scope = '#{appserver_scope}'
 shared_libs = #{shared_libs_str}
 
-# Get the AppserverID from the assembled scope
-appserver = AdminConfig.getid(appserver_scope)
+msgPrefix = 'WASClassloader create:'
 
-# Create a Classloader inside the AppserverID
-classloader = AdminConfig.create('Classloader', appserver, [['mode', mode]])
+try:
+  # Get the AppserverID from the assembled scope
+  appserver = AdminConfig.getid(appserver_scope)
 
-# Cycle through the array of shared libs and create references for every one of them.
-for libref in shared_libs
+  # Create a Classloader inside the AppserverID
+  classloader = AdminConfig.create('Classloader', appserver, [['mode', mode]])
+
+  # Cycle through the array of shared libs and create references for every one of them.
+  for libref in shared_libs:
     result = AdminConfig.create('LibraryRef', classloader, [['libraryName', libref], ['sharedClassloader', 'true']])
     AdminUtilities.debugNotice("Created shared lib: " + str(result))
-#endFor
+  #endFor
 
-AdminConfig.save()
+  AdminConfig.save()
+except:
+  typ, val, tb = sys.exc_info()
+  if (typ==SystemExit):  raise SystemExit,`val`
+  if (failonerror != AdminUtilities._TRUE_):
+    print "Exception: %s %s " % (sys.exc_type, sys.exc_value)
+    val = "%s %s" % (sys.exc_type, sys.exc_value)
+    raise Exception("ScriptLibraryException: " + val)
+  else:
+    AdminUtilities.fail(msgPrefix+AdminUtilities.getExceptionText(typ, val, tb), failonerror)
+  #endIf
+#endTry
+
 END
 
     debug "Running command: #{cmd} as user: #{resource[:user]}"
@@ -266,14 +281,28 @@ appserver_scope = '#{appserver_scope}'
 shared_libs = #{shared_libs_str}
 classloader_scope = '(#{classloader_scope})'
 
+msgPrefix = 'WASClassloader destroy:'
 
-# Get the AppserverID from the assembled scope
-appserver = AdminConfig.getid(appserver_scope)
+try:
+  # Get the AppserverID from the assembled scope
+  appserver = AdminConfig.getid(appserver_scope)
 
-# Remove an instance of a Classloader from inside the AppserverID
-classloader = AdminConfig.remove(classloader)
+  # Remove an instance of a Classloader from inside the AppserverID
+  classloader = AdminConfig.remove(classloader)
 
-AdminConfig.save()
+  AdminConfig.save()
+except:
+  typ, val, tb = sys.exc_info()
+  if (typ==SystemExit):  raise SystemExit,`val`
+  if (failonerror != AdminUtilities._TRUE_):
+    print "Exception: %s %s " % (sys.exc_type, sys.exc_value)
+    val = "%s %s" % (sys.exc_type, sys.exc_value)
+    raise Exception("ScriptLibraryException: " + val)
+  else:
+    AdminUtilities.fail(msgPrefix+AdminUtilities.getExceptionText(typ, val, tb), failonerror)
+  #endIf
+#endTry
+
 END
 
     debug "Running #{cmd}"
@@ -321,7 +350,7 @@ shared_libs = #{shared_libs_str}
 #classloader = AdminConfig.create('Classloader', appserver, [['mode', mode]])
 #
 # Cycle through the array of shared libs and create references for every one of them.
-#for libref in shared_libs
+#for libref in shared_libs:
 #    result = AdminConfig.create('LibraryRef', classloader, [['libraryName', libref], ['sharedClassloader', 'true']])
 #    AdminUtilities.debugNotice("Created shared lib: " + str(result))
 ##endFor
