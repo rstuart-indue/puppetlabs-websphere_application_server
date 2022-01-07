@@ -142,7 +142,7 @@ END
     end
 
     debug "Retrieving value of #{resource[:jcl_name]} from #{scope('file')}"
-    doc = REXML::Document.new(scope('file'))
+    doc = REXML::Document.new(File.open(scope('file')))
 
     # Remember that classloaders are not named and as such, we can't look for a specific one.
     # The way this bit of code works is to attempt to make an 'educamacated guess' about where to jam
@@ -182,9 +182,7 @@ END
     # If anyone knows a better way to do this, I'm all ears.
     # We're looking for Class Loader entries. We have to ensure we're looking under the correct components entry.
     component_entry = XPath.first(doc, "/process:Server[@clusterName='#{resource[:cluster]}']/components[@xmi:type='applicationserver:ApplicationServer']")
-    debug "Looking for:: /process:Server[@clusterName='#{resource[:cluster]}']/components[@xmi:type='applicationserver:ApplicationServer']"
-    debug "Discovered component_entry: #{component_entry}"
-    
+
     # Let's say we found a "classloader"
     XPath.each(component_entry, "classloaders[contains(@xmi:id, 'Classloader_')]")  { |cl|
         cl_name, cl_mode = XPath.match(cl, "@*[local-name()='id' or local-name()='mode']")
