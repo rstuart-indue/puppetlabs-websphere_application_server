@@ -38,6 +38,20 @@ Puppet::Type.type(:websphere_jvm_classloader).provide(:wsadmin, parent: Puppet::
     @jython_debug_state = Puppet::Util::Log.level == :debug
   end
 
+  # Return the target ID for the classloader we want to modify.
+  def get_targetid
+    if (resource[:enforce_shared_libs])
+      if (@old_classloader_data.key?(resource[:mode]))
+        @old_classloader_data[resource[:mode]][:target_classloader]
+      else
+        mode = @old_classloader_data.keys[0]
+        @old_classloader_data[mode][:target_classloader]
+      end
+    else
+      @old_classloader_data[resource[:mode]][:target_classloader]
+    end
+  end
+
   # This type only supports a 'server' scope - because server.xml file exists only in that scope.
   def scope(what)
     file = "#{resource[:profile_base]}/#{resource[:dmgr_profile]}"
@@ -247,22 +261,39 @@ END
 
   # Get the "guessed" classloader mode
   def mode
-    @old_classloader_data[:description]
+    # If we are to manage the whole show, we either return the mode because we found some classloaders in that mode
+    # or, we return the "other mode" (which will be the only key in the hash anyway)
+    #
+    # Note: I still think this is fraught with danger.
+    if (resource[:enforce_shared_libs])
+      @old_classloader_data.key?(resource[:mode])? resource[:mode] : @old_classloader_data.keys[0]
+    else
+      resource[:mode]
+    end
   end
 
   # Set the mode for guessed classloader
   def mode=(val)
-    @property_flush[:description] = val
+    @property_flush[:mode] = val
   end
 
   # Get the shared libs list for the "guessed classloader
   def shared_libs
-    @old_classloader_data[:destinationType]
+    if (resource[:enforce_shared_libs])
+      if (@old_classloader_data.key?(resource[:mode]))
+        @old_classloader_data[resource[:mode]][:combined_classloaders]
+      else
+        mode = @old_classloader_data.keys[0]
+        @old_classloader_data[mode][:combined_classloaders]
+      end
+    else
+      @old_classloader_data[resource[:mode]][:combined_classloaders]
+    end
   end
 
   # Set the classloader shared libs.
   def shared_libs=(val)
-    @property_flush[:destinationType] = val
+    @property_flush[:shared_libs] = val
   end
 
   # Remove classloader. Well, more to the point,
@@ -273,7 +304,7 @@ END
     # Ok, so I'm cheating a little - not much, but a little.
     # Set the scope for this. This is so that we don't have to look
     # for it all the time.
-    classloader_scope = scope('mod') + "|server.xml#" + classloader_id
+    classloader_scope = scope('mod') + "|server.xml#" + get_targetid
     
     cmd = <<-END.unindent
 import AdminUtilities
@@ -329,7 +360,7 @@ END
     # TODO: 
     # Ok, so I'm cheating a little - not much, but a little.
     # Set the scope for this.
-    classloader_scope = scope('mod') + "|server.xml#" + classloader_id
+    classloader_scope = scope('mod') + "|server.xml#" + get_targetid
 
     # Convert this to a dumb string (square brackets and all) to pass to Jython
     shared_libs_str = resource[:shared_libs].to_s.tr("\"", "'")
