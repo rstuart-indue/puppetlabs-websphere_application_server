@@ -409,6 +409,10 @@ try:
   #endFor
 
   #TODO: Implement the removal of library references.
+  for libref in del_shared_libs:
+    #AdminConfig.remove(libref)
+    #AdminUtilities.debugNotice("Removed shared lib reference: " + str(libref))
+  #endFor
 
   AdminConfig.save()
 except:
