@@ -52,6 +52,18 @@ Puppet::Type.type(:websphere_jvm_classloader).provide(:wsadmin, parent: Puppet::
     end
   end
 
+  def get_targetmode
+    # If we are to manage the whole show, we either return the mode because we found some classloaders in that mode
+    # or, we return the "other mode" (which will be the only key in the hash anyway)
+    #
+    # Note: I still think this is fraught with danger.
+    if (resource[:enforce_shared_libs])
+      @old_classloader_data.key?(resource[:mode])? resource[:mode] : @old_classloader_data.keys[0]
+    else
+      resource[:mode]
+    end
+  end
+
   # This type only supports a 'server' scope - because server.xml file exists only in that scope.
   def scope(what)
     file = "#{resource[:profile_base]}/#{resource[:dmgr_profile]}"
@@ -261,15 +273,7 @@ END
 
   # Get the "guessed" classloader mode
   def mode
-    # If we are to manage the whole show, we either return the mode because we found some classloaders in that mode
-    # or, we return the "other mode" (which will be the only key in the hash anyway)
-    #
-    # Note: I still think this is fraught with danger.
-    if (resource[:enforce_shared_libs])
-      @old_classloader_data.key?(resource[:mode])? resource[:mode] : @old_classloader_data.keys[0]
-    else
-      resource[:mode]
-    end
+    return get_targetmode
   end
 
   # Set the mode for guessed classloader
@@ -279,16 +283,8 @@ END
 
   # Get the shared libs list for the "guessed classloader
   def shared_libs
-    if (resource[:enforce_shared_libs])
-      if (@old_classloader_data.key?(resource[:mode]))
-        @old_classloader_data[resource[:mode]][:combined_classloaders]
-      else
-        mode = @old_classloader_data.keys[0]
-        @old_classloader_data[mode][:combined_classloaders]
-      end
-    else
-      @old_classloader_data[resource[:mode]][:combined_classloaders]
-    end
+    mode  = get_targetmode
+    @old_classloader_data[mode][:combined_classloaders]
   end
 
   # Set the classloader shared libs.
@@ -363,7 +359,14 @@ END
     classloader_scope = scope('mod') + "|server.xml#" + get_targetid
 
     # Convert this to a dumb string (square brackets and all) to pass to Jython
-    shared_libs_str = resource[:shared_libs].to_s.tr("\"", "'")
+    if @property_flush[:shared_libs]
+      mode = get_targetmode
+      add_shared_libs_str = @old_classloader_data[mode][:target_add].to_s.tr("\"", "'")
+      #del_shared_libs_str = @old_classloader_data[mode][:target_del].to_s.tr("\"", "'")
+    else
+      add_shared_libs_str = ''
+      del_shared_libs_str = ''
+    end
 
     cmd = <<-END.unindent
 import AdminUtilities
@@ -374,21 +377,38 @@ AdminUtilities.setDebugNotices('#{@jython_debug_state}')
 # Parameters we need for our ClassLoader creation
 mode = '#{resource[:mode]}'
 appserver_scope = '#{appserver_scope}'
-shared_libs = #{shared_libs_str}
+classloader_scope = '#{classloader_scope}'
+add_shared_libs = #{add_shared_libs_str}
+del_shared_libs = #{del_shared_libs_str}
 
-# Get the AppserverID from the assembled scope
-#appserver = AdminConfig.getid(appserver_scope)
-#
-# Create a Classloader inside the AppserverID
-#classloader = AdminConfig.create('Classloader', appserver, [['mode', mode]])
-#
-# Cycle through the array of shared libs and create references for every one of them.
-#for libref in shared_libs:
-#    result = AdminConfig.create('LibraryRef', classloader, [['libraryName', libref], ['sharedClassloader', 'true']])
-#    AdminUtilities.debugNotice("Created shared lib: " + str(result))
-##endFor
-#
-#AdminConfig.save()
+msgPrefix = 'WASClassloader modify:'
+
+try:
+  # Get the AppserverID from the assembled scope
+  #appserver = AdminConfig.getid(appserver_scope)
+
+  # Create a Classloader inside the AppserverID
+  #classloader = AdminConfig.create('Classloader', appserver, [['mode', mode]])
+  #AdminUtilities.debugNotice("Created classloader: " + str(classloader))
+
+  # Cycle through the array of shared libs and create references for every one of them.
+  for libref in add_shared_libs:
+    result = AdminConfig.create('LibraryRef', classloader_scope, [['libraryName', libref], ['sharedClassloader', 'true']])
+    AdminUtilities.debugNotice("Created shared lib reference: " + str(result))
+  #endFor
+
+  AdminConfig.save()
+except:
+  typ, val, tb = sys.exc_info()
+  if (typ==SystemExit):  raise SystemExit,`val`
+  if (failonerror != AdminUtilities._TRUE_):
+    print "Exception: %s %s " % (sys.exc_type, sys.exc_value)
+    val = "%s %s" % (sys.exc_type, sys.exc_value)
+    raise Exception("ScriptLibraryException: " + val)
+  else:
+    AdminUtilities.fail(msgPrefix+AdminUtilities.getExceptionText(typ, val, tb), failonerror)
+  #endIf
+#endTry
 END
     debug "Running #{cmd}"
     result = wsadmin(file: cmd, user: resource[:user])
