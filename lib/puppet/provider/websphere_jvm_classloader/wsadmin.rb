@@ -368,6 +368,12 @@ END
       del_shared_libs_str = ''
     end
 
+    if @property_flush[:mode]
+      mode_str = resource[:mode]
+    else
+      mode_str = ''
+    end
+
     cmd = <<-END.unindent
 import AdminUtilities
 
@@ -375,7 +381,7 @@ import AdminUtilities
 AdminUtilities.setDebugNotices('#{@jython_debug_state}')
 
 # Parameters we need for our ClassLoader creation
-mode = '#{resource[:mode]}'
+mode = '#{mode_str}'
 appserver_scope = '#{appserver_scope}'
 classloader_scope = '#{classloader_scope}'
 add_shared_libs = #{add_shared_libs_str}
@@ -391,11 +397,18 @@ try:
   #classloader = AdminConfig.create('Classloader', appserver, [['mode', mode]])
   #AdminUtilities.debugNotice("Created classloader: " + str(classloader))
 
+  if mode
+    result = AdminConfig.modify(classloader_scope, [['mode', mode]])
+    AdminUtilities.debugNotice("Modified classloader mode to " + mode + " for classloader " + classloader_scope)
+  endIf
+
   # Cycle through the array of shared libs and create references for every one of them.
   for libref in add_shared_libs:
     result = AdminConfig.create('LibraryRef', classloader_scope, [['libraryName', libref], ['sharedClassloader', 'true']])
     AdminUtilities.debugNotice("Created shared lib reference: " + str(result))
   #endFor
+
+  #TODO: Implement the removal of library references.
 
   AdminConfig.save()
 except:
