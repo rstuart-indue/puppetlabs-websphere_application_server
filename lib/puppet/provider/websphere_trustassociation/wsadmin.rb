@@ -177,7 +177,7 @@ END
   def destroy
 
     if (resource[:secd_name] == 'global')
-      raise Puppet::Error 'Refusing to destroy the built-in Trust Association for the Global Security domain. Please set `enabled => false` instead.'
+      raise Puppet::Error, 'Refusing to destroy the built-in Trust Association for the Global Security domain. Please set `enabled => false` instead.'
     end
 
     cmd = <<-END.unindent
