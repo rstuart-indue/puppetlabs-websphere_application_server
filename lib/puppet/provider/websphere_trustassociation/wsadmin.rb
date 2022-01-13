@@ -151,7 +151,7 @@ END
       # If this has changed, the whole planet is on a cob.
       auth_mechanism = XPath.first(doc, "/security:Security[@activeAuthMechanism='LTPA_1']/authMechanisms[@xmi:type='security:LTPA'][@xmi:id='LTPA_1']")
     else
-      auth_mechanism = XPath.first (doc, "/security:AppSecurity/authMechanisms[@xmi:type='security:LTPA']")
+      auth_mechanism = XPath.first(doc, "/security:AppSecurity/authMechanisms[@xmi:type='security:LTPA']")
     end
 
     tai_entry = XPath.first(auth_mechanism, 'trustAssociation') unless auth_mechanism.nil?
