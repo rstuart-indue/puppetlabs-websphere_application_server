@@ -140,8 +140,10 @@ END
     debug "Retrieving value of #{resource[:secd_name]} from #{scope('file')}"
     doc = REXML::Document.new(File.open(scope('file')))
 
-    if (resource[:secd_name] == 'global')
-      # Out of the box - this is the ID of the global security auth mechanism. If this has changed, the whole planet is on a cob.
+    case resource[:secd_name]
+    when 'global'
+      # Out of the box - this is the ID of the global security auth mechanism.
+      # If this has changed, the whole planet is on a cob.
       auth_mechanism = XPath.first(doc, "/security:Security[@activeAuthMechanism='LTPA_1']/authMechanisms[@xmi:type='security:LTPA'][@xmi:id='LTPA_1']")
     else
       auth_mechanism = XPath.first (doc, "/security:AppSecurity/authMechanisms[@xmi:type='security:LTPA']")
