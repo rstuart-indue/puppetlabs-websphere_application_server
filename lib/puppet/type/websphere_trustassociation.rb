@@ -52,7 +52,7 @@ Puppet::Type.newtype(:websphere_trustassociation) do
           [:secd_name],
         ],
       ],
-      # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:cell:CELL_01:SECDomainName
+      # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:CELL_01:SECDomainName
       [
         %r{^([^:]+):([^:]+):([^:]+):([^:]+)$},
         [
