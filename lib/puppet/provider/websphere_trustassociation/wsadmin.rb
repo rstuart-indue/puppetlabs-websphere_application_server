@@ -86,8 +86,8 @@ import AdminUtilities
 AdminUtilities.setDebugNotices('#{@jython_debug_state}')
 
 # Parameters we need for our Trust Association update
-sec_domain = #{sec_domain_str}
-enabled_state = #{enabled_str}
+sec_domain = '#{sec_domain_str}'
+enabled_state = '#{enabled_str}'
 
 msgPrefix = 'WASTrustAssociation create:'
 
@@ -234,8 +234,8 @@ import AdminUtilities
 AdminUtilities.setDebugNotices('#{@jython_debug_state}')
 
 # Parameters we need for our Trust Association update
-sec_domain = #{sec_domain_str}
-enabled_state = #{enabled_str}
+sec_domain = '#{sec_domain_str}'
+enabled_state = '#{enabled_str}'
 
 msgPrefix = 'WASTrustAssociation modify:'
 
