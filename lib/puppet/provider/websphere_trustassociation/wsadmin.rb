@@ -70,7 +70,12 @@ Puppet::Type.type(:websphere_trustassociation).provide(:wsadmin, parent: Puppet:
   def create
 
     # Only set the sec_domain_str to something if we're not working on the global domain.
-    (resource[:secd_name] == 'global'? sec_domain_str = '' : sec_domain_str = "'#{resource[:secd_name]}'"
+    case resource[:secd_name]
+    when 'global'
+      sec_domain_str = ''
+    else 
+      sec_domain_str = "'#{resource[:secd_name]}'"
+    end
 
     enabled_str = resource[:enabled].to_s
 
