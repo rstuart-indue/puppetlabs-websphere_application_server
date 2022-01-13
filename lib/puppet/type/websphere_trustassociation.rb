@@ -4,7 +4,7 @@ require 'pathname'
 
 Puppet::Type.newtype(:websphere_trustassociation) do
   @doc = <<-DOC
-    @summary This manages a WebSphere JVM Trust Association configuration.
+    @summary This manages a WebSphere Trust Association configuration.
 
     This module manages the Trust Association configuration for a given security domain.
     The security domain has to exist, or can be the default Global one.
@@ -67,6 +67,7 @@ Puppet::Type.newtype(:websphere_trustassociation) do
 
   validate do
     raise ArgumentError, 'cell is required' if self[:cell].nil?
+    raise ArgumentError, 'Security Domain name is required' if self[:secd_name].nil?
     raise ArgumentError, "Invalid profile_base #{self[:profile_base]}" unless Pathname.new(self[:profile_base]).absolute?
 
     if self[:profile].nil?
@@ -99,7 +100,7 @@ Puppet::Type.newtype(:websphere_trustassociation) do
 
   newparam(:cell) do
     isnamevar
-    desc 'The cell for which this JVM Class Loader should be set in'
+    desc 'The cell for which this Trust Association Interceptor should be set in'
   end
 
   newparam(:profile) do
@@ -110,7 +111,7 @@ Puppet::Type.newtype(:websphere_trustassociation) do
     isnamevar
     defaultto { @resource[:profile] }
     desc <<-EOT
-    The DMGR profile for which this JVM Class Loader should be set under.  Basically, where
+    The DMGR profile for which this Trust Association Interceptor should be set under.  Basically, where
     are we finding `wsadmin`
 
     This is synonymous with the 'profile' parameter.
