@@ -155,7 +155,7 @@ END
     end
 
     tai_entry = XPath.first(auth_mechanism, 'trustAssociation') unless auth_mechanism.nil?
-    @tai_state = XPath.match(tai_entry, "@*[local-name()='enabled']").value.to_sym unless tai_entry.nil?
+    @tai_state = XPath.first(tai_entry, "@*[local-name()='enabled']").value.to_sym unless tai_entry.nil?
 
     debug "Discovered Trust Association for: #{resource[:secd_name]} with state: #{@tai_state.to_s}"
 
@@ -168,13 +168,12 @@ END
     return @tai_state
   end
 
-  # Set the mode for guessed classloader
+  # Set the enabled state of the Trust Association
   def enabled=(val)
     @property_flush[:enabled] = val
   end
 
-  # Remove classloader. Well, more to the point,
-  # the shared libs which are referenced across class-loaders.
+  # Remove Trust Association - if not the global security domain
   def destroy
 
     if (resource[:secd_name] == 'global')
