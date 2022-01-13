@@ -41,8 +41,8 @@ Puppet::Type.type(:websphere_trustassociation).provide(:wsadmin, parent: Puppet:
     file = "#{resource[:profile_base]}/#{resource[:dmgr_profile]}"
     case resource[:secd_name]
     when 'global'
-      query = "/Cell:#{resource[:cell]}/Node:#{resource[:node_name]}/Server:#{resource[:server]}"
-      mod   = "cells/#{resource[:cell]}/nodes/#{resource[:node_name]}/servers/#{resource[:server]}"
+      query = "/Cell:#{resource[:cell]}"
+      mod   = "cells/#{resource[:cell]}"
       file += "/config/cells/#{resource[:cell]}/security.xml"
     else
       # TODO: this may need some tuning - but cannot test it because we're not using this kind of config.
