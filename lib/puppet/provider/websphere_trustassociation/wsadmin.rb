@@ -85,7 +85,7 @@ import AdminUtilities
 # Enable debug notices ('true'/'false')
 AdminUtilities.setDebugNotices('#{@jython_debug_state}')
 
-# Parameters we need for our Trust Association update
+# Parameters we need for our Trust Association creation
 sec_domain = '#{sec_domain_str}'
 enabled_state = '#{enabled_str}'
 
@@ -94,10 +94,10 @@ msgPrefix = 'WASTrustAssociation create:'
 try:
   if sec_domain:
     AdminTask.configureTrustAssociation((['-securityDomainName', sec_domain, '-enable', enabled_state]))
-    AdminUtilities.debugNotice("Modified Trust Association enabled state to " + enabled_state + " for security domain " + sec_domain)
+    AdminUtilities.debugNotice("Created Trust Association enabled state to " + enabled_state + " for security domain " + sec_domain)
   else:
     AdminTask.configureTrustAssociation((['-enable', enabled_state]))
-    AdminUtilities.debugNotice("Modified Trust Association enabled state to " + enabled_state + " for the global security domain ")
+    AdminUtilities.debugNotice("Created Trust Association enabled state to " + enabled_state + " for the global security domain ")
   #endIf
 
   AdminConfig.save()
