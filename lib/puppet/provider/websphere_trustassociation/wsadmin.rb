@@ -122,7 +122,7 @@ END
       ## This usually indicates that the server isn't ready on the DMGR yet -
       ## the DMGR needs to do another Puppet run, probably.
       err = <<-EOT
-      Could not create Activation Specs: #{resource[:as_name]} of type #{resource[:destination_type]}
+      Could not create Trust Association for Security Domain #{resource[:secd_name]}
       This appears to be due to the remote resource not being available.
       Ensure that all the necessary services have been created and are running
       on this host and the DMGR. If this is the first run, the cluster member
