@@ -115,9 +115,13 @@ Puppet::Type.newtype(:websphere_interceptor) do
     EOT
 
     # Compare the two hashes - the is{} and should{}. Bail out at the first failed comparison.
+    # Ensure we compare the two - both ways, otherwise we don't catch the reduction of properties
     def insync?(is)
       should.each_pair do |prop,value|
         return false unless property_matches?(is[prop],value)
+      end
+      is.each_pair do |prop,value|
+        return false unless property_matches?(should[prop],value)
       end
       true
     end
