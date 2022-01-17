@@ -3,17 +3,15 @@
 require 'English'
 require_relative '../websphere_helper'
 
-Puppet::Type.type(:websphere_trustassociation).provide(:wsadmin, parent: Puppet::Provider::Websphere_Helper) do
+Puppet::Type.type(:websphere_interceptor).provide(:wsadmin, parent: Puppet::Provider::Websphere_Helper) do
   desc <<-DESC
-    Provider to manage or create a Trust Association for a specific security Domain.
+    Provider to manage or create a Trust Association Interceptor for a specific security Domain.
 
     Please see the IBM documentation available at:
     https://www.ibm.com/docs/en/was/9.0.5?topic=scripting-configuring-trust-association-using
     https://www.ibm.com/docs/en/was/9.0.5?topic=scripting-securityconfigurationcommands-command-group-admintask-object
 
-    This provider relies on the AdminTask sub-commands for managing Trust Associations for a given security domain.
-    If the TA does not exist, it will be automatically created and the Global TA interceptors will be copied in as
-    defaults.
+    This provider relies on the AdminTask sub-commands for managing Trust Association Interceptors for a given security domain.
 
     This provider operates only for LTPA Authentication which is set up at the Sec Domain level.
     We execute the 'wsadmin' tool to query and make changes, which interprets
@@ -26,7 +24,7 @@ Puppet::Type.type(:websphere_trustassociation).provide(:wsadmin, parent: Puppet:
   def initialize(val = {})
     super(val)
     @property_flush = {}
-    @tai_state = ''
+    @old_tai = {}
 
     # Dynamic debugging
     @jython_debug_state = Puppet::Util::Log.level == :debug
@@ -63,10 +61,7 @@ Puppet::Type.type(:websphere_trustassociation).provide(:wsadmin, parent: Puppet:
     end
   end
 
-  # Create a Trust Association
-  # TODO: this may need some attention in the future - when dealing with non-global security domains.
-  #       It appears the Trust Association is created, but it needs to be switched from "use global"
-  #       to it.
+  # Create a Trust Association Interceptor
   def create
 
     # Only set the sec_domain_str to something if we're not working on the global domain.
@@ -77,7 +72,10 @@ Puppet::Type.type(:websphere_trustassociation).provide(:wsadmin, parent: Puppet:
       sec_domain_str = "'#{resource[:secd_name]}'"
     end
 
-    enabled_str = resource[:enabled].to_s
+    interceptor_str = resource[:interceptor_classname].to_s
+
+    # Convert this to a dumb string (square brackets and all) to pass to Jython
+    custom_props_str = resource[:properties].map{|k,v| "#{k}=#{v}"}to_s.tr("\"", "'")
 
     cmd = <<-END.unindent
 import AdminUtilities
@@ -85,19 +83,21 @@ import AdminUtilities
 # Enable debug notices ('true'/'false')
 AdminUtilities.setDebugNotices('#{@jython_debug_state}')
 
-# Parameters we need for our Trust Association creation
+# Parameters we need for our Trust Association Interceptor update
 sec_domain = '#{sec_domain_str}'
-enabled_state = '#{enabled_str}'
+interceptor_id = '#{interceptor_str}'
+custom_props = #{custom_props_str}
 
-msgPrefix = 'WASTrustAssociation create:'
+
+msgPrefix = 'WASInterceptor create:'
 
 try:
   if sec_domain:
-    AdminTask.configureTrustAssociation((['-securityDomainName', sec_domain, '-enable', enabled_state]))
-    AdminUtilities.debugNotice("Created Trust Association enabled state to " + enabled_state + " for security domain " + sec_domain)
+    AdminTask.configureInterceptor(['-interceptor', interceptor_id, '-securityDomainName', sec_domain, '-customProperties', custom_props ])
+    AdminUtilities.debugNotice("Created Trust Association Interceptor with custom props" + custom_props + " for security domain " + sec_domain)
   else:
-    AdminTask.configureTrustAssociation((['-enable', enabled_state]))
-    AdminUtilities.debugNotice("Created Trust Association enabled state to " + enabled_state + " for the global security domain ")
+    AdminTask.configureInterceptor('[-interceptor interceptor_id, -customProperties custom_props ]')
+    AdminUtilities.debugNotice("Created Trust Association Interceptor with custom props " + custom_props + " for the global security domain ")
   #endIf
 
   AdminConfig.save()
@@ -122,7 +122,7 @@ END
       ## This usually indicates that the server isn't ready on the DMGR yet -
       ## the DMGR needs to do another Puppet run, probably.
       err = <<-EOT
-      Could not create Trust Association for Security Domain #{resource[:secd_name]}
+      Could not create Interceptor: #{resource[:interceptor_id]}}
       This appears to be due to the remote resource not being available.
       Ensure that all the necessary services have been created and are running
       on this host and the DMGR. If this is the first run, the cluster member
@@ -136,7 +136,7 @@ END
     debug result
   end
 
-  # Check to see if a Trust Association exists - must return a boolean.
+  # Check to see if a Trust Association Interceptor exists - must return a boolean.
   def exists?
     unless File.exist?(scope('file'))
       return false
@@ -154,31 +154,44 @@ END
       auth_mechanism = XPath.first(doc, "/security:AppSecurity/authMechanisms[@xmi:type='security:LTPA']")
     end
 
-    tai_entry = XPath.first(auth_mechanism, 'trustAssociation') unless auth_mechanism.nil?
-    @tai_state = XPath.first(tai_entry, "@*[local-name()='enabled']").value.to_sym unless tai_entry.nil?
+    # This may be a bit of a problem for custom security domains.
+    tai_entry = XPath.first(auth_mechanism, "trustAssociation/interceptors[@interceptorClassName='#{resource[:interceptor_classname]}'") unless auth_mechanism.nil?
 
-    debug "Discovered Trust Association for: #{resource[:secd_name]} with state: #{@tai_state.to_s}"
+    XPath.each(tai_entry, "trustProperties") { |trust_property|
+      prop_name, prop_value = XPath.match(trust_property, "@*[local-name()='name' or local-name()='value']")
+      prop_name_str = prop_name.value.to_s
+      prop_value_str = prop_value.value.to_s
 
-    # And now, close the deal, say whether the Trust Association exists or not.
+      debug "Discovered Trust Association Interceptor property: #{prop_name_str} with value: #{prop_value_str}"
+      @old_tai[prop_name_str] = prop_value_str
+
+    } unless tai_entry.nil?
+
+    # And now, close the deal, say whether the Trust Association Interceptor exists or not.
     !tai_entry.nil?
   end
 
-  # Get the enabled state of the Trust Association
-  def enabled
-    return @tai_state
+  # Get TAI properties for a given Interceptor
+  def properties
+    return @old_tai
   end
 
-  # Set the enabled state of the Trust Association
-  def enabled=(val)
-    @property_flush[:enabled] = val
+  # Set TAI properties for a given Interceptor
+  def properties=(val)
+    @property_flush[:properties] = val
   end
 
-  # Remove Trust Association - if not the global security domain
+  # Remove Trust Association Interceptor - even the ones in the global security domain
   def destroy
-
-    if (resource[:secd_name] == 'global')
-      raise Puppet::Error, 'Refusing to destroy the built-in Trust Association for the Global Security domain. Please set `enabled => false` instead.'
+    # Only set the sec_domain_str to something if we're not working on the global domain.
+    case resource[:secd_name]
+    when 'global'
+      sec_domain_str = ''
+    else 
+      sec_domain_str = "'#{resource[:secd_name]}'"
     end
+
+    interceptor_str = resource[:interceptor_classname].to_s
 
     cmd = <<-END.unindent
 import AdminUtilities
@@ -186,15 +199,22 @@ import AdminUtilities
 # Enable debug notices ('true'/'false')
 AdminUtilities.setDebugNotices('#{@jython_debug_state}')
 
-# Parameters we need for our Trust Association destruction
-sec_domain = '#{resource[:secd_name]}'
+# Parameters we need for our Trust Association Interceptor destruction
+sec_domain = '#{sec_domain_str}'
+interceptor_id = '#{interceptor_str}'
 
-msgPrefix = 'WASTrustAssociation destroy:'
+
+msgPrefix = 'WASInterceptor destroy:'
 
 try:
-  # Remove the trust association object from the specified security domain
-  AdminTask.unconfigureTrustAssociation(['-securityDomainName', sec_domain])
-  AdminUtilities.debugNotice("Removed Trust Association for security domain: " + str(sec_domain))
+  # Remove the trust association interceptor object from the specified security domain
+  if sec_domain:
+    AdminTask.unconfigureInterceptor(['-interceptor', interceptor_id, '-securityDomainName', sec_domain ])
+    AdminUtilities.debugNotice("Removed Trust Association Interceptor ID" + interceptor_id + " for security domain " + sec_domain)
+  else:
+    AdminTask.unconfigureInterceptor(['-interceptor', interceptor_id ])
+    AdminUtilities.debugNotice("Removed Trust Association Interceptor ID" + interceptor_id + " for the global security domain ")
+  #endIf
 
   AdminConfig.save()
 except:
@@ -216,16 +236,25 @@ END
     debug result
   end
 
+  # This applies a new set of "custom properties" to the existing interceptor. There doesn't seem
+  # to be a way to remove some and not others.
   def flush
     # If we haven't got anything to modify, we've got nothing to flush. Otherwise
     # parse the list of things to do
     return if @property_flush.empty?
-    sec_domain_str = ''
-    if (resource[:secd_name] != 'global')
+    # Only set the sec_domain_str to something if we're not working on the global domain.
+    case resource[:secd_name]
+    when 'global'
+      sec_domain_str = ''
+    else 
       sec_domain_str = "'#{resource[:secd_name]}'"
     end
 
-    enabled_str = resource[:enabled].to_s
+    interceptor_str = resource[:interceptor_classname].to_s
+
+    # Convert this to a dumb string (square brackets and all) to pass to Jython
+    custom_props_str = resource[:properties].map{|k,v| "#{k}=#{v}"}to_s.tr("\"", "'")
+
 
     cmd = <<-END.unindent
 import AdminUtilities
@@ -233,20 +262,21 @@ import AdminUtilities
 # Enable debug notices ('true'/'false')
 AdminUtilities.setDebugNotices('#{@jython_debug_state}')
 
-# Parameters we need for our Trust Association update
+# Parameters we need for our Trust Association Interceptor update
 sec_domain = '#{sec_domain_str}'
-enabled_state = '#{enabled_str}'
+interceptor_id = '#{interceptor_str}'
+custom_props = #{custom_props_str}
 
-msgPrefix = 'WASTrustAssociation modify:'
+msgPrefix = 'WASInterceptor modify:'
 
 try:
-  if sec_domain:
-    AdminTask.configureTrustAssociation((['-securityDomainName', sec_domain, '-enable', enabled_state]))
-    AdminUtilities.debugNotice("Modified Trust Association enabled state to " + enabled_state + " for security domain " + sec_domain)
-  else:
-    AdminTask.configureTrustAssociation((['-enable', enabled_state]))
-    AdminUtilities.debugNotice("Modified Trust Association enabled state to " + enabled_state + " for the global security domain ")
-  #endIf
+if sec_domain:
+  AdminTask.configureInterceptor(['-interceptor', interceptor_id, '-securityDomainName', sec_domain, '-customProperties', custom_props ])
+  AdminUtilities.debugNotice("Created Trust Association Interceptor with custom props" + custom_props + " for security domain " + sec_domain)
+else:
+  AdminTask.configureInterceptor('[-interceptor interceptor_id, -customProperties custom_props ]')
+  AdminUtilities.debugNotice("Created Trust Association Interceptor with custom props " + custom_props + " for the global security domain ")
+#endIf
 
   AdminConfig.save()
 except:
