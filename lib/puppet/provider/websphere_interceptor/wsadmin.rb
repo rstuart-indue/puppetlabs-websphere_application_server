@@ -270,13 +270,13 @@ custom_props = '#{custom_props_str}'
 msgPrefix = 'WASInterceptor modify:'
 
 try:
-if sec_domain:
-  AdminTask.configureInterceptor(['-interceptor', interceptor_id, '-securityDomainName', sec_domain, '-customProperties', custom_props ])
-  AdminUtilities.debugNotice("Created Trust Association Interceptor with custom props" + custom_props + " for security domain " + sec_domain)
-else:
-  AdminTask.configureInterceptor(['-interceptor', interceptor_id, '-customProperties', custom_props ])
-  AdminUtilities.debugNotice("Created Trust Association Interceptor with custom props " + custom_props + " for the global security domain ")
-#endIf
+  if sec_domain:
+    AdminTask.configureInterceptor(['-interceptor', interceptor_id, '-securityDomainName', sec_domain, '-customProperties', custom_props ])
+    AdminUtilities.debugNotice("Created Trust Association Interceptor with custom props" + custom_props + " for security domain " + sec_domain)
+  else:
+    AdminTask.configureInterceptor(['-interceptor', interceptor_id, '-customProperties', custom_props ])
+    AdminUtilities.debugNotice("Created Trust Association Interceptor with custom props " + custom_props + " for the global security domain ")
+  #endIf
 
   AdminConfig.save()
 except:
