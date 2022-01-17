@@ -142,7 +142,7 @@ END
       return false
     end
 
-    debug "Retrieving value of #{resource[:secd_name]} from #{scope('file')}"
+    debug "Retrieving value of interceptor #{resource[:interceptor_classname]} for the #{resource[:secd_name]} security domain from #{scope('file')}"
     doc = REXML::Document.new(File.open(scope('file')))
 
     case resource[:secd_name]
@@ -155,7 +155,7 @@ END
     end
 
     # This may be a bit of a problem for custom security domains.
-    tai_entry = XPath.first(auth_mechanism, "trustAssociation/interceptors[@interceptorClassName='#{resource[:interceptor_classname]}'") unless auth_mechanism.nil?
+    tai_entry = XPath.first(auth_mechanism, "trustAssociation/interceptors[@interceptorClassName='#{resource[:interceptor_classname]}']") unless auth_mechanism.nil?
 
     XPath.each(tai_entry, "trustProperties") { |trust_property|
       prop_name, prop_value = XPath.match(trust_property, "@*[local-name()='name' or local-name()='value']")
