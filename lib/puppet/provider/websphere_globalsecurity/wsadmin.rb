@@ -12,6 +12,10 @@ Puppet::Type.type(:websphere_globalsecurity).provide(:wsadmin, parent: Puppet::P
 
     This provider relies on the AdminTask sub-commands for managing the global security options.
 
+    Please note that you cannot instantiate/create or destroy the global security settings object. Attempting
+    to do so will throw an exception and will leave the object unchanged. The only supported action is to
+    modify the object.
+
     We execute the 'wsadmin' tool to query and make changes, which interprets
     Jython. This means we need to use heredocs to satisfy whitespace sensitivity.
     DESC
