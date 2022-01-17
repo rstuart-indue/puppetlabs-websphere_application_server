@@ -75,7 +75,7 @@ Puppet::Type.type(:websphere_interceptor).provide(:wsadmin, parent: Puppet::Prov
     interceptor_str = resource[:interceptor_classname].to_s
 
     # Convert this to a dumb string (square brackets and all) to pass to Jython
-    custom_props_str = resource[:properties].map{|k,v| "#{k}=#{v}"}to_s.tr("\"", "'")
+    custom_props_str = resource[:properties].map{|k,v| "#{k}=#{v}"}.to_s.tr("\"", "'")
 
     cmd = <<-END.unindent
 import AdminUtilities
@@ -253,7 +253,7 @@ END
     interceptor_str = resource[:interceptor_classname].to_s
 
     # Convert this to a dumb string (square brackets and all) to pass to Jython
-    custom_props_str = resource[:properties].map{|k,v| "#{k}=#{v}"}to_s.tr("\"", "'")
+    custom_props_str = resource[:properties].map{|k,v| "#{k}=#{v}"}.to_s.tr("\"", "'")
 
 
     cmd = <<-END.unindent
