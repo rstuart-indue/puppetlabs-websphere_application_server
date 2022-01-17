@@ -75,7 +75,7 @@ Puppet::Type.type(:websphere_interceptor).provide(:wsadmin, parent: Puppet::Prov
     interceptor_str = resource[:interceptor_classname].to_s
 
     # Convert this to a dumb string (square brackets and all) to pass to Jython
-    custom_props_str = resource[:properties].map{|k,v| "#{k}=#{v}"}.to_s.tr("\"", "'")
+    custom_props_str = resource[:properties].map{|k,v| "#{k}=#{v}"}.to_s
 
     cmd = <<-END.unindent
 import AdminUtilities
@@ -86,7 +86,7 @@ AdminUtilities.setDebugNotices('#{@jython_debug_state}')
 # Parameters we need for our Trust Association Interceptor update
 sec_domain = '#{sec_domain_str}'
 interceptor_id = '#{interceptor_str}'
-custom_props = #{custom_props_str}
+custom_props = '#{custom_props_str}'
 
 
 msgPrefix = 'WASInterceptor create:'
@@ -96,7 +96,7 @@ try:
     AdminTask.configureInterceptor(['-interceptor', interceptor_id, '-securityDomainName', sec_domain, '-customProperties', custom_props ])
     AdminUtilities.debugNotice("Created Trust Association Interceptor with custom props" + custom_props + " for security domain " + sec_domain)
   else:
-    AdminTask.configureInterceptor('[-interceptor interceptor_id, -customProperties custom_props ]')
+    AdminTask.configureInterceptor(['-interceptor', interceptor_id, '-customProperties', custom_props ])
     AdminUtilities.debugNotice("Created Trust Association Interceptor with custom props " + custom_props + " for the global security domain ")
   #endIf
 
@@ -253,7 +253,7 @@ END
     interceptor_str = resource[:interceptor_classname].to_s
 
     # Convert this to a dumb string (square brackets and all) to pass to Jython
-    custom_props_str = resource[:properties].map{|k,v| "#{k}=#{v}"}.to_s.tr("\"", "'")
+    custom_props_str = resource[:properties].map{|k,v| "#{k}=#{v}"}.to_s
 
 
     cmd = <<-END.unindent
@@ -265,7 +265,7 @@ AdminUtilities.setDebugNotices('#{@jython_debug_state}')
 # Parameters we need for our Trust Association Interceptor update
 sec_domain = '#{sec_domain_str}'
 interceptor_id = '#{interceptor_str}'
-custom_props = #{custom_props_str}
+custom_props = '#{custom_props_str}'
 
 msgPrefix = 'WASInterceptor modify:'
 
@@ -274,7 +274,7 @@ if sec_domain:
   AdminTask.configureInterceptor(['-interceptor', interceptor_id, '-securityDomainName', sec_domain, '-customProperties', custom_props ])
   AdminUtilities.debugNotice("Created Trust Association Interceptor with custom props" + custom_props + " for security domain " + sec_domain)
 else:
-  AdminTask.configureInterceptor('[-interceptor interceptor_id, -customProperties custom_props ]')
+  AdminTask.configureInterceptor(['-interceptor', interceptor_id, '-customProperties', custom_props ])
   AdminUtilities.debugNotice("Created Trust Association Interceptor with custom props " + custom_props + " for the global security domain ")
 #endIf
 
