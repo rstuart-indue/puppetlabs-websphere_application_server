@@ -96,6 +96,11 @@ Puppet::Type.newtype(:websphere_globalsecurity) do
     defaultto :false
     newvalues(:true, :false)
     desc 'Optional. Sets whether Application Security is enabled. Defaults to false'
+
+    # Override insync? to make sure we're comparing symbols
+    def insync?(is)
+      is.to_sym == should.to_sym
+    end
   end
 
   newparam(:cell) do
