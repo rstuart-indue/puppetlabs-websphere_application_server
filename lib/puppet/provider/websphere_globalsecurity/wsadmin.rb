@@ -78,7 +78,7 @@ Puppet::Type.type(:websphere_globalsecurity).provide(:wsadmin, parent: Puppet::P
     sec_entry = XPath.first(doc, "/security:Security")
 
     XPath.each(sec_entry, "@*") {|attribute|
-      @old_sec[attribute.name.to_s] = attribute.value.to_s
+      @old_sec[attribute.name.to_sym] = attribute.value.to_s
       debug "Discovered Global Securty Domain atribute name: #{attribute.name.to_s} with value: #{attribute.value.to_s}"
     } unless sec_entry.nil?
 
