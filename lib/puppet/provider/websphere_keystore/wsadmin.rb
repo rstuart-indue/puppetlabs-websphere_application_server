@@ -275,7 +275,7 @@ END
     
     ks_entry = XPath.match(sec_entry, "keyStores[@managementScope='#{mgmt_scope.value.to_s}'][@location='#{@resource[:location]}']") unless mgmt_scope.nil?
     
-    debug "Found Keystore entry for #{@resource[:scope]}: #{kstore}" unless ks_entry.nil?
+    debug "Found Keystore entry for #{@resource[:scope]}: #{ks_entry}" unless ks_entry.nil?
         
     XPath.each(ks_entry, "@*") { |attribute|
       @old_kstore[attribute.name.to_sym] = attribute.value.to_s
