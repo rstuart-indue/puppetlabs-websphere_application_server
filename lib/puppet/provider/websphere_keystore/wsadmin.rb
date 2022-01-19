@@ -96,7 +96,7 @@ Puppet::Type.type(:websphere_keystore).provide(:wsadmin, parent: Puppet::Provide
                 ["keyStoreHostList", "#{resource[:remote_hostlist]}"],
                 ["enableCryptoOperations", "#{resource[:enable_crypto_hw]}"],
                 ["keyStoreStashFile", "#{resource[:enable_stashfile]}"]]
-    ks_attrs_str = ak_attrs.to_s.tr("\"", "'")
+    ks_attrs_str = ks_attrs.to_s.tr("\"", "'")
 
     cmd = <<-END.unindent
 import AdminUtilities
