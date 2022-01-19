@@ -281,9 +281,11 @@ END
     #   * Find if we have a keystore with the given name/path in that particular management scope ID
     #   * Extract the keystore details from the entry attributes if we do find one.
     
-    # Turns out that the Keystore name has to be unique within the broadest management scope - which is the cell.
-    ks_entry = XPath.first(sec_entry, "keyStores[@name='#{@resource[:ks_name]}']") unless sec_entry.nil?
+    # Turns out that the Keystore name has to be unique within the given management scope.
+    mgmt_scope = XPath.first(sec_entry, "managementScopes[@scopeName='#{scope('xml')}']/@*[local-name()='id']") unless sec_entry.nil?
+    debug "Found Management Scope entry for scope '#{resource[:scope]}': #{mgmt_scope.value.to_s}" unless mgmt_scope.nil?
     
+    ks_entry = XPath.first(sec_entry, "keyStores[@managementScope='#{mgmt_scope.value.to_s}'][@name='#{@resource[:ks_name]}']") unless mgmt_scope.nil?
     debug "Found Keystore entry for scope #{scope('xml')}: #{ks_entry}" unless ks_entry.nil?
         
     XPath.each(ks_entry, "@*") { |attribute|
