@@ -155,24 +155,6 @@ Puppet::Type.newtype(:websphere_keystore) do
 
   newproperty(:store_password) do
     desc "Required. The KeyStore password."
-
-    # def insync?(is)
-    #   # There will almost always be more properties on the system than
-    #   # defined in the resource. Make sure the properties in the resource
-    #   # are insync
-    #   should.each_pair do |prop,value|
-    #     return false unless (value.to_s.empty? || is.key?(prop))
-    #     # Stop after the first out of sync property
-    #     return false unless (property_matches?(is[prop],value) || ((is[prop].nil? || is[prop].empty?) && value.to_s.empty?))
-    #   end
-    #   true
-    # end
-
-    # It appears that the passwords are stored as a XOR. Really really! 
-    munge do |value|
-      xor_pass = value
-      xor_pass
-    end
   end
 
   newproperty(:readonly) do

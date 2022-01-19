@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'base64'
 require 'English'
 require_relative '../websphere_helper'
 
@@ -36,6 +37,20 @@ Puppet::Type.type(:websphere_keystore).provide(:wsadmin, parent: Puppet::Provide
 
     # Dynamic debugging
     @jython_debug_state = Puppet::Util::Log.level == :debug
+  end
+
+  # This creates the XOR string used in the authentication data entries.
+  # For now, WAS8 and WAS9 are using the same schema of obfuscation for
+  # the alias and KeyStore passwords.
+  # The character used as the XOR key is "_" (underscore).
+  def xor_string (val)
+    xor_result = ""
+    debase64 = Base64.decode64(val)
+
+    debase64.each_char { |char|
+      xor_result += (char.ord ^ "_".ord).ord.chr
+    }
+    return xor_result
   end
 
   def scope(what)
@@ -327,9 +342,13 @@ END
     @property_flush[:location] = val
   end
 
-  # Get a Keystore's password
+  # Get a Keystore's password - de-obfuscate it so we can compare them
+  # At least we're not storing it de-obfuscated in memory. *sigh*
   def store_password
-    @old_kstore_data[:password]
+    stripped_pass = @old_kstore_data[:password].match(/^(?:{xor})(.*)/).captures.first
+
+    old_pass = xor_string(stripped_pass)
+    return old_pass
   end
 
   # Set a Keystore's password
