@@ -287,9 +287,9 @@ END
     
     ks_entry = XPath.first(sec_entry, "keyStores[@managementScope='#{mgmt_scope.value.to_s}'][@name='#{@resource[:ks_name]}']") unless mgmt_scope.nil?
     debug "Found Keystore entry for scope #{scope('xml')}: #{ks_entry}" unless ks_entry.nil?
-        
+
     XPath.each(ks_entry, "@*") { |attribute|
-      @old_kstore[attribute.name.to_sym] = attribute.value.to_s
+      @old_kstore_data[attribute.name.to_sym] = attribute.value.to_s
     } unless ks_entry.nil?
     
     debug "Exists? method result for #{resource[:ks_name]} is: #{ks_entry}"
