@@ -88,7 +88,7 @@ Puppet::Type.type(:websphere_keystore).provide(:wsadmin, parent: Puppet::Provide
     ks_scope = scope('xml') 
 
     # Pass the params to the keystore creation routine.
-    ks_attrs = [["description", "#{resource[:description]}"],
+    ks_attrs = [["keyStoreDescription", "#{resource[:description]}"],
                 ["keyStorePassword", "#{resource[:store_password]}"],
                 ["keyStorePasswordVerify", "#{resource[:store_password]}"],
                 ["keyStoreReadOnly", "#{resource[:readonly]}"],
