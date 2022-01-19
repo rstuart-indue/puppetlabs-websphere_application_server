@@ -216,7 +216,7 @@ END
       ## This usually indicates that the server isn't ready on the DMGR yet -
       ## the DMGR needs to do another Puppet run, probably.
       err = <<-EOT
-      Could not create Keystore: #{resource[:as_name]} of type #{resource[:destination_type]}
+      Could not create Keystore: #{resource[:ks_name]} of type #{resource[:destination_type]}
       This appears to be due to the remote resource not being available.
       Ensure that all the necessary services have been created and are running
       on this host and the DMGR. If this is the first run, the cluster member
@@ -281,7 +281,7 @@ END
       @old_kstore[attribute.name.to_sym] = attribute.value.to_s
     } unless ks_entry.nil?
     
-    debug "Exists? method result for #{resource[:as_name]} is: #{ks_entry}"
+    debug "Exists? method result for #{resource[:ks_name]} is: #{ks_entry}"
 
     !ks_entry.nil?
   end
