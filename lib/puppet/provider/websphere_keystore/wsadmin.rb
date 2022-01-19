@@ -267,7 +267,7 @@ END
     #   * Extract the keystore details from the entry attributes if we do find one.
     
     # Turns out that the Keystore name has to be unique within the broadest management scope - which is the cell.
-    ks_entry = XPath.first(sec_entry, "keyStores[@name='#{@resource[:ks_name]}']") unless mgmt_scope.nil?
+    ks_entry = XPath.first(sec_entry, "keyStores[@name='#{@resource[:ks_name]}']") unless sec_entry.nil?
     
     debug "Found Keystore entry for scope #{scope('xml')}: #{ks_entry}" unless ks_entry.nil?
         
