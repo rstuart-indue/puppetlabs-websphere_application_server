@@ -412,7 +412,7 @@ AdminUtilities.setDebugNotices('#{@jython_debug_state}')
 bundleName = "com.ibm.ws.scripting.resources.scriptLibraryMessage"
 resourceBundle = AdminUtilities.getResourceBundle(bundleName)
 
-def deleteWMActivationSpec(scope, name, failonerror=AdminUtilities._BLANK_ ):
+def deleteKeyStore(scope, name, failonerror=AdminUtilities._BLANK_ ):
   if (failonerror==AdminUtilities._BLANK_):
       failonerror=AdminUtilities._FAIL_ON_ERROR_
   #endIf
