@@ -353,7 +353,7 @@ END
 
   # Get a Keystore's initialize at startup status
   def init_at_startup
-    @old_kstore_data[:initializeAtStartup]
+    @old_kstore_data.key?(:initializeAtStartup) ? @old_kstore_data[:initializeAtStartup] : :false
   end
 
   # Set a Keystore's initialize at startup status
@@ -363,7 +363,7 @@ END
 
   # Get a Keystore's readonly state
   def readonly
-    @old_kstore_data[:readOnly]
+    @old_kstore_data.key?(:readOnly) ? @old_kstore_data[:readOnly] : :false
   end
 
   # Set a Keystore's readonly state
@@ -373,7 +373,7 @@ END
 
   # Get a Keystore's Crypto HW status
   def enable_crypto_hw
-    @old_kstore_data[:useForAcceleration]
+    @old_kstore_data.key?(:useForAcceleration) ? @old_kstore_data[:useForAcceleration] : :false
   end
 
   # Set a Keystore's Crypto HW status
