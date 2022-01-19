@@ -265,20 +265,21 @@ END
     #   * Find the appropriate management scope ID by working it back from the scope name (the XML one).
     #   * Find if we have a keystore with the given name/path in that particular management scope ID
     #   * Extract the keystore details from the entry attributes if we do find one.
-
-    # Note that you cannot look for the namespaced attributes with their fully qualified namespace.
-    # By definition local-name() looks just for the non-qualified attribute - so you have to look
-    # for local-name()='id' not local-name()='xmi:id'
-    mgmt_scope = XPath.first(sec_entry, "managementScopes[@scopeName='#{scope('xml')}'][@scopeType='#{@resource[:scope]}']/@*[local-name()='id']") if sec_entry
     
-    debug "Found Management Scope entry for #{@resource[:scope]}: #{mgmt_scope.value.to_s}" unless mgmt_scope.nil?
+    # Turns out that the Keystore name has to be unique within the broadest management scope - which is the cell.
+    ks_entry = XPath.first(sec_entry, "keyStores[@name='#{@resource[:ks_name]}']") unless mgmt_scope.nil?
     
-    ks_entry = XPath.match(sec_entry, "keyStores[@managementScope='#{mgmt_scope.value.to_s}'][@location='#{@resource[:location]}']") unless mgmt_scope.nil?
-    
-    debug "Found Keystore entry for #{@resource[:scope]}: #{ks_entry}" unless ks_entry.nil?
+    debug "Found Keystore entry for scope #{scope('xml')}: #{ks_entry}" unless ks_entry.nil?
         
     XPath.each(ks_entry, "@*") { |attribute|
-      @old_kstore[attribute.name.to_sym] = attribute.value.to_s
+      case attribute.name.to_s
+      when 'managementScope'
+        mgmt_scope = XPath.first(sec_entry, "managementScopes[@xmi:id='#{attribute.value.to_s}']/@*[local-name()='scopeName']") if sec_entry
+        debug "Using Management Scope entry for #{attribute.name.to_s}: #{mgmt_scope.value.to_s}" unless mgmt_scope.nil?
+        @old_kstore[attribute.name.to_sym] = mgmt_scope.value.to_s unless mgmt_scope.nil?
+      else
+        @old_kstore[attribute.name.to_sym] = attribute.value.to_s
+      end
     } unless ks_entry.nil?
     
     debug "Exists? method result for #{resource[:ks_name]} is: #{ks_entry}"
