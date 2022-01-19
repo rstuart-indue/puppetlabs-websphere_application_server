@@ -289,14 +289,7 @@ END
     debug "Found Keystore entry for scope #{scope('xml')}: #{ks_entry}" unless ks_entry.nil?
         
     XPath.each(ks_entry, "@*") { |attribute|
-      case attribute.name.to_s
-      when 'managementScope'
-        mgmt_scope = XPath.first(sec_entry, "managementScopes[@xmi:id='#{attribute.value.to_s}']/@*[local-name()='scopeName']") if sec_entry
-        debug "Using Management Scope entry for #{attribute.name.to_s}: #{mgmt_scope.value.to_s}" unless mgmt_scope.nil?
-        @old_kstore[attribute.name.to_sym] = mgmt_scope.value.to_s unless mgmt_scope.nil?
-      else
-        @old_kstore[attribute.name.to_sym] = attribute.value.to_s
-      end
+      @old_kstore[attribute.name.to_sym] = attribute.value.to_s
     } unless ks_entry.nil?
     
     debug "Exists? method result for #{resource[:ks_name]} is: #{ks_entry}"
