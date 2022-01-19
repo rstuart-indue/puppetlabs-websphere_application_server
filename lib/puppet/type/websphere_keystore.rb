@@ -170,8 +170,7 @@ Puppet::Type.newtype(:websphere_keystore) do
 
     # It appears that the passwords are stored as a XOR. Really really! 
     munge do |value|
-      xor_pass = '{xor}'
-
+      xor_pass = value
       xor_pass
     end
   end
