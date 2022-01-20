@@ -373,7 +373,7 @@ END
 
   # Get a Keystore's Crypto HW status
   def enable_crypto_hw
-    @old_kstore_data.key?(:useForAcceleration) ? @old_kstore_data[:useForAcceleration] : :false
+    @old_kstore_data.key?(:useForAcceleration) ? (return @old_kstore_data[:useForAcceleration]) : (return :false)
   end
 
   # Set a Keystore's Crypto HW status
