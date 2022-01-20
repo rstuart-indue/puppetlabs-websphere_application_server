@@ -196,8 +196,8 @@ def createKeyStore(scope, name, location, dType, usage, ksList, failonerror=Admi
       finalParameters = finalParameters+attr
 
     # Call the corresponding AdminTask command
-    AdminUtilities.debugNotice("About to call AdminTask command with target : " + str(scope))
-    AdminUtilities.debugNotice("About to call AdminTask command with parameters : " + str(finalParameters))
+    AdminUtilities.debugNotice("About to call AdminTask command with scope: " + str(scope))
+    AdminUtilities.debugNotice("About to call AdminTask command with parameters: " + str(finalParameters))
 
     # Create the KeyStore
     AdminTask.createKeyStore(finalParameters)
@@ -378,7 +378,7 @@ END
 
   # Set a Keystore's Crypto HW status
   def enable_crypto_hw=(val)
-    @property_flush[:useForAcceleration] = val
+    raise Puppet::Error, "Hardware Crypto operations cannot be modified after the resource creation."
   end
 
   # Get a Keystore's remote host-list
@@ -388,7 +388,7 @@ END
 
   # Set a Keystore's remote host-list
   def remote_hostlist=(val)
-    @property_flush[:hostList] = val
+    raise Puppet::Error, "Remote host list cannot be modified after the resource creation."
   end
 
   # Remove a given Keystore
@@ -439,7 +439,7 @@ def deleteKeyStore(scope, name, failonerror=AdminUtilities._BLANK_ ):
       raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["name", name]))
 
     # Call the corresponding AdminTask command
-    AdminUtilities.debugNotice("About to call AdminTask command with scope : " + str(scope))
+    AdminUtilities.debugNotice("About to call AdminTask command with scope: " + str(scope))
     AdminUtilities.debugNotice("About to call AdminTask command for target keystore: " + str(name))
 
     # Delete the KeyStore
@@ -474,10 +474,154 @@ END
     # If we haven't got anything to modify, we've got nothing to flush. Otherwise
     # parse the list of things to do
     return if @property_flush.empty?
+    # Set the scope for this Keystore Resource.
+    ks_scope = scope('xml') 
+
+    # Check to see if we have to change the password for the store.
+    if @property_flush.key?(:password)
+      new_password = resource[:store_password]
+
+      # de-obfuscate the old password
+      stripped_pass = @old_kstore_data[:password].match(/^(?:{xor})(.*)/).captures.first
+      current_password = xor_string(stripped_pass)
+    else
+      new_password = ''
+      current_password = resource[:store_password]
+    end
+
+    # Pass the params to the keystore modification routine
+    # Note that we will perform these changes first, then
+    # if we need to, we change the password on the keystore.
+    ks_attrs = [["keyStoreDescription", "#{resource[:description]}"],
+                ["keyStorePassword", "#{current_password}"],
+                ["keyStoreReadOnly", "#{resource[:readonly]}"],
+                ["keyStoreInitAtStartup", "#{resource[:init_at_startup]}"],
+                ["keyStoreStashFile", "#{resource[:enable_stashfile]}"]]
+    ks_attrs_str = ks_attrs.to_s.tr("\"", "'")
 
     cmd = <<-END.unindent
 import AdminUtilities
-import re
+
+# Parameters we need for our KeyStore
+scope = '#{ks_scope}'
+name = "#{resource[:ks_name]}"
+location = "#{resource[:location]}"
+type = "#{resource[:type]}"
+usage = "#{resource[:usage]}"
+ks_attrs = #{ks_attrs_str}
+new_password = '#{new_password}'
+
+# Enable debug notices ('true'/'false')
+AdminUtilities.setDebugNotices('#{@jython_debug_state}')
+
+# Global variable within this script
+bundleName = "com.ibm.ws.scripting.resources.scriptLibraryMessage"
+resourceBundle = AdminUtilities.getResourceBundle(bundleName)
+
+def normalizeArgList(argList, argName):
+  if (argList == []):
+    AdminUtilities.debugNotice ("No " + `argName` + " parameters specified. Continuing with defaults.")
+  else:
+    if (str(argList).startswith("[[") > 0 and str(argList).startswith("[[[",0,3) == 0):
+      if (str(argList).find("\\"") > 0):
+        argList = str(argList).replace("\\"", "\\'")
+    else:
+        raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6049E", [argList]))
+  return argList
+#endDef
+
+def modifyKeyStore(scope, name, location, dType, usage, ksList, newPass='', failonerror=AdminUtilities._BLANK_ ):
+  if (failonerror==AdminUtilities._BLANK_):
+      failonerror=AdminUtilities._FAIL_ON_ERROR_
+  #endIf
+  msgPrefix = "modifyKeyStore(" + `scope` +  ", " + `name`+ ", " + `location` + ", " + `dType` + ", " + `usage` +  ", " + `ksList` + ", " + `failonerror`+"): "
+
+  try:
+    #--------------------------------------------------------------------
+    # Modify a Key Store
+    #--------------------------------------------------------------------
+    AdminUtilities.debugNotice ("---------------------------------------------------------------")
+    AdminUtilities.debugNotice (" AdminKS: modifyKeyStore ")
+    AdminUtilities.debugNotice (" Scope:")
+    AdminUtilities.debugNotice ("     scope:                      "+scope)
+    AdminUtilities.debugNotice (" Type:")
+    AdminUtilities.debugNotice ("     type:                       "+dType)
+    AdminUtilities.debugNotice (" Keystore main parameters:")
+    AdminUtilities.debugNotice ("     name:                       "+name)
+    AdminUtilities.debugNotice ("     location:                   "+location)
+    AdminUtilities.debugNotice ("     usage              :        "+usage)
+    AdminUtilities.debugNotice (" Keystore other parameters :")
+    AdminUtilities.debugNotice ("   keystore attributes list:     "+str(ksList))
+    AdminUtilities.debugNotice (" Keystore password change:")
+    AdminUtilities.debugNotice ("   keystore new password:        "+str(newPass))
+    AdminUtilities.debugNotice (" Return: No return value")
+    AdminUtilities.debugNotice ("---------------------------------------------------------------")
+    AdminUtilities.debugNotice (" ")
+
+    # This normalization is slightly superfluous, but, what the hey?
+    ksList = normalizeArgList(ksList, "ksList")
+    
+    # Make sure required parameters are non-empty
+    if (len(scope) == 0):
+      raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["scope", scope]))
+    if (len(name) == 0):
+      raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["name", name]))
+    if (len(location) == 0):
+      raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["location", location]))
+    if (len(dType) == 0):
+      raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["type", dType]))
+    if (len(usage) == 0):
+      raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["usage", usage]))
+    if (len(ksList) == 0):
+      raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["ksList", ksList]))
+
+    # Prepare the parameters for the AdminTask command:
+    ksList = AdminUtilities.convertParamStringToList(ksList)
+    requiredParameters = [["scopeName", scope], ["keyStoreName", name], ["keyStoreLocation", location], ["keyStoreType", dType], ["keyStoreUsage", usage]]
+    finalAttrsList = requiredParameters + ksList
+    finalParameters = []
+    for attrs in finalAttrsList:
+      attr = ["-"+attrs[0], attrs[1]]
+      finalParameters = finalParameters+attr
+
+    # Call the corresponding AdminTask command
+    AdminUtilities.debugNotice("About to call AdminTask command with scope: " + str(scope))
+    AdminUtilities.debugNotice("About to call AdminTask command with parameters: " + str(finalParameters))
+
+    # Modify the KeyStore
+    AdminTask.modifyKeyStore(finalParameters)
+
+    # If we have a new password specified - retrieve the old password and proceed to change it
+    if (len(newPass) > 0):
+      oldPass = ksList[1][1]
+      AdminUtilities.debugNotice("About to change password on keystore with scope: " + str(scope))
+      AdminUtilities.debugNotice("About to change password on keystore. Old pass: " + str(oldPass)) + "New pass: " + str(newPass)
+
+      # We need the keystore name, the old pass, the new pass and optionally the scope name
+      changePassParameters = [["-scopeName", scope], ["-keyStoreName", name], ["-keyStorePassword", oldPass], ["-newKeyStorePassword", newPass], ["-newKeyStorePasswordVerify", newPass]]
+
+      # Change the password now
+      AdminTask.changeKeyStorePassword(changePassParameters)
+    # endIf
+
+    # Save this KeyStore
+    AdminConfig.save()
+
+  except:
+    typ, val, tb = sys.exc_info()
+    if (typ==SystemExit):  raise SystemExit,`val`
+    if (failonerror != AdminUtilities._TRUE_):
+      print "Exception: %s %s " % (sys.exc_type, sys.exc_value)
+      val = "%s %s" % (sys.exc_type, sys.exc_value)
+      raise Exception("ScriptLibraryException: " + val)
+    else:
+      return AdminUtilities.fail(msgPrefix+AdminUtilities.getExceptionText(typ, val, tb), failonerror)
+    #endIf
+  #endTry
+#endDef
+
+# And now - modify the keystore
+modifyKeyStore(scope, name, location, type, usage, ks_attrs, new_password)
 
 END
     debug "Running #{cmd}"
