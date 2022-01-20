@@ -594,7 +594,7 @@ def modifyKeyStore(scope, name, location, dType, usage, ksList, newPass='', fail
     if (len(newPass) > 0):
       oldPass = ksList[1][1]
       AdminUtilities.debugNotice("About to change password on keystore with scope: " + str(scope))
-      AdminUtilities.debugNotice("About to change password on keystore. Old pass: " + str(oldPass)) + "New pass: " + str(newPass)
+      AdminUtilities.debugNotice("About to change password on keystore. Old pass: " + str(oldPass) + "New pass: " + str(newPass))
 
       # We need the keystore name, the old pass, the new pass and optionally the scope name
       changePassParameters = [["-scopeName", scope], ["-keyStoreName", name], ["-keyStorePassword", oldPass], ["-newKeyStorePassword", newPass], ["-newKeyStorePasswordVerify", newPass]]
