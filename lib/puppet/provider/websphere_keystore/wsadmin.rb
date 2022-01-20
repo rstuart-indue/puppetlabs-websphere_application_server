@@ -495,7 +495,7 @@ END
     ks_attrs = [["keyStoreDescription", "#{resource[:description]}"],
                 ["keyStorePassword", "#{current_password}"],
                 ["keyStoreReadOnly", "#{resource[:readonly]}"],
-                ["keyStoreInitAtStartup", "#{resource[:init_at_startup]}"]
+                ["keyStoreInitAtStartup", "#{resource[:init_at_startup]}"]]
     ks_attrs_str = ks_attrs.to_s.tr("\"", "'")
 
     cmd = <<-END.unindent
