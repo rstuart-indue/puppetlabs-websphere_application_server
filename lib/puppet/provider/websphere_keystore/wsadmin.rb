@@ -397,6 +397,16 @@ END
     raise Puppet::Error, "Remote host list cannot be modified after the resource creation."
   end
 
+  # Get a Keystore's stashFile state
+  def enable_stashfile
+    @old_kstore_data.key?(:stashFile) ? @old_kstore_data[:stashFile] : :false
+  end
+
+  # Set a Keystore's stashFile State
+  def enable_stashfile=(val)
+    raise Puppet::Error, "Stash-File status cannot be modified after the resource creation."
+  end
+
   # Remove a given Keystore
   def destroy
 
