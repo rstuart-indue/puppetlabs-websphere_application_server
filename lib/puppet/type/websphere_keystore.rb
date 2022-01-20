@@ -163,25 +163,25 @@ Puppet::Type.newtype(:websphere_keystore) do
     desc 'Optional. Whether the KeyStore is read-only. Defaults to `false`'
   end
 
-  newparam(:init_at_startup) do
+  newproperty(:init_at_startup) do
     defaultto :false
     newvalues(:true, :false)
     desc 'Optional. Whether the KeyStore is initialized at startup. Defaults to `false`'
   end
 
-  newparam(:enable_crypto_hw) do
+  newproperty(:enable_crypto_hw) do
     defaultto :false
     newvalues(:true, :false)
     desc 'Optional. Whether a hardware cyptographic device is used for cryptographic operations only. Operations requiring login are not supported when using this option. Defaults to `false`'
   end
 
-  newparam(:enable_stashfile) do
+  newproperty(:enable_stashfile) do
     defaultto :false
     newvalues(:true, :false)
     desc 'Optional. Whether to create stash files for CMS type keystore. Defaults to `false`'
   end
 
-  newparam(:remote_hostlist) do
+  newproperty(:remote_hostlist) do
     defaultto ''
     desc 'Optional. Specifies a host (or list of hosts) to contact to perform the key store operation. Multiple hosts may be listed, separated by a "|" character. Defaults to an empty, 0-length string - no hosts'
   end
