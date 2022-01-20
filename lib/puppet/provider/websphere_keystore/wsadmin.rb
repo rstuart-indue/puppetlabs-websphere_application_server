@@ -373,13 +373,7 @@ END
 
   # Get a Keystore's Crypto HW status
   def enable_crypto_hw
-    if @old_kstore_data.key?(:useForAcceleration)
-      debug "Returning fould value for Crypto_HW"
-      return @old_kstore_data[:useForAcceleration]
-    else
-      debug "Crypto HW is missing, hence false."
-      return :false
-    end
+    @old_kstore_data.key?(:useForAcceleration)? @old_kstore_data[:useForAcceleration] : :false
   end
 
   # Set a Keystore's Crypto HW status
