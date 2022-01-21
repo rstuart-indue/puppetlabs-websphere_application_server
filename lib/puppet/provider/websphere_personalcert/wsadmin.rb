@@ -165,11 +165,11 @@ Puppet::Type.type(:websphere_personalcert).provide(:wsadmin, parent: Puppet::Pro
   
     case result
     when %r{keytool error: java.lang.Exception: Alias <#{resource[:cert_alias]}> does not exist}
-      return :false
+      return false
     when %r{keytool error: java.lang.Exception: Keystore file does not exist: #{kstore_data[:location]}}
       raise Puppet::Error, "Unable to open KeyStore file #{kstore_data[:location]}"
     when %r{Certificate fingerprint (SHA1): .*}
-      return :true
+      return true
     else
       raise Puppet::Error, "An unexpected error has occured running keytool: #{result}"
     end
