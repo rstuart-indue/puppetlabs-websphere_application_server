@@ -130,7 +130,7 @@ Puppet::Type.newtype(:websphere_keystore) do
     desc <<-EOT
     Required. The Keystore  name to create/modify/remove.
     
-    Example: `QASEvents`
+    Example: `CustomKeyStore`
     EOT
   end
 
