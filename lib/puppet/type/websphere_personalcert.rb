@@ -2,27 +2,27 @@
 
 require 'pathname'
 
-Puppet::Type.newtype(:websphere_keystore) do
+Puppet::Type.newtype(:websphere_personalcert) do
   @doc = <<-DOC
-    @summary This manages a WebSphere SSL Keystore resource.
+    @summary This manages a WebSphere SSL Personal Certificate resource.
 
     @example
-      websphere_keystore { 'puppet_keystore':
-        ensure           => 'present',
-        description      => 'Puppet Test Keystore',
-        usage            => 'SSLKeys',
-        location         => '/some/path/to/puppet-keystore.p12',
-        type             => 'PKCS12',
-        store_password   => 'SomeRandomPassword',
-        readonly         => false,
-        init_at_startup  => false,
-        enable_crypto_hw => false,
-        profile_base     => '/opt/IBM/WebSphere/AppServer/profiles',
-        dmgr_profile     => 'PROFILE_DMGR_01',
-        cell             => 'CELL_01',
-        user             => 'webadmin',
-        wsadmin_user     => 'wasadmin',
-        wsadmin_pass     => 'password',
+      websphere_personalcert { 'cert_alias':
+        ensure             => 'present',
+        key_store_name     => 'CellDefaultKeyStore',
+        key_file_path      => '/some/path/to/source-keystore.p12',
+        key_file_pass      => 'SourceKeyStorePassword',
+        key_file_type      => 'PKCS12',
+        key_file_certalias => 'SourceCertAlias'
+        replace_old_cert   => true,
+        delete_old_cert    => true,
+        delete_old_signers => true,
+        profile_base       => '/opt/IBM/WebSphere/AppServer/profiles',
+        dmgr_profile       => 'PROFILE_DMGR_01',
+        cell               => 'CELL_01',
+        user               => 'webadmin',
+        wsadmin_user       => 'wasadmin',
+        wsadmin_pass       => 'password',
       }
   DOC
 
@@ -32,31 +32,31 @@ Puppet::Type.newtype(:websphere_keystore) do
   # composite namevars.
   def self.title_patterns
     [
-      # KSName
+      # CertAlias
       [
         %r{^([^:]+)$},
         [
-          [:ks_name],
+          [:cert_alias],
         ],
       ],
-      # /opt/IBM/WebSphere/AppServer/profiles:KSName
+      # /opt/IBM/WebSphere/AppServer/profiles:CertAlias
       [
         %r{^([^:]+):([^:]+)$},
         [
           [:profile_base],
-          [:ks_name],
+          [:cert_alias],
         ],
       ],
-      # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:KSName
+      # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:CertAlias
       [
         %r{^([^:]+):([^:]+):([^:]+)$},
         [
           [:profile_base],
           [:dmgr_profile],
-          [:ks_name],
+          [:cert_alias],
         ],
       ],
-      # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:cell:CELL_01:KSName
+      # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:cell:CELL_01:CertAlias
       [
         %r{^([^:]+):([^:]+):(cell):([^:]+):([^:]+)$},
         [
@@ -64,10 +64,10 @@ Puppet::Type.newtype(:websphere_keystore) do
           [:dmgr_profile],
           [:scope],
           [:cell],
-          [:ks_name],
+          [:cert_alias],
         ],
       ],
-      # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:cluster:CELL_01:TEST_CLUSTER_01:KSName
+      # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:cluster:CELL_01:TEST_CLUSTER_01:CertAlias
       [
         %r{^([^:]+):([^:]+):(cluster):([^:]+):([^:]+):([^:]+)$},
         [
@@ -76,10 +76,10 @@ Puppet::Type.newtype(:websphere_keystore) do
           [:scope],
           [:cell],
           [:cluster],
-          [:ks_name],
+          [:cert_alias],
         ],
       ],
-      # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:node:CELL_01:AppNode01:KSName
+      # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:node:CELL_01:AppNode01:CertAlias
       [
         %r{^([^:]+):([^:]+):(node):([^:]+):([^:]+):([^:]+)$},
         [
@@ -88,10 +88,10 @@ Puppet::Type.newtype(:websphere_keystore) do
           [:scope],
           [:cell],
           [:node_name],
-          [:ks_name],
+          [:cert_alias],
         ],
       ],
-      # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:server:CELL_01:AppNode01:AppServer01:KSName
+      # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:server:CELL_01:AppNode01:AppServer01:CertAlias
       [
         %r{^([^:]+):([^:]+):(server):([^:]+):([^:]+):([^:]+):([^:]+)$},
         [
@@ -101,7 +101,7 @@ Puppet::Type.newtype(:websphere_keystore) do
           [:cell],
           [:node_name],
           [:server],
-          [:ks_name],
+          [:cert_alias],
         ],
       ],
     ]
@@ -114,104 +114,92 @@ Puppet::Type.newtype(:websphere_keystore) do
     raise ArgumentError, 'node_name is required when scope is server, or node' if self[:node_name].nil? && self[:scope] =~ %r{(server|node)}
     raise ArgumentError, 'cluster is required when scope is cluster' if self[:cluster].nil? && self[:scope] =~ %r{^cluster$}
     raise ArgumentError, "Invalid profile_base #{self[:profile_base]}" unless Pathname.new(self[:profile_base]).absolute?
+    raise ArgumentError, "Invalid key_file_path #{self[:key_file_path]}" unless Pathname.new(self[:key_file_path]).absolute?
 
     if self[:profile].nil?
       raise ArgumentError, 'profile is required' unless self[:dmgr_profile]
       self[:profile] = self[:dmgr_profile]
     end
 
-    [:ks_name, :server, :cell, :node_name, :cluster, :profile, :user].each do |value|
+    [:cert_alias, :server, :cell, :node_name, :cluster, :profile, :user].each do |value|
       raise ArgumentError, "Invalid #{value} #{self[:value]}" unless %r{^[-0-9A-Za-z._]+$}.match?(value)
     end 
   end
 
-  newparam(:ks_name) do
+  newparam(:cert_alias) do
     isnamevar
     desc <<-EOT
-    Required. The Keystore  name to create/modify/remove.
+    Required. The Personal Certificate alias name to create/modify/remove.
     
-    Example: `CustomKeyStore`
+    Example: `www.foo.bar.baz_expiry_YYYYMMDD`
     EOT
   end
 
-  newproperty(:description) do
-    desc 'Required. A meanigful description of the Keystore object.'
+  newparam(:key_store_name) do
+    desc 'Required. The name of the destination keystore for the import operation.'
   end
 
-  newproperty(:usage) do
-    defaultto :SSLKeys
-    newvalues(:SSLKeys, :RootKeys, :DefaultSigners, :RSATokenKeys, :KeySetKeys)
-    desc 'Optional. The SSL Keystore purpose. One of the following: `SSLKeys`, `RootKeys`, `DefaultSigners`, `RSATokenKeys`, `KeySetKeys`. Defaults to `SSLKeys`'
+  newparam(:key_file_path) do
+    desc 'Required. The fully qualified path on the filesystem of the source keystore from which to import the personal certificate.'
   end
 
-  newproperty(:location) do
-    desc 'Required. The Keystore location on the filesystem. Can be referencing a WAS variable or an absolute path.'
+  newparam(:key_file_pass) do
+    desc "Required. The password to access the source keystore."
   end
 
-  newproperty(:type) do
+  newparam(:key_file_type) do
     newvalues(:PKCS12, :JCEKS, :JKS, :CMSKS, :PKCS11)
-    desc 'Required. The SSL Keystore type. One of the following: `PKCS12`, `JCEKS`, `JKS`, `CMSKS`, `PKCS11` '
+    desc 'Required. The SSL type of the source keystore. One of the following: `PKCS12`, `JCEKS`, `JKS`, `CMSKS`, `PKCS11` '
   end
 
-  newproperty(:store_password) do
-    desc "Required. The KeyStore password."
+  newparam(:key_file_certalias) do
+    desc "Required. The personal certificate alias name to import from the source keystore."
   end
 
-  newproperty(:readonly) do
+  newparam(:replace_old_cert) do
     defaultto :false
     newvalues(:true, :false)
-    desc 'Optional. Whether the KeyStore is read-only. Defaults to `false`'
+    desc 'Optional. Set the value of this parameter to true in order to replace the old destination certificate with the newly imported one. Defaults to `false`'
   end
 
-  newproperty(:init_at_startup) do
+  newparam(:delete_old_cert) do
     defaultto :false
     newvalues(:true, :false)
-    desc 'Optional. Whether the KeyStore is initialized at startup. Defaults to `false`'
+    desc 'Optional. Set the value of this parameter to true in order to delete the old certificates during certificate replacement. Defaults to `false`'
   end
 
-  newproperty(:enable_crypto_hw) do
+  newparam(:delete_old_signers) do
     defaultto :false
     newvalues(:true, :false)
-    desc 'Optional. Whether a hardware cyptographic device is used for cryptographic operations only. Operations requiring login are not supported when using this option. Defaults to `false`'
-  end
-
-  newproperty(:enable_stashfile) do
-    defaultto :false
-    newvalues(:true, :false)
-    desc 'Optional. Whether to create stash files for CMS type keystore. Defaults to `false`'
-  end
-
-  newproperty(:remote_hostlist) do
-    defaultto ''
-    desc 'Optional. Specifies a host (or list of hosts) to contact to perform the key store operation. Multiple hosts may be listed, separated by a "|" character. Defaults to an empty, 0-length string - no hosts'
+    desc 'Optional. Set the value of this parameter to true in order to delete the old signer certificates during certificate replacement. Defaults to `false`'
   end
 
   newparam(:scope) do
     isnamevar
     desc <<-EOT
-    The scope for the Keystore .
+    The scope for the Personal Certificate .
     Valid values: cell, cluster, node, or server
     EOT
   end
 
   newparam(:server) do
     isnamevar
-    desc 'The server for which this Keystore should be set in'
+    desc 'The server for which this Personal Certificate should be set'
   end
 
   newparam(:cell) do
     isnamevar
-    desc 'The cell for which this Keystore should be set in'
+    desc 'The cell for which this Personal Certificate should be set'
   end
 
   newparam(:node_name) do
     isnamevar
-    desc 'The node name for which this Keystore should be set in'
+    desc 'The node name for which this Personal Certificate should be set'
   end
 
   newparam(:cluster) do
     isnamevar
-    desc 'The cluster for which this Keystore should be set in'
+    desc 'The cluster for which this Personal Certificate should be set'
   end
 
   newparam(:profile) do
@@ -222,7 +210,7 @@ Puppet::Type.newtype(:websphere_keystore) do
     isnamevar
     defaultto { @resource[:profile] }
     desc <<-EOT
-    The DMGR profile for which this Keystore should be set under.  Basically, where
+    The DMGR profile for which this Personal Certificate should be set under.  Basically, where
     are we finding `wsadmin`
 
     This is synonymous with the 'profile' parameter.

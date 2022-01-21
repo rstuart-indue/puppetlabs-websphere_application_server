@@ -89,6 +89,86 @@ class Puppet::Provider::Websphere_Helper < Puppet::Provider # rubocop:disable Na
     end
   end
 
+  ## Build the base 'keytool' command that we'll use to work on keystore files.
+  ## This command is derived from whatever the 'profile_base' is (since keytool is
+  ## profile-specific), the name of the profile, and keystore credentials, if provided.
+  def keytoolcmd(passfile = nil)
+    keytool_failure_message = 'Unable to find keytool utility.'
+
+    if resource[:profile_base]
+      keytool_file = "#{resource[:profile_base]}/../java/8.0/bin/keytool"
+      keytool_failure_message += " Failed to locate executable with path: '#{keytool_file}'."
+    end
+
+    # One more try - it may be on an WAS8 environment.
+    if !File.exist?(keytool_file)
+      keytool_file = "#{resource[:profile_base]}/../java/bin/keytool"
+      keytool_failure_message += " Failed to locate executable with path: '#{keytool_file}'."
+    end
+
+    # File.exists? is a double check if resource[:profile] is set but at
+    # least you will know for sure
+    raise Puppet::Error, "#{keytool_failure_message}. Please ensure the keytool utility exists at a proper location." unless File.exist?(keytool_file)
+
+    keytool_cmd = "#{keytool_file} -list"
+
+    keytool_cmd += if passfile
+                     " -storepass:file #{passfile} "
+                   else
+                     ' '
+                   end
+
+    keytool_cmd
+  end
+
+  ## Method to perform keytool operations on the keystore files. Pass:
+  ## :command => 'bare arguments for keytool'
+  ##   The value will be sent to 'keytool' - evaluating
+  ##   the code on the command line. You may want to be very careful with this
+  ##   as the keystore password will show up in the process listing.
+  ## :passfile => 'key store pass'
+  ##   The value will be written to a temporary file and read in by keytool
+  ##   using the '-storepass:file' argument.  This is to avoid the password
+  ##   showing up in the process list. The rest of the arguments will be taken
+  ##   from the :command argument.
+  def keytool(args = {})
+    if args[:passfile]
+      ktool_file = Tempfile.new('keytool_')
+
+      ## File needs to be readable by the specified user.
+      ktool_file.chmod(0o640)
+      ktool_file.write(args[:passfile])
+      ktool_file.rewind
+      keytool_list = keytoolcmd(ktool_file.path) + args[:command]
+    else
+      keytool_list = keytoolcmd + args[:command]
+    end
+
+    result = nil
+
+    begin
+      debug "Executing as user #{args[:user]}: #{keytool_list}"
+      Dir.chdir('/tmp') do
+        result = Puppet::Util::Execution.execute(
+          keytool_list,
+          failonfail: args[:failonfail] != false,
+          uid: args[:user] || 'root',
+          combine: true,
+        )
+      end
+
+      result
+    rescue StandardError => e
+      raise Puppet::Error, "Command failed for #{resource[:name]}: #{e}" if args[:failonfail]
+      Puppet.warning("Command failed for #{resource[:name]}: #{e}")
+    ensure
+      if args[:passfile]
+        ktool_file.close
+        ktool_file.unlink
+      end
+    end
+  end
+
   ## Helper method to query the 'server.xml' file for an attribute.
   ## value.  Ideally, we could have this query any arbitrary xml value with
   ## any depth.  It's rigid and fixed at three levels deep for now.
