@@ -143,19 +143,23 @@ Puppet::Type.type(:websphere_personalcert).provide(:wsadmin, parent: Puppet::Pro
     XPath.each(ks_entry, "@*[local-name()='password' or local-name()='location' or local-name()='type']") { |attribute|
       case attribute.name.to_s
       when 'location'
-        kstore_data[attribute.name.to_sym] = attribute.value.to_s.sub(/${CONFIG_ROOT}/, "#{resource[:profile_base]}/#{resource[:dmgr_profile]}/config")
+        # We know if we get a ${CONFIG_ROOT} we have to replace that
+        # with the whole path where the configs are. We only do the replacement
+        # if the location starts with ${CONFIG_ROOT}
+        kstore_data[attribute.name.to_sym] = attribute.value.to_s.sub(/^\$\{CONFIG_ROOT\}/, "#{resource[:profile_base]}/#{resource[:dmgr_profile]}/config")
       when 'password'
-        # De-obfuscate the target keystore password (should we pass that password in as an attribute?!)
+        # De-obfuscate the target keystore password
+        # ... (or maybe should we pass that password in as an attribute?!)
         kstore_data[attribute.name.to_sym] = xor_string(attribute.value.to_s.match(/^(?:{xor})(.*)/).captures.first)
       else
         kstore_data[attribute.name.to_sym] = attribute.value.to_s
       end
     } unless ks_entry.nil?
 
-    debug "Exists? method result for #{resource[:key_store_name]} is: #{ks_entry}"
+    debug "KStore data for #{resource[:key_store_name]} is: #{kstore_data}"
     keytoolcmd = "-storetype #{kstore_data[:type]} -keystore .#{kstore_data[:location]} -alias #{resource[:cert_alias]}"
 
-    debug "Running command: #{keytoolcmd} as user: #{resource[:user]}"
+    debug "Running keytool command with arguments: #{keytoolcmd} as user: #{resource[:user]}"
     result = keytool(filepass: kstore_data[:password], command: keytoolcmd, failonfail: false)
     debug result
   
@@ -163,11 +167,11 @@ Puppet::Type.type(:websphere_personalcert).provide(:wsadmin, parent: Puppet::Pro
     when %r{keytool error: java.lang.Exception: Alias <#{resource[:cert_alias]}> does not exist}
       return :false
     when %r{keytool error: java.lang.Exception: Keystore file does not exist: #{kstore_data[:location]}}
-      raise Puppet.Error, "Unable to open KeyStore file #{kstore_data[:location]}"
+      raise Puppet::Error, "Unable to open KeyStore file #{kstore_data[:location]}"
     when %r{Certificate fingerprint (SHA1): .*}
       return :true
     else
-      raise Puppet.Error, "An unexpected error has occured running keytool: #{result}"
+      raise Puppet::Error, "An unexpected error has occured running keytool: #{result}"
     end
 
   end

@@ -159,8 +159,8 @@ class Puppet::Provider::Websphere_Helper < Puppet::Provider # rubocop:disable Na
 
       result
     rescue StandardError => e
-      raise Puppet::Error, "Command failed for #{resource[:name]}: #{e}" if args[:failonfail]
-      Puppet.warning("Command failed for #{resource[:name]}: #{e}")
+      raise Puppet::Error, "Keytool command failed for #{resource[:name]}: #{e}" if args[:failonfail]
+      Puppet.warning("Keytool command failed for #{resource[:name]}: #{e}")
     ensure
       if args[:passfile]
         ktool_file.close

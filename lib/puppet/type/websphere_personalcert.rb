@@ -13,7 +13,7 @@ Puppet::Type.newtype(:websphere_personalcert) do
         key_file_path      => '/some/path/to/source-keystore.p12',
         key_file_pass      => 'SourceKeyStorePassword',
         key_file_type      => 'PKCS12',
-        key_file_certalias => 'SourceCertAlias'
+        key_file_certalias => 'SourceCertAlias',
         replace_old_cert   => true,
         delete_old_cert    => true,
         delete_old_signers => true,
