@@ -157,7 +157,7 @@ Puppet::Type.type(:websphere_personalcert).provide(:wsadmin, parent: Puppet::Pro
     } unless ks_entry.nil?
 
     debug "KStore data for #{resource[:key_store_name]} is: #{kstore_data}"
-    keytoolcmd = "-storetype #{kstore_data[:type]} -keystore .#{kstore_data[:location]} -alias #{resource[:cert_alias]}"
+    keytoolcmd = "-storetype #{kstore_data[:type]} -keystore #{kstore_data[:location]} -alias #{resource[:cert_alias]}"
 
     debug "Running keytool command with arguments: #{keytoolcmd} as user: #{resource[:user]}"
     result = keytool(filepass: kstore_data[:password], command: keytoolcmd, failonfail: false)
