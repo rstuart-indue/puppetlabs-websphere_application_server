@@ -29,6 +29,8 @@ Puppet::Type.type(:websphere_personalcert).provide(:wsadmin, parent: Puppet::Pro
     super(val)
     @property_flush = {}
 
+    @old_fingerprint = ''
+
     # Dynamic debugging
     @jython_debug_state = Puppet::Util::Log.level == :debug
   end
@@ -168,7 +170,8 @@ Puppet::Type.type(:websphere_personalcert).provide(:wsadmin, parent: Puppet::Pro
       return false
     when %r{keytool error: java.lang.Exception: Keystore file does not exist: #{kstore_data[:location]}}
       raise Puppet::Error, "Unable to open KeyStore file #{kstore_data[:location]}"
-    when %r{Certificate fingerprint (SHA1): .*}
+    when %r{Certificate fingerprint \(SHA1\): (?<@old_fingerprint>.*)}
+      debug "Found certificat alias: #{resource[:cert_alias]} with fingerprint: #{@old_fingerprint}"
       return true
     else
       raise Puppet::Error, "An unexpected error has occured running keytool: #{result}"
