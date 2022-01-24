@@ -170,8 +170,8 @@ Puppet::Type.type(:websphere_personalcert).provide(:wsadmin, parent: Puppet::Pro
       return false
     when %r{keytool error: java.lang.Exception: Keystore file does not exist: #{kstore_data[:location]}}
       raise Puppet::Error, "Unable to open KeyStore file #{kstore_data[:location]}"
-    when %r{Certificate fingerprint \(SHA1\): (?<@old_fingerprint>.*)}
-      cert_details = result.match(/^(?<cert_name>\w+),(?<expiry>\w+,\w+),(?<cert_type>\w),\nCertificate fingerprint \(SHA1\): (?<fingerprint>.*)/)
+    when %r{Certificate fingerprint \(SHA1\):.*}
+      cert_details = result.match(/^(?<cert_name>\w+),\s+(?<expiry>\w+\s\d+,\s\w+),\s+(?<cert_type>\w+),\nCertificate fingerprint \(SHA1\): (?<fingerprint>.*)/)
       debug "Found certificate alias: #{resource[:cert_alias]} with fingerprint: #{cert_details}"
       debug "Found certificate alias: #{resource[:cert_alias]} with fingerprint: #{@old_fingerprint}"
       return true
