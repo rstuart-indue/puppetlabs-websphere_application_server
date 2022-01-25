@@ -140,9 +140,6 @@ def createPersonalCertAlias(name, kstore_scope, kstore_dst, kstore_src, kstore_t
     AdminUtilities.debugNotice (" Return: No return value")
     AdminUtilities.debugNotice ("---------------------------------------------------------------")
     AdminUtilities.debugNotice (" ")
-
-    # This normalization is slightly superfluous, but, what the hey?
-    ksList = normalizeArgList(ksList, "ksList")
     
     # Make sure required parameters are non-empty
     if (len(name) == 0):
@@ -187,7 +184,7 @@ def createPersonalCertAlias(name, kstore_scope, kstore_dst, kstore_src, kstore_t
 #endDef
 
 # And now - create the cert alias in the target store.
-createPersonalCertAlias(cert_alias_dst, key_store_scope, key_store_dst, key_file_src, key_file_pass, key_file_type, cert_alias_src)
+createPersonalCertAlias(cert_alias_dst, key_store_scope, key_store_dst, key_file_src, key_file_type, key_file_pass, cert_alias_src)
 
 END
 
