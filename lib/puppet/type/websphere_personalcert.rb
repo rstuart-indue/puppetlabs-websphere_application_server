@@ -157,9 +157,7 @@ Puppet::Type.newtype(:websphere_personalcert) do
   end
 
   newparam(:replace_old_cert) do
-    defaultto :false
-    newvalues(:true, :false)
-    desc 'Optional. Set the value of this parameter to true in order to replace the old destination certificate with the newly imported one. Defaults to `false`'
+    desc 'Optional. Set the value of this parameter to the name of the old certificate to replace with the newly imported one.'
   end
 
   newparam(:delete_old_cert) do
