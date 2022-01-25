@@ -109,6 +109,8 @@ key_file_type = "#{resource[:key_file_type]}"
 key_file_pass = "#{resource[:key_file_pass]}"
 cert_alias_src = "#{resource[:key_file_certalias]}"
 
+# Certificate replacement variables
+old_cert_name = "#{resource[:replace_old_cert]}"
 
 # Enable debug notices ('true'/'false')
 AdminUtilities.setDebugNotices('#{@jython_debug_state}')
@@ -117,7 +119,7 @@ AdminUtilities.setDebugNotices('#{@jython_debug_state}')
 bundleName = "com.ibm.ws.scripting.resources.scriptLibraryMessage"
 resourceBundle = AdminUtilities.getResourceBundle(bundleName)
 
-def createPersonalCertAlias(name, kstore_scope, kstore_dst, kstore_src, kstore_type_src, kstore_pass_src, kstore_alias_src, failonerror=AdminUtilities._BLANK_ ):
+def createPersonalCertAlias(name, kstore_scope, kstore_dst, kstore_src, kstore_type_src, kstore_pass_src, kstore_alias_src, old_cert='', failonerror=AdminUtilities._BLANK_ ):
   if (failonerror==AdminUtilities._BLANK_):
       failonerror=AdminUtilities._FAIL_ON_ERROR_
   #endIf
@@ -167,6 +169,19 @@ def createPersonalCertAlias(name, kstore_scope, kstore_dst, kstore_src, kstore_t
     # Create the Personal Cert Alias by importing it from the source file
     AdminTask.importCertificate(finalParameters)
 
+    # Now, see if we need to replace a cert
+    if (len(old_cert) > 0):
+      delete_old_cert = "#{resource[:delete_old_cert]}"
+      delete_old_signers = "#{resource[:delete_old_signers]}"
+
+      # Assemble the replace params
+      replaceParameters = ["-keyStoreScope", kstore_scope, "-keyStoreName", kstore_dst, "-certificateAlias", old_cert, "-replacementCertificateAlias", name, "-deleteOldCert", delete_old_cert, "-deleteOldSigners", delete_old_signers]
+
+      AdminUtilities.debugNotice("About to replace config references to old certificate: " + str(old_cert) + " with new certificate: " +str(name))
+      # Replace the certificate
+      AdminTask.replaceCertificate(replaceParameters)
+    #endIf
+
     # Save this personal cert alias
     AdminConfig.save()
 
@@ -184,7 +199,7 @@ def createPersonalCertAlias(name, kstore_scope, kstore_dst, kstore_src, kstore_t
 #endDef
 
 # And now - create the cert alias in the target store.
-createPersonalCertAlias(cert_alias_dst, key_store_scope, key_store_dst, key_file_src, key_file_type, key_file_pass, cert_alias_src)
+createPersonalCertAlias(cert_alias_dst, key_store_scope, key_store_dst, key_file_src, key_file_type, key_file_pass, cert_alias_src, old_cert_name)
 
 END
 
@@ -297,11 +312,87 @@ END
   # Remove a given Personal Certificate
   def destroy
 
+    # Set the scope for this Keystore/CertAlias.
+    ks_scope = scope('xml')
+    
+    cmd = <<-END.unindent
+import AdminUtilities
+import re
+
+# Parameters we need for our CertAlias removal
+ks_scope = '#{ks_scope}'
+certalias = '#{resource[:cert_alias]}' 
+keystore = "#{resource[:key_store_name]}"
+
+# Enable debug notices ('true'/'false')
+AdminUtilities.setDebugNotices('#{@jython_debug_state}')
+
+# Global variable within this script
+bundleName = "com.ibm.ws.scripting.resources.scriptLibraryMessage"
+resourceBundle = AdminUtilities.getResourceBundle(bundleName)
+
+def deletePersonalCertAlias(name, scope, ks_name, failonerror=AdminUtilities._BLANK_ ):
+  if (failonerror==AdminUtilities._BLANK_):
+      failonerror=AdminUtilities._FAIL_ON_ERROR_
+  #endIf
+  msgPrefix = "deletePersonalCertAlias(" + `name` + ", " + `scope` + ", " + `ks_name`+ ", " + `failonerror`+"): "
+
+  try:
+    #--------------------------------------------------------------------
+    # Delete a Keystore
+    #--------------------------------------------------------------------
+    AdminUtilities.debugNotice ("---------------------------------------------------------------")
+    AdminUtilities.debugNotice (" AdminKS: deletePersonalCertAlias ")
+    AdminUtilities.debugNotice (" Scope:")
+    AdminUtilities.debugNotice ("     scope:                      "+scope)
+    AdminUtilities.debugNotice (" Key Store:")
+    AdminUtilities.debugNotice ("     ks_name:                    "+ks_name)
+    AdminUtilities.debugNotice (" Cert Alias:")
+    AdminUtilities.debugNotice ("     name   :                    "+name)
+    AdminUtilities.debugNotice (" Return: NIL")
+    AdminUtilities.debugNotice ("---------------------------------------------------------------")
+    AdminUtilities.debugNotice (" ")
+
+    # Make sure required parameters are non-empty
+    if (len(name) == 0):
+      raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["name", name]))
+    if (len(scope) == 0):
+      raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["scope", scope]))
+    if (len(ks_name) == 0):
+      raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["ks_name", ks_name]))
+
+    # Call the corresponding AdminTask command
+    AdminUtilities.debugNotice("About to call AdminTask command with scope: " + str(scope))
+    AdminUtilities.debugNotice("About to call AdminTask command for target certalias: " + str(name))
+
+    # Delete the Cert Alias
+    AdminTask.deleteCertificate(['-keyStoreName', ks_name, '-keyStoreScope', scope, '-certificateAlias', name])
+
+    AdminConfig.save()
+
+  except:
+    typ, val, tb = sys.exc_info()
+    if (typ==SystemExit):  raise SystemExit,`val`
+    if (failonerror != AdminUtilities._TRUE_):
+      print "Exception: %s %s " % (sys.exc_type, sys.exc_value)
+      val = "%s %s" % (sys.exc_type, sys.exc_value)
+      raise Exception("ScriptLibraryException: " + val)
+    else:
+      return AdminUtilities.fail(msgPrefix+AdminUtilities.getExceptionText(typ, val, tb), failonerror)
+    #endIf
+  #endTry
+#endDef
+
+# And now - delete the certalias
+deletePersonalCertAlias(certalias, ks_scope, keystore)
+
+END
+
+    debug "Running #{cmd}"
+    result = wsadmin(file: cmd, user: resource[:user])
+    debug result
   end
 
-  def flush
-    # If we haven't got anything to modify, we've got nothing to flush. Otherwise
-    # parse the list of things to do
-    return if @property_flush.empty?
-  end
+  # Since you can't change the params of a certificate after import, there's nothing
+  # we need to do as flush(). The only way to modify a certificate is to delete it.
 end
