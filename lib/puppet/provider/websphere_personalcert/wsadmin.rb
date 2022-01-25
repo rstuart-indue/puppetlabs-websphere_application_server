@@ -29,7 +29,7 @@ Puppet::Type.type(:websphere_personalcert).provide(:wsadmin, parent: Puppet::Pro
     super(val)
     @property_flush = {}
 
-    @old_fingerprint = ''
+    @old_cert_details = {}
 
     # Dynamic debugging
     @jython_debug_state = Puppet::Util::Log.level == :debug
@@ -94,7 +94,123 @@ Puppet::Type.type(:websphere_personalcert).provide(:wsadmin, parent: Puppet::Pro
 
   # Create a Personal Certificate Resource
   def create
+    # Set the scope for this Certificate Resource.
+    ks_scope = scope('xml') 
 
+    cmd = <<-END.unindent
+import AdminUtilities
+
+# Parameters we need for our cert alias
+cert_alias_dst = "#{resource[:cert_alias]}"
+key_store_dst = "#{resource[:key_store_name]}"
+key_store_scope = "#{ks_scope}"
+key_file_src = "#{resource[:key_file_path]}"
+key_file_type = "#{resource[:key_file_type]}"
+key_file_pass = "#{resource[:key_file_pass]}"
+cert_alias_src = "#{resource[:key_file_certalias]}"
+
+
+# Enable debug notices ('true'/'false')
+AdminUtilities.setDebugNotices('#{@jython_debug_state}')
+
+# Global variable within this script
+bundleName = "com.ibm.ws.scripting.resources.scriptLibraryMessage"
+resourceBundle = AdminUtilities.getResourceBundle(bundleName)
+
+def createPersonalCertAlias(name, kstore_scope, kstore_dst, kstore_src, kstore_type_src, kstore_pass_src, kstore_alias_src, failonerror=AdminUtilities._BLANK_ ):
+  if (failonerror==AdminUtilities._BLANK_):
+      failonerror=AdminUtilities._FAIL_ON_ERROR_
+  #endIf
+  msgPrefix = "createPersonalCertAlias(" + `name` +  ", " + `kstore_scope`+ ", " + `kstore_dst` + ", " + `kstore_src` + ", " + `kstore_type_src` +  ", " + `kstore_alias_src` + ", " + `failonerror`+"): "
+
+  try:
+    #--------------------------------------------------------------------
+    # Create a personal cert alias
+    #--------------------------------------------------------------------
+    AdminUtilities.debugNotice ("---------------------------------------------------------------")
+    AdminUtilities.debugNotice (" AdminPCertAlias: createPersonalCertAlias ")
+    AdminUtilities.debugNotice (" Target:")
+    AdminUtilities.debugNotice ("     keystore:                   "+kstore_dst)
+    AdminUtilities.debugNotice ("     scope                       "+kstore_scope)
+    AdminUtilities.debugNotice ("     alias                       "+name)
+    AdminUtilities.debugNotice (" Source:")
+    AdminUtilities.debugNotice ("     type:                       "+kstore_type_src)
+    AdminUtilities.debugNotice ("     keystore:                   "+kstore_src)
+    AdminUtilities.debugNotice ("     alias:                      "+kstore_alias_src)
+    AdminUtilities.debugNotice (" Return: No return value")
+    AdminUtilities.debugNotice ("---------------------------------------------------------------")
+    AdminUtilities.debugNotice (" ")
+
+    # This normalization is slightly superfluous, but, what the hey?
+    ksList = normalizeArgList(ksList, "ksList")
+    
+    # Make sure required parameters are non-empty
+    if (len(name) == 0):
+      raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["name", name]))
+      if (len(kstore_dst) == 0):
+        raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["kstore_dst", kstore_dst]))
+    if (len(kstore_scope) == 0):
+      raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["kstore_scope", kstore_scope]))
+    if (len(kstore_src) == 0):
+      raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["kstore_src", kstore_src]))
+    if (len(kstore_type_src) == 0):
+      raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["kstore_type_src", kstore_type_src]))
+    if (len(kstore_pass_src) == 0):
+      raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["kstore_pass_src", kstore_pass_src]))
+    if (len(kstore_alias_src) == 0):
+      raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["kstore_alias_src", kstore_alias_src]))
+
+    # Prepare the parameters for the AdminTask command:
+    finalParameters = ["-keyStoreScope", kstore_scope, "-certificateAlias", name, "-keyStoreName", kstore_dst, "-keyFilePath", kstore_src, "-keyFilePassword", kstore_pass_src, "-keyFileType", kstore_type_src, "-certificateAliasFromKeyFile", kstore_alias_src]
+
+    # Call the corresponding AdminTask command
+    AdminUtilities.debugNotice("About to call AdminTask command with scope: " + str(kstore_scope))
+    AdminUtilities.debugNotice("About to call AdminTask command with parameters: " + str(finalParameters))
+
+    # Create the Personal Cert Alias by importing it from the source file
+    AdminTask.importCertificate(finalParameters)
+
+    # Save this personal cert alias
+    AdminConfig.save()
+
+  except:
+    typ, val, tb = sys.exc_info()
+    if (typ==SystemExit):  raise SystemExit,`val`
+    if (failonerror != AdminUtilities._TRUE_):
+      print "Exception: %s %s " % (sys.exc_type, sys.exc_value)
+      val = "%s %s" % (sys.exc_type, sys.exc_value)
+      raise Exception("ScriptLibraryException: " + val)
+    else:
+      return AdminUtilities.fail(msgPrefix+AdminUtilities.getExceptionText(typ, val, tb), failonerror)
+    #endIf
+  #endTry
+#endDef
+
+# And now - create the cert alias in the target store.
+createPersonalCertAlias(cert_alias_dst, key_store_scope, key_store_dst, key_file_src, key_file_pass, key_file_type, cert_alias_src)
+
+END
+
+    debug "Running command: #{cmd} as user: #{resource[:user]}"
+    result = wsadmin(file: cmd, user: resource[:user], failonfail: false)
+
+    if %r{Invalid parameter value "" for parameter "parent config id" on command "create"}.match?(result)
+      ## I'd rather handle this in the Jython, but I'm not sure how.
+      ## This usually indicates that the server isn't ready on the DMGR yet -
+      ## the DMGR needs to do another Puppet run, probably.
+      err = <<-EOT
+      Could not create personal certificate alias: #{resource[:cert_alias]} for location #{resource[:key_store_name]}
+      This appears to be due to the remote resource not being available.
+      Ensure that all the necessary services have been created and are running
+      on this host and the DMGR. If this is the first run, the cluster member
+      may need to be created on the DMGR.
+      EOT
+
+      raise Puppet::Error, err
+
+    end
+
+    debug result
   end
 
   # Check to see if a Personal Certificate exists - must return a boolean.
@@ -171,9 +287,9 @@ Puppet::Type.type(:websphere_personalcert).provide(:wsadmin, parent: Puppet::Pro
     when %r{keytool error: java.lang.Exception: Keystore file does not exist: #{kstore_data[:location]}}
       raise Puppet::Error, "Unable to open KeyStore file #{kstore_data[:location]}"
     when %r{Certificate fingerprint \(SHA1\):.*}
-      cert_details = result.match(/^(?<cert_name>\w+),\s+(?<expiry>\w+\s\d+,\s\w+),\s+(?<cert_type>\w+),\nCertificate fingerprint \(SHA1\): (?<fingerprint>.*)/)
-      debug "Found certificate alias: #{resource[:cert_alias]} with fingerprint: #{cert_details}"
-      debug "Found certificate alias: #{resource[:cert_alias]} with fingerprint: #{@old_fingerprint}"
+      # Remove any extra \n from the output. We really don't need them, so we replace with with spaces.
+      @old_cert_details = result.tr("\n", ' ').match(/^(?<cert_name>\w+),\s+(?<expiry>\w+\s\d+,\s\w+),\s+(?<cert_type>\w+),\s+Certificate fingerprint\s+\(SHA1\):\s+(?<fingerprint>.*)/)
+      debug "Found certificate alias: #{resource[:cert_alias]} with fingerprint: #{@cert_details}"
       return true
     else
       raise Puppet::Error, "An unexpected error has occured running keytool: #{result}"
