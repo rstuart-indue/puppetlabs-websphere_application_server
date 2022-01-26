@@ -7,14 +7,14 @@ Puppet::Type.newtype(:websphere_personalcert) do
     @summary This manages a WebSphere SSL Personal Certificate resource.
 
     @example
-      websphere_personalcert { 'cert_alias':
+      websphere_personalcert { 'new_cert_alias':
         ensure             => 'present',
         key_store_name     => 'CellDefaultKeyStore',
         key_file_path      => '/some/path/to/source-keystore.p12',
         key_file_pass      => 'SourceKeyStorePassword',
         key_file_type      => 'PKCS12',
         key_file_certalias => 'SourceCertAlias',
-        replace_old_cert   => true,
+        replace_old_cert   => 'old_cert_alias',
         delete_old_cert    => true,
         delete_old_signers => true,
         profile_base       => '/opt/IBM/WebSphere/AppServer/profiles',
@@ -157,7 +157,11 @@ Puppet::Type.newtype(:websphere_personalcert) do
   end
 
   newparam(:replace_old_cert) do
-    desc 'Optional. Set the value of this parameter to the name of the old certificate to replace with the newly imported one.'
+    desc <<-EOT
+    Optional. Set the value of this parameter to the name of the old certificate to replace with the newly imported one.
+    
+    Example: `www.foo.bar.baz_expired`
+    EOT
   end
 
   newparam(:delete_old_cert) do
