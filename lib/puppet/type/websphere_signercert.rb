@@ -10,7 +10,7 @@ Puppet::Type.newtype(:websphere_signercert) do
       websphere_signercert { 'signer_cert_alias':
         ensure          => 'present',
         key_store_name  => 'CellDefaultTrustStore',
-        cert_file_path   => '/some/path/to/signer_certificate.pem',
+        cert_file_path  => '/some/path/to/signer_certificate.pem',
         base_64_encoded => true,
         profile_base    => '/opt/IBM/WebSphere/AppServer/profiles',
         dmgr_profile    => 'PROFILE_DMGR_01',

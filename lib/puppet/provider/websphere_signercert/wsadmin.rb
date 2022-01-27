@@ -177,7 +177,7 @@ def createSignerCertAlias(name, kstore_scope, kstore_dst, certfile_src, base64_e
 #endDef
 
 # And now - create the cert alias in the target store.
-createSignerCertAlias(cert_alias_dst, key_store_scope, key_store_dst, cert_file_src, key_file_type, key_file_pass, cert_alias_src, old_cert_name)
+createSignerCertAlias(cert_alias_dst, key_store_scope, key_store_dst, cert_file_src, is_base64)
 
 END
 
