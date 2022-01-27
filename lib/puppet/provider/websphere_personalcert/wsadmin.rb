@@ -260,6 +260,7 @@ END
     #   * Find the appropriate management scope ID by working it back from the scope name (the XML one).
     #   * Find if we have a keystore with the given name/path in that particular management scope ID
     #   * Extract the keystore details from the entry attributes if we do find one.
+    #   * Extract the certificate details from the keystore itself via the keytool helper
     
     # Turns out that the Personal Certificate name has to be unique within the given management scope.
     mgmt_scope = XPath.first(sec_entry, "managementScopes[@scopeName='#{scope('xml')}']/@*[local-name()='id']") unless sec_entry.nil?
@@ -339,7 +340,7 @@ def deletePersonalCertAlias(name, scope, ks_name, failonerror=AdminUtilities._BL
 
   try:
     #--------------------------------------------------------------------
-    # Delete a Keystore
+    # Delete a personal cert alias
     #--------------------------------------------------------------------
     AdminUtilities.debugNotice ("---------------------------------------------------------------")
     AdminUtilities.debugNotice (" AdminKS: deletePersonalCertAlias ")
