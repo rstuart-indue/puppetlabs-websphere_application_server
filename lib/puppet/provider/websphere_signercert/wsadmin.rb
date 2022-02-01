@@ -68,7 +68,7 @@ Puppet::Type.type(:websphere_signercert).provide(:wsadmin, parent: Puppet::Provi
     when 'node'
       query = "/Cell:#{resource[:cell]}/Node:#{resource[:node_name]}"
       mod   = "cells/#{resource[:cell]}/nodes/#{resource[:node_name]}"
-      xml   = "(cell):/#{resource[:cell]}:(node):#{resource[:node_name]}"
+      xml   = "(cell):#{resource[:cell]}:(node):#{resource[:node_name]}"
     when 'server'
       query = "/Cell:#{resource[:cell]}/Node:#{resource[:node_name]}/Server:#{resource[:server]}"
       mod   = "cells/#{resource[:cell]}/nodes/#{resource[:node_name]}/servers/#{resource[:server]}"
