@@ -50,13 +50,13 @@ Puppet::Type.type(:websphere_sslconfig).provide(:wsadmin, parent: Puppet::Provid
     return xor_result
   end
 
-  def scope(what)
+  def scope(what, target_scope: resource[:scope])
     file = "#{resource[:profile_base]}/#{resource[:dmgr_profile]}"
 
     # I don't honestly know where the query/mod could be used, but sure as hell
     # the xml entry is used in security.xml scope attribute for a management scope.
     # It's yet another way of defining scope in WAS.
-    case resource[:scope]
+    case target_scope
     when 'cell'
       query = "/Cell:#{resource[:cell]}"
       mod   = "cells/#{resource[:cell]}"
@@ -74,7 +74,7 @@ Puppet::Type.type(:websphere_sslconfig).provide(:wsadmin, parent: Puppet::Provid
       mod   = "cells/#{resource[:cell]}/nodes/#{resource[:node_name]}/servers/#{resource[:server]}"
       xml   = "(cell):#{resource[:cell]}:(node):#{resource[:node_name]}:(server):#{resource[:server]}"
     else
-      raise Puppet::Error, "Unknown scope: #{resource[:scope]}"
+      raise Puppet::Error, "Unknown scope: #{target_scope}"
     end
 
     file += "/config/cells/#{resource[:cell]}/security.xml"
@@ -106,6 +106,20 @@ Puppet::Type.type(:websphere_sslconfig).provide(:wsadmin, parent: Puppet::Provid
       ["enabledCyphers", "#{resource[:enabled_cyphers]}"],
       ["sslProtocol", "#{resource[:ssl_protocol]}"],
     ]
+
+    # Add the scope names for the key and trust stores if they are different from the resource scope
+    # If left unspecified, then the default resource scope is assumed.
+    # The command will still fail if the keystore does not exist in that scope - which is OK, we want
+    # it to fail.
+    if resource[:key_store_scope] != resource[:scope]
+      kstore_scope = scope('xml', target_scope: resource[:key_store_scope])
+      sslconfig_attrs += [["keyStoreScopeName", "#{kstore_scope}"]]
+    end
+
+    if resource[:trust_store_scope] != resource[:scope]
+      tstore_scope = scope('xml', target_scope: resource[:trust_store_scope])
+      sslconfig_attrs += [["trustStoreScopeName", "#{tstore_scope}"]]
+    end
     sslconfig_attrs_str = sslconfig_attrs.to_s.tr("\"", "'")
 
     cmd = <<-END.unindent
@@ -290,31 +304,36 @@ END
     debug "Found SSL Config entry for scope #{scope('xml')}: #{repertoire_entry}" unless repertoire_entry.nil?
 
     XPath.each(repertoire_entry, "setting/@*") { |attribute|
-      case attribute.name.to_s
+      attr_name = attribute.name.to_s
+      attr_value = attribute.value.to_s
+      case attr_name
       when 'keyStore', 'trustStore'
-        # Reverse lookup the keyStore ID to what its real name is. We don't have to be too picky
-        # about the scope of the keystore because the IDs are unique, so the resolved name will be OK.
-        # Also, if the Big Blue has messed the config up, we're not the ones to fix it.
-        kstore_name = XPath.first(sec_entry, "keyStores[@xmi:id='#{attribute.value.to_s}']/@*[local-name()='name']")
-        @old_conf_details[attribute.name.to_sym] = kstore_name.value.to_s
-      when 'keyManager'
+        # Reverse lookup the keyStore ID to what its real name is. Get the scope and scope-type while
+        # we're here. Certainly don't want to regexp this thing later.
+        kstore_name,kstore_mgtscope = XPath.match(sec_entry, "keyStores[@xmi:id='#{attr_value}']/@*[local-name()='name' or local-name()='managementScope']")
+        kstore_scope,kstore_scope_type = XPath.match(sec_entry, "managementScopes[@xmi:id='#{kstore_mgtscope.value.to_s}']/@*[local-name()='scopeName' or local-name()='scopeType']")
+        @old_conf_details[attr_name.to_sym] = kstore_name.value.to_s
+        @old_conf_details["#{attr_name}Scope".to_sym] = kstore_scope.value.to_s
+        @old_conf_details["#{attr_name}ScopeType".to_sym] = kstore_scope_type.value.to_s
+      when 'keyManager', 'trustManager'
         # Reverse lookup the keyManager ID to what its real name is.
         # Ugh... this is bad. Turns out that key managers and trust managers can happily have the same name. In the
         # WebUI we end up with 3 items in the drop down list called "IBMX509" - which have different scopes but you
-        # can't tell from looking at them which is which. I would wager that you won't know which is which when you
+        # can't tell from looking at them which-is-which. I would wager that you won't know which is which when you
         # resolve them either - unless you have them in the management scope they are supposed to be. And this is all
         # from a clean install.
         #
         # This is really messed up! Thank you, you useless reptile.
-        mgr_name = XPath.first(sec_entry, "keyManagers[@xmi:id='#{attribute.value.to_s}']/@*[local-name()='name']")
-        @old_conf_details[attribute.name.to_sym] = mgr_name.value.to_s
-      when 'trustManager'
-        # Reverse lookup the trustManager ID to what its real name is.
-        mgr_name = XPath.first(sec_entry, "trustManagers[@xmi:id='#{attribute.value.to_s}']/@*[local-name()='name']")
-        @old_conf_details[attribute.name.to_sym] = mgr_name.value.to_s    
+        # Remember that the entries we're looking for are called "keyManagers" and "trustManagers" - plural,
+        # therefore, note the "s" in the line immediately below, after the #{attr_name}
+        mgr_name,mgr_mgtscope = XPath.match(sec_entry, "#{attr_name}s[@xmi:id='#{attr_value}']/@*[local-name()='name' or local-name()='managementScope']")
+        mgr_scope,mgr_scope_type = XPath.match(sec_entry, "managementScopes[@xmi:id='#{mgr_mgtscope.value.to_s}']/@*[local-name()='scopeName' or local-name()='scopeType']")
+        @old_conf_details[attr_name.to_sym] = mgr_name.value.to_s
+        @old_conf_details["#{attr_name}Scope".to_sym] = mgr_scope.value.to_s
+        @old_conf_details["#{attr_name}ScopeType".to_sym] = mgr_scope_type.value.to_s
       else
-        @old_conf_details[attribute.name.to_sym] = attribute.value.to_s
-      end
+        @old_conf_details[attr_name.to_sym] = attr_value
+      end    
     } unless repertoire_entry.nil?
 
     debug "SSL Config data for #{resource[:conf_alias]} is: #{@old_conf_details}"
@@ -335,6 +354,22 @@ END
 
   def trust_store_name=(val)
     @property_flush[:trustStoreName] = val
+  end
+
+  def key_store_scope
+    @old_conf_details[:keyStoreScopeType]
+  end
+
+  def key_store_scope=(val)
+    @property_flush[:keyStoreScopeType] = val
+  end
+
+  def trust_store_scope
+    @old_conf_details[:trustStoreScopeType]
+  end
+
+  def trust_store_scope=(val)
+    @property_flush[:trustStoreScopeType] = val
   end
 
   def server_cert_alias

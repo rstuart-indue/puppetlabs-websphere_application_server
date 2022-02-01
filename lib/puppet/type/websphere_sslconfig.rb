@@ -10,7 +10,9 @@ Puppet::Type.newtype(:websphere_sslconfig) do
       websphere_sslconfig { 'ssl_config_name':
         ensure            => 'present',
         key_store_name    => 'CellDefaultKeyStore',
+        key_store_scope   => 'cell',
         trust_store_name  => 'CellDefaultTrustStore',
+        trust_store_scope => 'cell',
         server_cert_alias => 'ServerCert_alias',
         client_cert_alias => 'ClientCert_alias',
         client_auth_req   => true,
@@ -155,6 +157,16 @@ Puppet::Type.newtype(:websphere_sslconfig) do
 
   newproperty(:client_cert_alias) do
     desc 'Required. The name of the cert alias in the trust store associated with this SSL configuration.'
+  end
+
+  newproperty(:key_store_scope) do
+    defaultto self[:scope]
+    desc 'Optional. The scope of the specified key store. Defaults to the SSL Config alias scope.'
+  end
+
+  newproperty(:trust_store_scope) do
+    defaultto self[:scope]
+    desc 'Optional. The scope of the specified key store. Defaults to the SSL Config alias scope.'
   end
 
   newproperty(:client_auth_req) do
