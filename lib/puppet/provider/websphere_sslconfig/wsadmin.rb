@@ -120,6 +120,7 @@ Puppet::Type.type(:websphere_sslconfig).provide(:wsadmin, parent: Puppet::Provid
       tstore_scope = scope('xml', target_scope: resource[:trust_store_scope])
       sslconfig_attrs += [["trustStoreScopeName", "#{tstore_scope}"]]
     end
+
     sslconfig_attrs_str = sslconfig_attrs.to_s.tr("\"", "'")
 
     cmd = <<-END.unindent

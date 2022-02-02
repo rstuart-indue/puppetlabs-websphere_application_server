@@ -129,6 +129,10 @@ Puppet::Type.newtype(:websphere_sslconfig) do
       self[:profile] = self[:dmgr_profile]
     end
 
+    # Default the key and trust stores scopes to the resource SSL Config scope.
+    self[key_store_scope] = self[:scope] if self[:key_store_scope].nil?
+    self[trust_store_scope] = self[:scope] if self[:trust_store_scope].nil?
+
     [:conf_alias, :server, :cell, :node_name, :cluster, :profile, :user].each do |value|
       raise ArgumentError, "Invalid #{value} #{self[:value]}" unless %r{^[-0-9A-Za-z._]+$}.match?(value)
     end 
@@ -160,12 +164,10 @@ Puppet::Type.newtype(:websphere_sslconfig) do
   end
 
   newproperty(:key_store_scope) do
-    defaultto self[:scope]
     desc 'Optional. The scope of the specified key store. Defaults to the SSL Config alias scope.'
   end
 
   newproperty(:trust_store_scope) do
-    defaultto self[:scope]
     desc 'Optional. The scope of the specified key store. Defaults to the SSL Config alias scope.'
   end
 
