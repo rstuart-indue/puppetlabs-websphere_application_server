@@ -385,7 +385,7 @@ END
   end
 
   def client_auth_supp
-    @old_conf_details.key?(:clientAuthenticationSupported)? @old_conf_details[:clientAuthenticationSupported] : false
+    @old_conf_details.key?(:clientAuthenticationSupported)? @old_conf_details[:clientAuthenticationSupported] : :false
   end
 
   def client_auth_supp=(val)
