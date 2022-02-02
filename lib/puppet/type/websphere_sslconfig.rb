@@ -122,7 +122,6 @@ Puppet::Type.newtype(:websphere_sslconfig) do
     raise ArgumentError, 'node_name is required when scope is server, or node' if self[:node_name].nil? && self[:scope] =~ %r{(server|node)}
     raise ArgumentError, 'cluster is required when scope is cluster' if self[:cluster].nil? && self[:scope] =~ %r{^cluster$}
     raise ArgumentError, "Invalid profile_base #{self[:profile_base]}" unless Pathname.new(self[:profile_base]).absolute?
-    raise ArgumentError, "Invalid cert_file_path #{self[:cert_file_path]}" unless Pathname.new(self[:cert_file_path]).absolute?
 
     if self[:profile].nil?
       raise ArgumentError, 'profile is required' unless self[:dmgr_profile]
