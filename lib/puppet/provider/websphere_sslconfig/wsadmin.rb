@@ -103,7 +103,7 @@ Puppet::Type.type(:websphere_sslconfig).provide(:wsadmin, parent: Puppet::Provid
       ["type", "#{resource[:type]}"],
       ["jsseProvider", "#{resource[:jsse_provider]}"],
       ["clientAuthentication", "#{resource[:client_auth_req]}"],["clientAuthenticationSupported", "#{resource[:client_auth_supp]}"],                       ["securityLevel", "#{resource[:security_level]}"],
-      ["enabledCyphers", "#{resource[:enabled_cyphers]}"],
+      ["enabledCiphers", "#{resource[:enabled_ciphers]}"],
       ["sslProtocol", "#{resource[:ssl_protocol]}"],
     ]
 
@@ -413,11 +413,11 @@ END
     @property_flush[:securityLevel] = val
   end
 
-  def enabled_cyphers
+  def enabled_ciphers
     @old_conf_details[:enabledCiphers]
   end
 
-  def enabled_cyphers=(val)
+  def enabled_ciphers=(val)
     @property_flush[:enabledCiphers] = val
   end
 

@@ -18,7 +18,7 @@ Puppet::Type.newtype(:websphere_sslconfig) do
         client_auth_req   => true,
         client_auth_supp  => true,
         security_level    => 'HIGH',
-        enabled_cyphers   => '',
+        enabled_ciphers   => '',
         ssl_protocol      => 'TLSv1.3',
         type              => 'JSSE',
         jsse_provider     => 'IBMJSSE2',
@@ -188,7 +188,7 @@ Puppet::Type.newtype(:websphere_sslconfig) do
     desc 'Optional. The cipher group that you want to use. Valid values are: HIGH, MEDIUM, LOW, and CUSTOM. Defaults to `HIGH`'
   end
 
-  newproperty(:enabled_cyphers) do
+  newproperty(:enabled_ciphers) do
     defaultto ''
     desc 'Optional. A list of accepted ciphers used during the SSL handshake. Defaults to an empty string: `` i.e. all, no exceptions.'
   end
