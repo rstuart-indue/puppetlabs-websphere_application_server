@@ -35,20 +35,6 @@ Puppet::Type.type(:websphere_sslconfig).provide(:wsadmin, parent: Puppet::Provid
     @jython_debug_state = Puppet::Util::Log.level == :debug
   end
 
-  # This creates the XOR string used in the authentication data entries.
-  # For now, WAS8 and WAS9 are using the same schema of obfuscation for
-  # the alias and KeyStore passwords.
-  # The character used as the XOR key is "_" (underscore).
-  def xor_string (val)
-    xor_result = ""
-    debase64 = Base64.decode64(val)
-
-    debase64.each_char { |char|
-      xor_result += (char.ord ^ "_".ord).ord.chr
-    }
-    return xor_result
-  end
-
   def scope(what, target_scope: resource[:scope])
     file = "#{resource[:profile_base]}/#{resource[:dmgr_profile]}"
 
@@ -521,6 +507,9 @@ END
     # If we haven't got anything to modify, we've got nothing to flush. Otherwise
     # parse the list of things to do
     return if @property_flush.empty?
+
+    # Set the scope for this Keystore/SSLConfig.
+    conf_scope = scope('xml')
 
     # Assemble the attributes we need for creating the SSL config
     sslconfig_attrs = [
