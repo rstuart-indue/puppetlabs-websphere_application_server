@@ -154,12 +154,12 @@ Puppet::Type.newtype(:websphere_sslconfig) do
     desc 'Required. The name of the trust store associated with this SSL configuration.'
   end
 
-  newproperty(:server_cert_alias) do
-    desc 'Required. The name of the cert alias in the key store associated with this SSL configuration.'
+  newproperty(:server_key_alias) do
+    desc 'Required. Specifies the certificate alias that is used as the identity for this SSL configuration. Can be set to `` (empty string)'
   end
 
-  newproperty(:client_cert_alias) do
-    desc 'Required. The name of the cert alias in the trust store associated with this SSL configuration.'
+  newproperty(:client_key_alias) do
+    desc 'Required. Specifies the description for a client certificate alias associated with this SSL configuration. Can be set to `` (empty string)'
   end
 
   newproperty(:key_store_scope) do
