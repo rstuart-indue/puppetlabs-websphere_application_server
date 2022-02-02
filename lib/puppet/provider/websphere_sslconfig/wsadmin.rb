@@ -343,19 +343,19 @@ END
   end
 
   def key_store_name
-    @old_conf_details[:keyStoreName]
+    @old_conf_details[:keyStore]
   end
 
   def key_store_name=(val)
-    @property_flush[:keyStoreName] = val
+    @property_flush[:keyStore] = val
   end
 
   def trust_store_name
-    @old_conf_details[:trustStoreName]
+    @old_conf_details[:trustStore]
   end
 
   def trust_store_name=(val)
-    @property_flush[:trustStoreName] = val
+    @property_flush[:trustStore] = val
   end
 
   def key_store_scope
@@ -374,20 +374,20 @@ END
     @property_flush[:trustStoreScopeType] = val
   end
 
-  def server_cert_alias
-    @old_conf_details[:serverCertAlias]
+  def server_key_alias
+    @old_conf_details[:serverKeyAlias]
   end
 
-  def server_cert_alias=(val)
-    @property_flush[:serverCertAlias] = val
+  def server_key_alias=(val)
+    @property_flush[:serverKeyAlias] = val
   end
 
-  def client_cert_alias
-    @old_conf_details[:clientCertAlias]
+  def client_key_alias
+    @old_conf_details[:clientKeyAlias]
   end
 
-  def client_cert_alias=(val)
-    @property_flush[:clientCertAlias] = val
+  def client_key_alias=(val)
+    @property_flush[:clientKeyAlias] = val
   end
 
   def client_auth_req
@@ -431,7 +431,7 @@ END
   end
 
   def jsse_provider
-    @old_conf_details[:sslProtocol]
+    @old_conf_details[:jsseProvider]
   end
 
   def jsse_provider=(val)
