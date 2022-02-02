@@ -131,8 +131,8 @@ sslconfig_name = "#{resource[:conf_alias]}"
 sslconfig_scope = "#{conf_scope}"
 k_store = "#{resource[:key_store_name]}"
 t_store = "#{resource[:trust_store_name]}"
-t_cert = "#{resource[:client_cert_alias]}"
-k_cert = "#{resource[:server_cert_alias]}"
+c_cert = "#{resource[:client_cert_alias]}"
+s_cert = "#{resource[:server_cert_alias]}"
 sslconfig_attrs = #{sslconfig_attrs_str}
 
 # Enable debug notices ('true'/'false')
@@ -154,11 +154,11 @@ def normalizeArgList(argList, argName):
   return argList
 #endDef
 
-def createSSLConfig(name, conf_scope, key_store, trust_store, key_cert, trust_cert, sslConfigPList, failonerror=AdminUtilities._BLANK_ ):
+def createSSLConfig(name, conf_scope, key_store, trust_store, server_cert, client_cert, sslConfigPList, failonerror=AdminUtilities._BLANK_ ):
   if (failonerror==AdminUtilities._BLANK_):
       failonerror=AdminUtilities._FAIL_ON_ERROR_
   #endIf
-  msgPrefix = "createSSLConfig(" + `name` +  ", " + `conf_scope`+ ", " + `trust_store` + ", " + `key_store` + ", " + `trust_cert` +  ", " + `key_cert` + `sslConfigPList` + `failonerror`+"): "
+  msgPrefix = "createSSLConfig(" + `name` +  ", " + `conf_scope`+ ", " + `trust_store` + ", " + `key_store` + ", " + `client_cert` +  ", " + `server_cert` + `sslConfigPList` + `failonerror`+"): "
 
   try:
     #--------------------------------------------------------------------
@@ -172,8 +172,8 @@ def createSSLConfig(name, conf_scope, key_store, trust_store, key_cert, trust_ce
     AdminUtilities.debugNotice (" Trust and Key Stores:")
     AdminUtilities.debugNotice ("     keystore:                   "+key_store)
     AdminUtilities.debugNotice ("     truststore:                 "+trust_store)
-    AdminUtilities.debugNotice ("     keycert:                    "+key_cert)
-    AdminUtilities.debugNotice ("     trustcert:                  "+trust_cert)
+    AdminUtilities.debugNotice ("     servercert:                 "+server_cert)
+    AdminUtilities.debugNotice ("     clientcert:                 "+client_cert)
     AdminUtilities.debugNotice (" SSL Config Options:")
     AdminUtilities.debugNotice ("     sslConfigPList:             "+str(sslConfigPList))
     AdminUtilities.debugNotice (" Return: No return value")
@@ -195,7 +195,7 @@ def createSSLConfig(name, conf_scope, key_store, trust_store, key_cert, trust_ce
 
     # Prepare the parameters for the AdminTask command:
     sslConfigPList = AdminUtilities.convertParamStringToList(sslConfigPList)
-    requiredParameters = [["alias", name], ["scopeName", conf_scope], ["trustStoreName", trust_store], ["keyStoreName", key_store]]
+    requiredParameters = [["alias", name], ["scopeName", conf_scope], ["trustStoreName", trust_store], ["keyStoreName", key_store], ['serverKeyAlias', server_cert], ['clientKeyAlias', client_cert]]
     finalAttrsList = requiredParameters + sslConfigPList
     finalParameters = []
     for attrs in finalAttrsList:
@@ -226,7 +226,7 @@ def createSSLConfig(name, conf_scope, key_store, trust_store, key_cert, trust_ce
 #endDef
 
 # And now - create the SSL Config in the target store.
-createSSLConfig(sslconfig_name, sslconfig_scope, k_store, t_store, k_cert, t_cert, sslconfig_attrs)
+createSSLConfig(sslconfig_name, sslconfig_scope, k_store, t_store, s_cert, c_cert, sslconfig_attrs)
 
 END
 
