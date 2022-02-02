@@ -173,14 +173,14 @@ Puppet::Type.newtype(:websphere_sslconfig) do
   end
 
   newproperty(:client_auth_req) do
-    defaultto :false
-    newvalues(:true, :false)
+    defaultto false
+    newvalues(true, false)
     desc 'Optional. Set the value of this parameter to `true` to request client authentication. Defaults to `false`'
   end
 
   newproperty(:client_auth_supp) do
-    defaultto :false
-    newvalues(:true, :false)
+    defaultto false
+    newvalues(true, false)
     desc 'Optional. Set the value of this parameter to `true` to support client authentication. Defaults to `false`'
   end
 
