@@ -155,11 +155,13 @@ Puppet::Type.newtype(:websphere_sslconfig) do
   end
 
   newproperty(:server_key_alias) do
-    desc 'Required. Specifies the certificate alias that is used as the identity for this SSL configuration. Can be set to `` (empty string)'
+    defaultto ''
+    desc 'Optional. Specifies the certificate alias that is used as the identity for this SSL configuration. Defaults to `` (empty string)'
   end
 
   newproperty(:client_key_alias) do
-    desc 'Required. Specifies the description for a client certificate alias associated with this SSL configuration. Can be set to `` (empty string)'
+    defaultto ''
+    desc 'Optional. Specifies the description for a client certificate alias associated with this SSL configuration. Defaults to `` (empty string)'
   end
 
   newproperty(:key_store_scope) do
