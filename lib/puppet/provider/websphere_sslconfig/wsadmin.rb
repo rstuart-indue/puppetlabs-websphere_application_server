@@ -118,8 +118,8 @@ sslconfig_name = "#{resource[:conf_alias]}"
 sslconfig_scope = "#{conf_scope}"
 k_store = "#{resource[:key_store_name]}"
 t_store = "#{resource[:trust_store_name]}"
-c_cert = "#{resource[:client_cert_alias]}"
-s_cert = "#{resource[:server_cert_alias]}"
+c_cert = "#{resource[:client_key_alias]}"
+s_cert = "#{resource[:server_key_alias]}"
 sslconfig_attrs = #{sslconfig_attrs_str}
 
 # Enable debug notices ('true'/'false')
@@ -546,8 +546,8 @@ sslconfig_name = "#{resource[:conf_alias]}"
 sslconfig_scope = "#{conf_scope}"
 k_store = "#{resource[:key_store_name]}"
 t_store = "#{resource[:trust_store_name]}"
-c_cert = "#{resource[:client_cert_alias]}"
-s_cert = "#{resource[:server_cert_alias]}"
+c_cert = "#{resource[:client_key_alias]}"
+s_cert = "#{resource[:server_key_alias]}"
 sslconfig_attrs = #{sslconfig_attrs_str}
 
 # Enable debug notices ('true'/'false')
