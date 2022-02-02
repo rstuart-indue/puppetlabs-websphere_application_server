@@ -415,7 +415,7 @@ END
   end
 
   def enabled_ciphers
-    @old_conf_details.key?(:enabledCiphers)? old_conf_details[:enabledCiphers] : ''
+    @old_conf_details.key?(:enabledCiphers)? @old_conf_details[:enabledCiphers] : ''
   end
 
   def enabled_ciphers=(val)
