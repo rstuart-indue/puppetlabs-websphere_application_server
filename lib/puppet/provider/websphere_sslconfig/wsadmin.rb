@@ -375,7 +375,7 @@ END
   end
 
   def server_key_alias
-    @old_conf_details[:serverKeyAlias]
+    @old_conf_details.key?(:serverKeyAlias)? @old_conf_details[:serverKeyAlias] : ''
   end
 
   def server_key_alias=(val)
@@ -383,7 +383,7 @@ END
   end
 
   def client_key_alias
-    @old_conf_details[:clientKeyAlias]
+    @old_conf_details.key?(:clientKeyAlias)? @old_conf_details[:clientKeyAlias] : ''
   end
 
   def client_key_alias=(val)
