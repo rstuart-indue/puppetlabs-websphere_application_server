@@ -119,7 +119,7 @@ AdminUtilities.setDebugNotices('#{@jython_debug_state}')
 bundleName = "com.ibm.ws.scripting.resources.scriptLibraryMessage"
 resourceBundle = AdminUtilities.getResourceBundle(bundleName)
 
-def createPersonalCertAlias(name, kstore_scope, kstore_dst, kstore_src, kstore_type_src, kstore_pass_src, kstore_alias_src, old_cert='', failonerror=AdminUtilities._BLANK_ ):
+def createPersonalCertAlias(name, kstore_scope, kstore_dst, kstore_src, kstore_type_src, kstore_pass_src, kstore_alias_src, old_cert='', failonerror=AdminUtilities._TRUE_ ):
   if (failonerror==AdminUtilities._BLANK_):
       failonerror=AdminUtilities._FAIL_ON_ERROR_
   #endIf
