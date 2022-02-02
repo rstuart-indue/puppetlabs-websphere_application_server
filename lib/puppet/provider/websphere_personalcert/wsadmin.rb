@@ -119,7 +119,7 @@ AdminUtilities.setDebugNotices('#{@jython_debug_state}')
 bundleName = "com.ibm.ws.scripting.resources.scriptLibraryMessage"
 resourceBundle = AdminUtilities.getResourceBundle(bundleName)
 
-def createPersonalCertAlias(name, kstore_scope, kstore_dst, kstore_src, kstore_type_src, kstore_pass_src, kstore_alias_src, old_cert='', failonerror=AdminUtilities._TRUE_ ):
+def createPersonalCertAlias(name, kstore_scope, kstore_dst, kstore_src, kstore_type_src, kstore_pass_src, kstore_alias_src, old_cert='', failonerror=AdminUtilities._BLANK_ ):
   if (failonerror==AdminUtilities._BLANK_):
       failonerror=AdminUtilities._FAIL_ON_ERROR_
   #endIf
@@ -204,7 +204,7 @@ createPersonalCertAlias(cert_alias_dst, key_store_scope, key_store_dst, key_file
 END
 
     debug "Running command: #{cmd} as user: #{resource[:user]}"
-    result = wsadmin(file: cmd, user: resource[:user], failonfail: false)
+    result = wsadmin(file: cmd, user: resource[:user], failonfail: true)
 
     if %r{Invalid parameter value "" for parameter "parent config id" on command "create"}.match?(result)
       ## I'd rather handle this in the Jython, but I'm not sure how.
