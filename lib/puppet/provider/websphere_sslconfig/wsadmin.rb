@@ -21,6 +21,13 @@ Puppet::Type.type(:websphere_sslconfig).provide(:wsadmin, parent: Puppet::Provid
       * the type of the SSL Config object.
     You need to destroy it first, then create another one with the desired attributes.
 
+    This type does not implement yet the following:
+      * trust manager selection
+      * trust manager scope
+      * key manager selection
+      * key manager scope
+      * SSL Config properties
+
     We execute the 'wsadmin' tool to query and make changes, which interprets
     Jython. This means we need to use heredocs to satisfy whitespace sensitivity.
     DESC
