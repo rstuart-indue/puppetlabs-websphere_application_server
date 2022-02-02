@@ -19,7 +19,6 @@ Puppet::Type.type(:websphere_sslconfig).provide(:wsadmin, parent: Puppet::Provid
     This provider will not allow the changing of:
       * the name/alias of the SSL Config object
       * the type of the SSL Config object.
-      * the JSSE provider 
     You need to destroy it first, then create another one with the desired attributes.
 
     We execute the 'wsadmin' tool to query and make changes, which interprets
@@ -97,12 +96,14 @@ Puppet::Type.type(:websphere_sslconfig).provide(:wsadmin, parent: Puppet::Provid
   def create
     # Set the scope for this SSL ConfigResource.
      conf_scope = scope('xml')
-
-    # At the very least - we pass the description of the Activation Specs.
+  
+    # Assemble the attributes we need for creating the SSL config
     sslconfig_attrs = [
       ["type", "#{resource[:type]}"],
       ["jsseProvider", "#{resource[:jsse_provider]}"],
-      ["clientAuthentication", "#{resource[:client_auth_req]}"],["clientAuthenticationSupported", "#{resource[:client_auth_supp]}"],                       ["securityLevel", "#{resource[:security_level]}"],
+      ["clientAuthentication", "#{resource[:client_auth_req]}"],
+      ["clientAuthenticationSupported", "#{resource[:client_auth_supp]}"],
+      ["securityLevel", "#{resource[:security_level]}"],
       ["enabledCiphers", "#{resource[:enabled_ciphers]}"],
       ["sslProtocol", "#{resource[:ssl_protocol]}"],
     ]
@@ -414,7 +415,7 @@ END
   end
 
   def enabled_ciphers
-    @old_conf_details[:enabledCiphers]
+    @old_conf_details.key?(:enabledCiphers)? old_conf_details[:enabledCiphers] : ''
   end
 
   def enabled_ciphers=(val)
@@ -427,6 +428,14 @@ END
 
   def ssl_protocol=(val)
     @property_flush[:sslProtocol] = val
+  end
+
+  def jsse_provider
+    @old_conf_details[:sslProtocol]
+  end
+
+  def jsse_provider=(val)
+    @property_flush[:jsseProvider] = val
   end
 
   # Remove a given SSL Config
@@ -450,7 +459,7 @@ AdminUtilities.setDebugNotices('#{@jython_debug_state}')
 bundleName = "com.ibm.ws.scripting.resources.scriptLibraryMessage"
 resourceBundle = AdminUtilities.getResourceBundle(bundleName)
 
-def deleteSSLConfig(name, scope, ks_name, failonerror=AdminUtilities._BLANK_ ):
+def deleteSSLConfig(name, scope, ks_name, failonerror=AdminUtilities._TRUE_ ):
   if (failonerror==AdminUtilities._BLANK_):
       failonerror=AdminUtilities._FAIL_ON_ERROR_
   #endIf
@@ -513,11 +522,138 @@ END
     # parse the list of things to do
     return if @property_flush.empty?
 
+    # Assemble the attributes we need for creating the SSL config
+    sslconfig_attrs = [
+      ["jsseProvider", "#{resource[:jsse_provider]}"],
+      ["clientAuthentication", "#{resource[:client_auth_req]}"],
+      ["clientAuthenticationSupported", "#{resource[:client_auth_supp]}"],
+      ["securityLevel", "#{resource[:security_level]}"],
+      ["enabledCiphers", "#{resource[:enabled_ciphers]}"],
+      ["sslProtocol", "#{resource[:ssl_protocol]}"],
+    ]
+
+    # Add the scope names for the key and trust stores if they are different from the resource scope
+    # If left unspecified, then the default resource scope is assumed.
+    # The command will still fail if the keystore does not exist in that scope - which is OK, we want
+    # it to fail.
+    if resource[:key_store_scope] != resource[:scope]
+      kstore_scope = scope('xml', target_scope: resource[:key_store_scope])
+      sslconfig_attrs += [["keyStoreScopeName", "#{kstore_scope}"]]
+    end
+
+    if resource[:trust_store_scope] != resource[:scope]
+      tstore_scope = scope('xml', target_scope: resource[:trust_store_scope])
+      sslconfig_attrs += [["trustStoreScopeName", "#{tstore_scope}"]]
+    end
+
+    sslconfig_attrs_str = sslconfig_attrs.to_s.tr("\"", "'")
+
     cmd = <<-END.unindent
 import AdminUtilities
 import re
 
-# TODO: flush() things in Jython
+# Parameters we need for our SSL Config
+sslconfig_name = "#{resource[:conf_alias]}"
+sslconfig_scope = "#{conf_scope}"
+k_store = "#{resource[:key_store_name]}"
+t_store = "#{resource[:trust_store_name]}"
+c_cert = "#{resource[:client_cert_alias]}"
+s_cert = "#{resource[:server_cert_alias]}"
+sslconfig_attrs = #{sslconfig_attrs_str}
+
+# Enable debug notices ('true'/'false')
+AdminUtilities.setDebugNotices('#{@jython_debug_state}')
+
+# Global variable within this script
+bundleName = "com.ibm.ws.scripting.resources.scriptLibraryMessage"
+resourceBundle = AdminUtilities.getResourceBundle(bundleName)
+
+def normalizeArgList(argList, argName):
+  if (argList == []):
+    AdminUtilities.debugNotice ("No " + `argName` + " parameters specified. Continuing with defaults.")
+  else:
+    if (str(argList).startswith("[[") > 0 and str(argList).startswith("[[[",0,3) == 0):
+      if (str(argList).find("\\"") > 0):
+        argList = str(argList).replace("\\"", "\\'")
+    else:
+        raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6049E", [argList]))
+  return argList
+#endDef
+
+def modifySSLConfig(name, conf_scope, key_store, trust_store, server_cert, client_cert, sslConfigPList, failonerror=AdminUtilities._TRUE_ ):
+  if (failonerror==AdminUtilities._BLANK_):
+      failonerror=AdminUtilities._FAIL_ON_ERROR_
+  #endIf
+  msgPrefix = "modifySSLConfig(" + `name` +  ", " + `conf_scope`+ ", " + `trust_store` + ", " + `key_store` + ", " + `client_cert` +  ", " + `server_cert` + `sslConfigPList` + `failonerror`+"): "
+
+  try:
+    #--------------------------------------------------------------------
+    # Modify an SSL Config
+    #--------------------------------------------------------------------
+    AdminUtilities.debugNotice ("---------------------------------------------------------------")
+    AdminUtilities.debugNotice (" AdminSSLConfig: modifySSLConfig ")
+    AdminUtilities.debugNotice (" Target:")
+    AdminUtilities.debugNotice ("     scope                       "+conf_scope)
+    AdminUtilities.debugNotice ("     alias                       "+name)
+    AdminUtilities.debugNotice (" Trust and Key Stores:")
+    AdminUtilities.debugNotice ("     keystore:                   "+key_store)
+    AdminUtilities.debugNotice ("     truststore:                 "+trust_store)
+    AdminUtilities.debugNotice ("     servercert:                 "+server_cert)
+    AdminUtilities.debugNotice ("     clientcert:                 "+client_cert)
+    AdminUtilities.debugNotice (" SSL Config Options:")
+    AdminUtilities.debugNotice ("     sslConfigPList:             "+str(sslConfigPList))
+    AdminUtilities.debugNotice (" Return: No return value")
+    AdminUtilities.debugNotice ("---------------------------------------------------------------")
+    AdminUtilities.debugNotice (" ")
+
+    # This normalization is slightly superfluous, but, what the hey?
+    sslConfigPList = normalizeArgList(sslConfigPList, "sslConfigPList")
+    
+    # Make sure required parameters are non-empty
+    if (len(name) == 0):
+      raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["name", name]))
+    if (len(conf_scope) == 0):
+      raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["conf_scope", conf_scope]))
+    if (len(trust_store) == 0):
+      raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["trust_store", trust_store]))
+    if (len(key_store) == 0):
+      raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["key_store", key_store]))
+
+    # Prepare the parameters for the AdminTask command:
+    sslConfigPList = AdminUtilities.convertParamStringToList(sslConfigPList)
+    requiredParameters = [["alias", name], ["scopeName", conf_scope], ["trustStoreName", trust_store], ["keyStoreName", key_store], ['serverKeyAlias', server_cert], ['clientKeyAlias', client_cert]]
+    finalAttrsList = requiredParameters + sslConfigPList
+    finalParameters = []
+    for attrs in finalAttrsList:
+      attr = ["-"+attrs[0], attrs[1]]
+      finalParameters = finalParameters+attr
+    
+    # Call the corresponding AdminTask command
+    AdminUtilities.debugNotice("About to call AdminTask command with scope: " + str(conf_scope))
+    AdminUtilities.debugNotice("About to call AdminTask command with parameters: " + str(finalParameters))
+
+    # Modify the SSL Config Alias
+    AdminTask.modifySSLConfig(finalParameters)
+
+    # Save this SSL Config
+    AdminConfig.save()
+
+  except:
+    typ, val, tb = sys.exc_info()
+    if (typ==SystemExit):  raise SystemExit,`val`
+    if (failonerror != AdminUtilities._TRUE_):
+      print "Exception: %s %s " % (sys.exc_type, sys.exc_value)
+      val = "%s %s" % (sys.exc_type, sys.exc_value)
+      raise Exception("ScriptLibraryException: " + val)
+    else:
+      return AdminUtilities.fail(msgPrefix+AdminUtilities.getExceptionText(typ, val, tb), failonerror)
+    #endIf
+  #endTry
+#endDef
+
+# And now - modify the SSL Config in the target store.
+modifySSLConfig(sslconfig_name, sslconfig_scope, k_store, t_store, s_cert, c_cert, sslconfig_attrs)
+
 END
     debug "Running #{cmd}"
     result = wsadmin(file: cmd, user: resource[:user])

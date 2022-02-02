@@ -229,7 +229,7 @@ Puppet::Type.newtype(:websphere_sslconfig) do
     desc 'Optional. Specifies type of the SSL configuration. Defaults to `JSSE`'
   end
 
-  newparam(:jsse_provider) do
+  newproperty(:jsse_provider) do
     defaultto :IBMJSSE2
     desc 'Optional. Specifies JSSE provider of the SSL configuration. Defaults to `IBMJSSE2`'
   end
