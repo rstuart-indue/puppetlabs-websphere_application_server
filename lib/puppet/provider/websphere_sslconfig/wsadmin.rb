@@ -225,7 +225,7 @@ createSSLConfig(sslconfig_name, sslconfig_scope, k_store, t_store, s_cert, c_cer
 END
 
     debug "Running command: #{cmd} as user: #{resource[:user]}"
-    result = wsadmin(file: cmd, user: resource[:user], failonfail: false)
+    result = wsadmin(file: cmd, user: resource[:user], failonfail: true)
 
     if %r{Invalid parameter value "" for parameter "parent config id" on command "create"}.match?(result)
       ## I'd rather handle this in the Jython, but I'm not sure how.
@@ -576,7 +576,7 @@ def normalizeArgList(argList, argName):
   return argList
 #endDef
 
-def modifySSLConfig(name, conf_scope, key_store, trust_store, server_cert, client_cert, sslConfigPList, failonerror=AdminUtilities._TRUE_ ):
+def modifySSLConfig(name, conf_scope, key_store, trust_store, server_cert, client_cert, sslConfigPList, failonerror=AdminUtilities._BLANK_ ):
   if (failonerror==AdminUtilities._BLANK_):
       failonerror=AdminUtilities._FAIL_ON_ERROR_
   #endIf
