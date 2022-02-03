@@ -182,7 +182,7 @@ createSignerCertAlias(cert_alias_dst, key_store_scope, key_store_dst, cert_file_
 END
 
     debug "Running command: #{cmd} as user: #{resource[:user]}"
-    result = wsadmin(file: cmd, user: resource[:user], failonfail: false)
+    result = wsadmin(file: cmd, user: resource[:user], failonfail: true)
 
     if %r{Invalid parameter value "" for parameter "parent config id" on command "create"}.match?(result)
       ## I'd rather handle this in the Jython, but I'm not sure how.
