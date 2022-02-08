@@ -50,7 +50,7 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
     END
 
     debug "Running command: #{cmd} as user: resource[:user]"
-    result = wsadmin(file: cmd, user: resource[:user], failonfail: false)
+    result = wsadmin(file: cmd, user: resource[:user], failonfail: true)
 
     if %r{Invalid parameter value "" for parameter "parent config id" on command "create"}.match?(result)
       ## I'd rather handle this in the Jython, but I'm not sure how.
@@ -237,8 +237,8 @@ Puppet::Type.type(:websphere_user).provide(:wsadmin, parent: Puppet::Provider::W
             AdminTask.updateUser([#{arg_string}])
         AdminConfig.save()
         END
-    debug "Running #{cmd}"
-    result = wsadmin(file: cmd, user: resource[:user])
+    debug "Running update command: #{cmd}"
+    result = wsadmin(file: cmd, user: resource[:user], failonfail: true)
     debug "result: #{result}"
   end
 end
