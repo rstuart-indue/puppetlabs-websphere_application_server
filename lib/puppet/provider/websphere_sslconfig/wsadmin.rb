@@ -536,17 +536,15 @@ END
     # If left unspecified, then the default resource scope is assumed.
     # The command will still fail if the keystore does not exist in that scope - which is OK, we want
     # it to fail.
-    if resource[:key_store_scope] != resource[:scope]
-      kstore_scope = scope('xml', target_scope: resource[:key_store_scope])
-      debug "Got key store scope for #{resource[:key_store_scope]}: #{kstore_scope}"
-      sslconfig_attrs += [["keyStoreScopeName", "#{kstore_scope}"]]
-    end
 
-    if resource[:trust_store_scope] != resource[:scope]
-      tstore_scope = scope('xml', target_scope: resource[:trust_store_scope])
-      debug "Got trust store scope for #{resource[:trust_store_scope]}: #{tstore_scope}"
-      sslconfig_attrs += [["trustStoreScopeName", "#{tstore_scope}"]]
-    end
+    kstore_scope = scope('xml', target_scope: resource[:key_store_scope])
+    debug "Got key store scope for #{resource[:key_store_scope]}: #{kstore_scope}"
+    sslconfig_attrs += [["keyStoreScopeName", "#{kstore_scope}"]]
+
+    tstore_scope = scope('xml', target_scope: resource[:trust_store_scope])
+    debug "Got trust store scope for #{resource[:trust_store_scope]}: #{tstore_scope}"
+    sslconfig_attrs += [["trustStoreScopeName", "#{tstore_scope}"]]
+
 
     sslconfig_attrs_str = sslconfig_attrs.to_s.tr("\"", "'")
 
