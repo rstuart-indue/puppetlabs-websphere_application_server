@@ -538,11 +538,13 @@ END
     # it to fail.
     if resource[:key_store_scope] != resource[:scope]
       kstore_scope = scope('xml', target_scope: resource[:key_store_scope])
+      debug "Got key store scope for #{resource[:key_store_scope]}: #{kstore_scope}"
       sslconfig_attrs += [["keyStoreScopeName", "#{kstore_scope}"]]
     end
 
     if resource[:trust_store_scope] != resource[:scope]
       tstore_scope = scope('xml', target_scope: resource[:trust_store_scope])
+      debug "Got trust store scope for #{resource[:trust_store_scope]}: #{tstore_scope}"
       sslconfig_attrs += [["trustStoreScopeName", "#{tstore_scope}"]]
     end
 
