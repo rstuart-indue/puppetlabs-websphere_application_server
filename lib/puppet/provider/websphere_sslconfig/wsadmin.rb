@@ -103,21 +103,14 @@ Puppet::Type.type(:websphere_sslconfig).provide(:wsadmin, parent: Puppet::Provid
       ["sslProtocol", "#{resource[:ssl_protocol]}"],
     ]
 
-    # Add the scope names for the key and trust stores if they are different from the resource scope
-    # If left unspecified, then the default resource scope is assumed.
-    # The command will still fail if the keystore does not exist in that scope - which is OK, we want
-    # it to fail.
-    if resource[:key_store_scope] != resource[:scope]
-      kstore_scope = scope('xml', target_scope: resource[:key_store_scope])
-      debug "Got key store scope for #{resource[:key_store_scope]}: #{kstore_scope}"
-      sslconfig_attrs += [["keyStoreScopeName", "#{kstore_scope}"]]
-    end
+    # Add the scope names for the key and trust stores. We can't add them
+    # selectively - wsacmd fails horribly, assuming that the given scope
+    # actually applies universally.
+    kstore_scope = scope('xml', target_scope: resource[:key_store_scope])
+    sslconfig_attrs += [["keyStoreScopeName", "#{kstore_scope}"]]
 
-    if resource[:trust_store_scope] != resource[:scope]
-      tstore_scope = scope('xml', target_scope: resource[:trust_store_scope])
-      debug "Got trust store scope for #{resource[:trust_store_scope]}: #{tstore_scope}"
-      sslconfig_attrs += [["trustStoreScopeName", "#{tstore_scope}"]]
-    end
+    tstore_scope = scope('xml', target_scope: resource[:trust_store_scope])
+    sslconfig_attrs += [["trustStoreScopeName", "#{tstore_scope}"]]
 
     sslconfig_attrs_str = sslconfig_attrs.to_s.tr("\"", "'")
 
@@ -532,19 +525,14 @@ END
       ["sslProtocol", "#{resource[:ssl_protocol]}"],
     ]
 
-    # Add the scope names for the key and trust stores if they are different from the resource scope
-    # If left unspecified, then the default resource scope is assumed.
-    # The command will still fail if the keystore does not exist in that scope - which is OK, we want
-    # it to fail.
-
+    # Add the scope names for the key and trust stores. We can't add them
+    # selectively - wsacmd fails horribly, assuming that the given scope
+    # actually applies universally.
     kstore_scope = scope('xml', target_scope: resource[:key_store_scope])
-    debug "Got key store scope for #{resource[:key_store_scope]}: #{kstore_scope}"
     sslconfig_attrs += [["keyStoreScopeName", "#{kstore_scope}"]]
 
     tstore_scope = scope('xml', target_scope: resource[:trust_store_scope])
-    debug "Got trust store scope for #{resource[:trust_store_scope]}: #{tstore_scope}"
     sslconfig_attrs += [["trustStoreScopeName", "#{tstore_scope}"]]
-
 
     sslconfig_attrs_str = sslconfig_attrs.to_s.tr("\"", "'")
 
