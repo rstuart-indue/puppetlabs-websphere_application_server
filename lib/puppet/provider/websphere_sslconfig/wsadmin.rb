@@ -45,6 +45,8 @@ Puppet::Type.type(:websphere_sslconfig).provide(:wsadmin, parent: Puppet::Provid
   def scope(what, target_scope: resource[:scope])
     file = "#{resource[:profile_base]}/#{resource[:dmgr_profile]}"
 
+    debug "Using target_scope: #{target_scope}"
+
     # I don't honestly know where the query/mod could be used, but sure as hell
     # the xml entry is used in security.xml scope attribute for a management scope.
     # It's yet another way of defining scope in WAS.
@@ -107,11 +109,13 @@ Puppet::Type.type(:websphere_sslconfig).provide(:wsadmin, parent: Puppet::Provid
     # it to fail.
     if resource[:key_store_scope] != resource[:scope]
       kstore_scope = scope('xml', target_scope: resource[:key_store_scope])
+      debug "Got key store scope for #{resource[:key_store_scope]}: #{kstore_scope}"
       sslconfig_attrs += [["keyStoreScopeName", "#{kstore_scope}"]]
     end
 
     if resource[:trust_store_scope] != resource[:scope]
       tstore_scope = scope('xml', target_scope: resource[:trust_store_scope])
+      debug "Got trust store scope for #{resource[:trust_store_scope]}: #{tstore_scope}"
       sslconfig_attrs += [["trustStoreScopeName", "#{tstore_scope}"]]
     end
 
