@@ -194,6 +194,18 @@ Puppet::Type.newtype(:websphere_cluster_member) do
     desc 'Manages the maximumSize setting for the WebContainer ThreadPool'
   end
 
+  newproperty(:mls_thread_inactivity_timeout) do
+    desc 'Manages the Message Listener Service ThreadInactivityTimeout for the ApplicationServer'
+  end
+
+  newproperty(:mls_threadpool_min_size) do
+    desc 'Manages the minimumSize setting for the Message Listener Service ThreadPool'
+  end
+
+  newproperty(:mls_threadpool_max_size) do
+    desc 'Manages the maximumSize setting for the Message Listener Service ThreadPool'
+  end
+
   newproperty(:umask) do
     defaultto '022'
     desc 'Manages the ProcessExecution umask for a cluster member'
