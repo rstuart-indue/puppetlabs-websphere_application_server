@@ -301,6 +301,70 @@ Puppet::Type.type(:websphere_cluster_member).provide(:wsadmin, parent: Puppet::P
     refresh
   end
 
+  def mls_thread_inactivity_timeout
+    get_xml_val(
+      'services[@xmi:type="applicationserver.ejbcontainer.messagelistener:MessageListenerService"]',
+      'threadPool[@name="Message.Listener.Pool"]',
+      'inactivityTimeout',
+    )
+  end
+
+  def mls_thread_inactivity_timeout=(_value)
+    cmd = <<-END.unindent
+      the_id=AdminConfig.getid('/Node:#{resource[:node_name]}/Server:#{resource[:name]}/')
+      tpList=AdminConfig.list('ThreadPool', the_id).split(lineSeparator)
+      for tp in tpList:
+        if tp.count('Message.Listener.Pool') == 1:
+          tpMessageListenerPool=tp
+      AdminConfig.modify(tpMessageListenerPool, [['inactivityTimeout', #{resource[:mls_thread_inactivity_timeout]}]])
+      AdminConfig.save()
+    END
+    wsadmin(file: cmd, user: resource[:user])
+  end
+
+  def mls_threadpool_min_size
+    get_xml_val(
+      'services[@xmi:type="applicationserver.ejbcontainer.messagelistener:MessageListenerService"]',
+      'threadPool[@name="Message.Listener.Pool"]',
+      'minimumSize',
+    )
+  end
+
+  def mls_threadpool_min_size=(_value)
+    cmd = <<-END.unindent
+      the_id=AdminConfig.getid('/Node:#{resource[:node_name]}/Server:#{resource[:name]}/')
+      tpList=AdminConfig.list('ThreadPool', the_id).split(lineSeparator)
+      for tp in tpList:
+        if tp.count('Message.Listener.Pool') == 1:
+          tpMessageListenerPool=tp
+      AdminConfig.modify(tpMessageListenerPool, [['minimumSize', #{resource[:mls_threadpool_min_size]}]])
+      AdminConfig.save()
+    END
+    wsadmin(file: cmd, user: resource[:user])
+  end
+
+  def mls_threadpool_max_size
+    get_xml_val(
+      'services[@xmi:type="applicationserver.ejbcontainer.messagelistener:MessageListenerService"]',
+      'threadPool[@name="Message.Listener.Pool"]',
+      'maximumSize',
+    )
+  end
+
+  def mls_threadpool_max_size=(_value)
+    cmd = <<-END.unindent
+      the_id=AdminConfig.getid('/Node:#{resource[:node_name]}/Server:#{resource[:name]}/')
+      tpList=AdminConfig.list('ThreadPool', the_id).split(lineSeparator)
+      for tp in tpList:
+        if tp.count('Message.Listener.Pool') == 1:
+          tpMessageListenerPool=tp
+      AdminConfig.modify(tpMessageListenerPool, [['maximumSize', #{resource[:mls_threadpool_min_size]}]])
+      AdminConfig.save()
+    END
+    wsadmin(file: cmd, user: resource[:user])
+    refresh
+  end
+
   def refresh
     flush
   end
