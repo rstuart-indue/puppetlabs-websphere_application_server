@@ -10,6 +10,60 @@ require_relative '../websphere_helper'
 Puppet::Type.type(:websphere_cluster_member).provide(:wsadmin, parent: Puppet::Provider::Websphere_Helper) do
   desc 'wsadmin provider for `websphere_cluster_member`'
 
+  # This is a rather inelegant work-around the get_xml_val() method from the helper class to do
+  # an arbitrary number of levels instead of the fixed "three-down-from-the-root".
+  # It should be that we modify *that* method, but we are running out of time and can't test
+  # everything if we modify it.
+  # TODO: update the original get_xml_val() in webpshere_helper.rb
+  def get_xml_val2(section, element, attribute, server_xml = nil)
+
+    # If we weren't told where the server.xml file is, we have to
+    # piece it together from the fragments we have
+    unless server_xml
+      serverxml_failure_message = 'Unable to find server xml file.'
+
+      if resource[:profile]
+        server_xml = resource[:profile_base] + '/' \
+          + resource[:profile] + '/config/cells/' \
+          + resource[:cell] + '/nodes/' + resource[:node_name] \
+          + '/servers/' + resource[:server] + '/server.xml'
+        serverxml_failure_message += " File doesn't exist at '#{server_xml}'."
+      end
+
+      if resource[:profile].nil? || !File.exist?(server_xml)
+        server_xml = resource[:profile_base] + '/' \
+          + resource[:dmgr_profile] + '/config/cells/' \
+          + resource[:cell] + '/nodes/' + resource[:node_name] \
+          + '/servers/' + resource[:server] + '/server.xml'
+        serverxml_failure_message += " File doesn't exist at '#{server_xml}'."
+      end
+
+      # File.exists? is a double check if resource[:profile] is set
+      raise Puppet::Error, "#{serverxml_failure_message}. Please ensure the server.xml exists in the proper location." unless File.exist?(server_xml)
+    end
+
+    unless File.exist?(server_xml)
+      raise Puppet::Error, "#{resource[:name]}: "\
+        + "Unable to open server.xml at #{server_xml}. Make sure the profile "\
+        + 'exists, the node has been federated, a corresponding app instance '\
+        + 'exists, and the names are correct. Hint:  The DMGR may need to '\
+        + 'Puppet.'
+    end
+
+    debug "Using XML file: #{server_xml}"
+    doc = REXML::Document.new(File.open(server_xml))
+
+    debug "Looking into the XML doc for section: #{section} , element: #{element}"
+    element_entry = XPath.first(doc, "//#{section}/#{element}/")
+    debug "Found Section/Element entries: #{element_entry}" if element_entry
+  
+    value = element_entry.attributes[attribute] if element_entry
+    debug "Found: #{server_xml}/#{element}:#{attribute}: #{value}"
+
+    false unless value
+    value.to_s
+  end
+
   def exists?
     xml_file = resource[:profile_base] + '/' + resource[:dmgr_profile] + '/config/cells/' + resource[:cell] + '/clusters/' + resource[:cluster] + '/cluster.xml'
 
@@ -321,7 +375,7 @@ Puppet::Type.type(:websphere_cluster_member).provide(:wsadmin, parent: Puppet::P
   end
 
   def mls_thread_inactivity_timeout
-    get_xml_val(
+    get_xml_val2(
       'services[@xmi:type="applicationserver.ejbcontainer.messagelistener:MessageListenerService"]',
       'threadPool[@name="Message.Listener.Pool"]',
       'inactivityTimeout',
@@ -342,7 +396,7 @@ Puppet::Type.type(:websphere_cluster_member).provide(:wsadmin, parent: Puppet::P
   end
 
   def mls_threadpool_min_size
-    get_xml_val(
+    get_xml_val2(
       'services[@xmi:type="applicationserver.ejbcontainer.messagelistener:MessageListenerService"]',
       'threadPool[@name="Message.Listener.Pool"]',
       'minimumSize',
@@ -363,7 +417,7 @@ Puppet::Type.type(:websphere_cluster_member).provide(:wsadmin, parent: Puppet::P
   end
 
   def mls_threadpool_max_size
-    get_xml_val(
+    get_xml_val2(
       'services[@xmi:type="applicationserver.ejbcontainer.messagelistener:MessageListenerService"]',
       'threadPool[@name="Message.Listener.Pool"]',
       'maximumSize',
@@ -377,11 +431,10 @@ Puppet::Type.type(:websphere_cluster_member).provide(:wsadmin, parent: Puppet::P
       for tp in tpList:
         if tp.count('Message.Listener.Pool') == 1:
           tpMessageListenerPool=tp
-      AdminConfig.modify(tpMessageListenerPool, [['maximumSize', #{resource[:mls_threadpool_min_size]}]])
+      AdminConfig.modify(tpMessageListenerPool, [['maximumSize', #{resource[:mls_threadpool_max_size]}]])
       AdminConfig.save()
     END
     wsadmin(file: cmd, user: resource[:user])
-    refresh
   end
 
   def refresh
