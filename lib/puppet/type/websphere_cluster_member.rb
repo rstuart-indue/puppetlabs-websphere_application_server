@@ -186,6 +186,10 @@ Puppet::Type.newtype(:websphere_cluster_member) do
     desc 'Manages the totalTranLifetimeTimeout for the ApplicationServer'
   end
 
+  newproperty(:max_transaction_timeout) do
+    desc 'Manages the maxTranLifetimeTimeout for the ApplicationServer'
+  end
+
   newproperty(:threadpool_webcontainer_min_size) do
     desc 'Manages the minimumSize setting for the WebContainer ThreadPool'
   end

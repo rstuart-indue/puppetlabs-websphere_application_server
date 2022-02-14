@@ -237,6 +237,25 @@ Puppet::Type.type(:websphere_cluster_member).provide(:wsadmin, parent: Puppet::P
     wsadmin(file: cmd, user: resource[:user])
   end
 
+  # Do not correct the spelling of the category we're looking for, this is
+  # how they spell it in the documentation too.
+  def max_transaction_timeout
+    get_xml_val(
+      'components[@xmi:type="applicationserver:ApplicationServer"]',
+      'services',
+      'propogatedOrBMTTranLifetimeTimeout',
+    )
+  end
+
+  def max_transaction_timeout=(_value)
+    cmd = <<-END.unindent
+    the_id = AdminConfig.list('TransactionService', '(cells/#{resource[:cell]}/nodes/#{resource[:node_name]}/servers/#{resource[:name]}|server.xml)')
+    AdminConfig.modify(the_id, [['propogatedOrBMTTranLifetimeTimeout', #{resource[:max_transaction_timeout]}]])
+    AdminConfig.save()
+    END
+    wsadmin(file: cmd, user: resource[:user])
+  end
+
   def client_inactivity_timeout
     get_xml_val(
       'components[@xmi:type="applicationserver:ApplicationServer"]',
