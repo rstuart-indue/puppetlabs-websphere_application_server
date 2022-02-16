@@ -73,19 +73,16 @@ Puppet::Type.type(:websphere_virtualhost).provide(:wsadmin, parent: Puppet::Prov
   end
 
   # Helper method to assemble the alias list in a format like below
-  # ["aliases",
-  #            [
-  #             [["hostname", "*"], ["port", "9080"]],
-  #             [["hostname", "*"], ["port", "80"]],
-  #             [["hostname", "*"], ["port", "9443"]],
-  #            ]
+  # [
+  #   [["hostname", "*"], ["port", "9080"]],
+  #   [["hostname", "*"], ["port", "80"]],
+  #   [["hostname", "*"], ["port", "9443"]],
   # ]
   def get_aliases_string
-    alias_list = []
+    vhost_alias_list = []
     resource[:alias_list].each { |alias_pair|
-      alias_list += [[['hostname', "#{alias_pair[0]}"], ['port', "#{alias_pair[1]}"]]]
+      vhost_alias_list += [[['hostname', "#{alias_pair[0]}"], ['port', "#{alias_pair[1]}"]]]
     } unless resource[:alias_list].nil?
-    vhost_alias_list = ['aliases', alias_list]
     vhost_alias_list.to_s.tr("\"", "'")
   end
 
@@ -115,7 +112,7 @@ def normalizeArgList(argList, argName):
   if (argList == []):
     AdminUtilities.debugNotice ("No " + `argName` + " parameters specified. Continuing with defaults.")
   else:
-    if (str(argList).startswith("[[") > 0 and str(argList).startswith("[[[",0,3) == 0):
+    if (str(argList).startswith("[[") > 0 and str(argList).startswith("[[[[",0,4) == 0):
       if (str(argList).find("\\"") > 0):
         argList = str(argList).replace("\\"", "\\'")
     else:
@@ -156,7 +153,7 @@ def createVHost(name, scope, vHostAliasList, failonerror=AdminUtilities._BLANK_ 
     # Prepare the parameters for the AdminConfig command:
     vHostAliasList = AdminUtilities.convertParamStringToList(vHostAliasList)
     requiredParameters = [["name", name]]
-    finalAttrsList = requiredParameters + vHostAliasList
+    finalAttrsList = requiredParameters + [["aliases", vHostAliasList]]
 
     # Call the corresponding AdminConfig command
     AdminUtilities.debugNotice("About to call AdminConfig command with scope: " + str(scope))
