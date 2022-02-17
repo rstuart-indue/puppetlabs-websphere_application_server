@@ -60,52 +60,12 @@ Puppet::Type.newtype(:websphere_virtualhost) do
           [:vhost],
         ],
       ],
-      # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:cluster:CELL_01:TEST_CLUSTER_01:VHost
-      [
-        %r{^([^:]+):([^:]+):(cluster):([^:]+):([^:]+):([^:]+)$},
-        [
-          [:profile_base],
-          [:dmgr_profile],
-          [:scope],
-          [:cell],
-          [:cluster],
-          [:vhost],
-        ],
-      ],
-      # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:node:CELL_01:AppNode01:VHost
-      [
-        %r{^([^:]+):([^:]+):(node):([^:]+):([^:]+):([^:]+)$},
-        [
-          [:profile_base],
-          [:dmgr_profile],
-          [:scope],
-          [:cell],
-          [:node_name],
-          [:vhost],
-        ],
-      ],
-      # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:server:CELL_01:AppNode01:AppServer01:VHost
-      [
-        %r{^([^:]+):([^:]+):(server):([^:]+):([^:]+):([^:]+):([^:]+)$},
-        [
-          [:profile_base],
-          [:dmgr_profile],
-          [:scope],
-          [:cell],
-          [:node_name],
-          [:server],
-          [:vhost],
-        ],
-      ],
     ]
   end
 
   validate do
-    raise ArgumentError, "Invalid scope #{self[:scope]}: Must be cell, cluster, node, or server" unless %r{^(cell|cluster|node|server)$}.match?(self[:scope])
-    raise ArgumentError, 'server is required when scope is server' if self[:server].nil? && self[:scope] == 'server'
+    raise ArgumentError, "Invalid scope #{self[:scope]}: Must be cell" unless %r{^(cell)$}.match?(self[:scope])
     raise ArgumentError, 'cell is required' if self[:cell].nil?
-    raise ArgumentError, 'node_name is required when scope is server, or node' if self[:node_name].nil? && self[:scope] =~ %r{(server|node)}
-    raise ArgumentError, 'cluster is required when scope is cluster' if self[:cluster].nil? && self[:scope] =~ %r{^cluster$}
     raise ArgumentError, "Invalid profile_base #{self[:profile_base]}" unless Pathname.new(self[:profile_base]).absolute?
 
     if self[:profile].nil?
@@ -113,7 +73,7 @@ Puppet::Type.newtype(:websphere_virtualhost) do
       self[:profile] = self[:dmgr_profile]
     end
 
-    [:vhost, :server, :cell, :node_name, :cluster, :profile, :user].each do |value|
+    [:vhost, :cell, :profile, :user].each do |value|
       raise ArgumentError, "Invalid #{value} #{self[:value]}" unless %r{^[-0-9A-Za-z._]+$}.match?(value)
     end 
   end
@@ -140,28 +100,13 @@ Puppet::Type.newtype(:websphere_virtualhost) do
     isnamevar
     desc <<-EOT
     The scope for the Virtual Host .
-    Valid values: cell, cluster, node, or server
+    Valid value: cell
     EOT
-  end
-
-  newparam(:server) do
-    isnamevar
-    desc 'The server for which this Virtual Host should be set'
   end
 
   newparam(:cell) do
     isnamevar
     desc 'The cell for which this Virtual Host should be set'
-  end
-
-  newparam(:node_name) do
-    isnamevar
-    desc 'The node name for which this Virtual Host should be set'
-  end
-
-  newparam(:cluster) do
-    isnamevar
-    desc 'The cluster for which this Virtual Host should be set'
   end
 
   newparam(:profile) do

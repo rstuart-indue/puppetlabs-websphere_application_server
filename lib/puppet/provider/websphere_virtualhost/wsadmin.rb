@@ -32,26 +32,12 @@ Puppet::Type.type(:websphere_virtualhost).provide(:wsadmin, parent: Puppet::Prov
 
     debug "Using target_scope: #{target_scope}"
 
-    # I don't honestly know where the query/mod could be used, but sure as hell
-    # the xml entry is used in security.xml scope attribute for a management scope.
-    # It's yet another way of defining scope in WAS.
+    # Three ways of defining scope in WAS.
     case target_scope
     when 'cell'
       query = "/Cell:#{resource[:cell]}"
       mod   = "cells/#{resource[:cell]}"
       xml   = "(cell):#{resource[:cell]}"
-    when 'cluster'
-      query = "/Cell:#{resource[:cell]}/ServerCluster:#{resource[:cluster]}"
-      mod   = "cells/#{resource[:cell]}/clusters/#{resource[:cluster]}"
-      xml   = "(cell):#{resource[:cell]}:(cluster):#{resource[:cluster]}"
-    when 'node'
-      query = "/Cell:#{resource[:cell]}/Node:#{resource[:node_name]}"
-      mod   = "cells/#{resource[:cell]}/nodes/#{resource[:node_name]}"
-      xml   = "(cell):#{resource[:cell]}:(node):#{resource[:node_name]}"
-    when 'server'
-      query = "/Cell:#{resource[:cell]}/Node:#{resource[:node_name]}/Server:#{resource[:server]}"
-      mod   = "cells/#{resource[:cell]}/nodes/#{resource[:node_name]}/servers/#{resource[:server]}"
-      xml   = "(cell):#{resource[:cell]}:(node):#{resource[:node_name]}:(server):#{resource[:server]}"
     else
       raise Puppet::Error, "Unknown scope: #{target_scope}"
     end
@@ -97,7 +83,7 @@ Puppet::Type.type(:websphere_virtualhost).provide(:wsadmin, parent: Puppet::Prov
 import AdminUtilities
 
 # Parameters we need for our Virtual Host
-vhost_name = "#{resource[:'vhost']}"
+vhost_name = "#{resource[:vhost]}"
 vhost_scope = "#{scope}"
 vhost_aliases = #{vhost_alias_list_str}
 
