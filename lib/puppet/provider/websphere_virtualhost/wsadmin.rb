@@ -402,18 +402,21 @@ def modifyVHost(name, scope, vHostAliasList, failonerror=AdminUtilities._BLANK_ 
     vhostID = AdminConfig.getid(name)
 
     # Remove Aliases - since the 'modify' operation is additive only
-    for alias in (AdminConfig.showAttribute(vhostID, 'aliases'))[1:-1].split(" "):
-      hostname = str(AdminConfig.showAttribute(alias, 'hostname'))
-      port = str(AdminConfig.showAttribute(alias, 'port'))
-      AdminUtilities.debugNotice ("Removing Alias: '" + hostname + "' (" + port + ")")
-      AdminConfig.remove(alias)
-    #endFor
+    currentAliasList = (AdminConfig.showAttribute(vhostID, 'aliases'))[1:-1].split(" ")
+    if (len(currentAliasList) > 0):
+      for alias in currentAliasList:
+        hostname = str(AdminConfig.showAttribute(alias, 'hostname'))
+        port = str(AdminConfig.showAttribute(alias, 'port'))
+        AdminUtilities.debugNotice ("Removing Alias: '" + hostname + "' (" + port + ")")
+        AdminConfig.remove(alias)
+      #endFor
+    #endIf
 
     # Now put the alias list back in - if we have any left
     if (vHostAliasList != [[]]):
       # Call the corresponding AdminConfig command
       AdminUtilities.debugNotice("About to call AdminConfig command with scope: " + str(scope))
-      AdminUtilities.debugNotice("About to call AdminConfig command with parameters: " + str(finalAttrsList))
+      AdminUtilities.debugNotice("About to call AdminConfig command with parameters: " + str(vHostAliasList))
       AdminConfig.modify(vhostID, [['aliases', vHostAliasList]])
     #endIf
 
