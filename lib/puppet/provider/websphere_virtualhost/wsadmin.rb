@@ -403,14 +403,14 @@ def modifyVHost(name, scope, vHostAliasList, failonerror=AdminUtilities._BLANK_ 
 
     # Remove Aliases - since the 'modify' operation is additive only
     currentAliasList = (AdminConfig.showAttribute(vhostID, 'aliases'))[1:-1].split(" ")
-    if (len(currentAliasList) > 0):
-      for alias in currentAliasList:
+    for alias in currentAliasList:
+      if (len(alias) > 0):
         hostname = str(AdminConfig.showAttribute(alias, 'hostname'))
         port = str(AdminConfig.showAttribute(alias, 'port'))
         AdminUtilities.debugNotice ("Removing Alias: '" + hostname + "' (" + port + ")")
         AdminConfig.remove(alias)
-      #endFor
-    #endIf
+      #endIf
+    #endFor
 
     # Now put the alias list back in - if we have any left
     if (vHostAliasList != [[]]):
