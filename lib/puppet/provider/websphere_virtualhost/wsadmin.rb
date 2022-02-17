@@ -183,7 +183,7 @@ END
       ## This usually indicates that the server isn't ready on the DMGR yet -
       ## the DMGR needs to do another Puppet run, probably.
       err = <<-EOT
-      Could not create Virtual Host alias: #{resource[:'vhost']} for location #{resource[:cell]}
+      Could not create Virtual Host alias: #{resource[:vhost]} for location #{resource[:cell]}
       This appears to be due to the remote resource not being available.
       Ensure that all the necessary services have been created and are running
       on this host and the DMGR. If this is the first run, the cluster member
@@ -203,7 +203,7 @@ END
       return false
     end
 
-    debug "Retrieving value of #{resource[:'vhost']} from #{scope('file')}"
+    debug "Retrieving value of #{resource[:vhost]} from #{scope('file')}"
     doc = REXML::Document.new(File.open(scope('file')))
 
     xmi_entry = XPath.first(doc, "/xmi:XMI")
@@ -218,7 +218,7 @@ END
       @old_conf_details += [[hostname.value.to_s, port]]
     } unless host_entry.nil?
 
-    debug "Virtual Host data for #{resource[:vhost]} is: #{@old_conf_details}"
+    debug "Virtual Host data for #{resource[:vhost]} is: #{@old_conf_details}" unless host_entry.nil?
     !host_entry.nil?
   end
 
