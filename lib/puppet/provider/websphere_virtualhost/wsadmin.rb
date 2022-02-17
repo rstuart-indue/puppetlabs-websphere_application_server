@@ -142,8 +142,7 @@ def createVHost(name, scope, vHostAliasList, failonerror=AdminUtilities._BLANK_ 
     AdminUtilities.debugNotice (" ")
 
     # This normalization is slightly superfluous, but, what the hey?
-    if (vHostAliasList != [[]]):
-      vHostAliasList = normalizeArgList(vHostAliasList, "vHostAliasList")
+    vHostAliasList = normalizeArgList(vHostAliasList, "vHostAliasList")
     
     # Make sure required parameters are non-empty
     if (len(name) == 0):
@@ -154,12 +153,7 @@ def createVHost(name, scope, vHostAliasList, failonerror=AdminUtilities._BLANK_ 
     # Prepare the parameters for the AdminConfig command:
     vHostAliasList = AdminUtilities.convertParamStringToList(vHostAliasList)
     requiredParameters = [["name", name]]
-
-    if (vHostAliasList != [[]]):
-      finalAttrsList = requiredParameters + [["aliases", vHostAliasList]]
-    else:
-      finalAttrsList = requiredParameters
-    #endIf
+    finalAttrsList = requiredParameters + [["aliases", vHostAliasList]]
 
     # Call the corresponding AdminConfig command
     AdminUtilities.debugNotice("About to call AdminConfig command with scope: " + str(scope))
@@ -333,15 +327,14 @@ END
     # Set the scope for this VHost.
     scope = scope('query')
 
-    # So I'm going to cheat a little:
-    vhost_id = "#{scope('query')}/VirtualHost:#{resource[:vhost]}/"
     vhost_alias_list_str = get_aliases_string
 
     cmd = <<-END.unindent
 import AdminUtilities
+import re
 
 # Parameters we need for our Virtual Host
-vhost_id = "#{vhost_id}"
+vhost_name = "#{resource[:'vhost']}"
 vhost_scope = "#{scope}"
 vhost_aliases = #{vhost_alias_list_str}
 
@@ -356,7 +349,7 @@ def normalizeArgList(argList, argName):
   if (argList == []):
     AdminUtilities.debugNotice ("No " + `argName` + " parameters specified. Continuing with defaults.")
   else:
-    if (str(argList).startswith("[[") > 0 and str(argList).startswith("[[[[",0,4) == 0):
+    if (str(argList).startswith("[[") > 0 and str(argList).startswith("[[[",0,3) == 0):
       if (str(argList).find("\\"") > 0):
         argList = str(argList).replace("\\"", "\\'")
     else:
@@ -364,77 +357,6 @@ def normalizeArgList(argList, argName):
   return argList
 #endDef
 
-def modifyVHost(name, scope, vHostAliasList, failonerror=AdminUtilities._BLANK_ ):
-  if (failonerror==AdminUtilities._BLANK_):
-      failonerror=AdminUtilities._FAIL_ON_ERROR_
-  #endIf
-  msgPrefix = "modifyVHost(" + `name` +  ", " + `scope`+ `vHostAliasList` + `failonerror`+"): "
-
-  try:
-    #--------------------------------------------------------------------
-    # Modify a Virtual Host
-    #--------------------------------------------------------------------
-    AdminUtilities.debugNotice ("---------------------------------------------------------------")
-    AdminUtilities.debugNotice (" AdminConfig: modifyVHost ")
-    AdminUtilities.debugNotice (" Target:")
-    AdminUtilities.debugNotice ("     scope                       "+scope)
-    AdminUtilities.debugNotice ("     alias                       "+name)
-    AdminUtilities.debugNotice (" Virtual Host Aliases:")
-    AdminUtilities.debugNotice ("     vHostAliasList:             "+str(vHostAliasList))
-    AdminUtilities.debugNotice (" Return: No return value")
-    AdminUtilities.debugNotice ("---------------------------------------------------------------")
-    AdminUtilities.debugNotice (" ")
-
-    # This normalization is slightly superfluous, but, what the hey?
-    if (vHostAliasList != [[]]):
-      vHostAliasList = normalizeArgList(vHostAliasList, "vHostAliasList")
-    
-    # Make sure required parameters are non-empty
-    if (len(name) == 0):
-      raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["name", name]))
-    if (len(scope) == 0):
-      raise AttributeError(AdminUtilities._formatNLS(resourceBundle, "WASL6041E", ["scope", scope]))
-
-    # Prepare the parameters for the AdminConfig command:
-    vHostAliasList = AdminUtilities.convertParamStringToList(vHostAliasList)
-
-    # Get the VHost ID corresponding for the VHost name
-    vhostID = AdminConfig.getid(name)
-
-    # Remove Aliases - since the 'modify' operation is additive only
-    for alias in (AdminConfig.showAttribute(vhostID, 'aliases'))[1:-1].split(" "):
-      hostname = str(AdminConfig.showAttribute(alias, 'hostname'))
-      port = str(AdminConfig.showAttribute(alias, 'port'))
-      AdminUtilities.debugNotice ("Removing Alias: '" + hostname + "' (" + port + ")")
-      AdminConfig.remove(alias)
-    #endFor
-
-    # Now put the alias list back in - if we have any left
-    if (vHostAliasList != [[]]):
-      # Call the corresponding AdminConfig command
-      AdminUtilities.debugNotice("About to call AdminConfig command with scope: " + str(scope))
-      AdminUtilities.debugNotice("About to call AdminConfig command with parameters: " + str(finalAttrsList))
-      AdminConfig.modify(vhostID, [['aliases', vHostAliasList]])
-    #endIf
-
-    # Save this Virtual Host
-    AdminConfig.save()
-
-  except:
-    typ, val, tb = sys.exc_info()
-    if (typ==SystemExit):  raise SystemExit,`val`
-    if (failonerror != AdminUtilities._TRUE_):
-      print "Exception: %s %s " % (sys.exc_type, sys.exc_value)
-      val = "%s %s" % (sys.exc_type, sys.exc_value)
-      raise Exception("ScriptLibraryException: " + val)
-    else:
-      return AdminUtilities.fail(msgPrefix+AdminUtilities.getExceptionText(typ, val, tb), failonerror)
-    #endIf
-  #endTry
-#endDef
-
-# And now - create the Virtual Host in the target store.
-modifyVHost(vhost_id, vhost_scope, vhost_aliases)    
 END
     debug "Running #{cmd}"
     result = wsadmin(file: cmd, user: resource[:user])
