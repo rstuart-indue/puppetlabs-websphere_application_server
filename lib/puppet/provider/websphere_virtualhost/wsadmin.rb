@@ -218,7 +218,7 @@ END
       @old_conf_details += [[hostname.value.to_s, port]]
     } unless host_entry.nil?
 
-    debug "Virtual Host data for #{resource[:vhost]} is: #{@old_conf_details}"
+    debug "Virtual Host data for #{resource[:vhost]} is: #{@old_conf_details}" unless host_entry.nil?
     !host_entry.nil?
   end
 
