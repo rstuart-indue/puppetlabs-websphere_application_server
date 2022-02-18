@@ -203,7 +203,7 @@ END
     end
 
     # Get the Alias ID while we're at it. We'll need it in order to delete the resource easier.
-    @alias_id = XPath.match(alias_entry, "@*[local-name()='id']") unless alias_entry.nil?
+    @alias_id = XPath.match(alias_entry, "@*[local-name()='id']").value.to_s unless alias_entry.nil?
 
     debug "Alias hostname/port for #{resource[:virtual_host]} is: #{alias_entry.attributes['hostname']}(#{alias_entry.attributes['port']}" unless alias_entry.nil?
     !alias_entry.nil?
