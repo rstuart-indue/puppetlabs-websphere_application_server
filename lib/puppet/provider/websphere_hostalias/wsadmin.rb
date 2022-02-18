@@ -283,4 +283,8 @@ END
     result = wsadmin(file: cmd, user: resource[:user])
     debug result
   end
+
+  def flush
+    super()
+  end
 end
