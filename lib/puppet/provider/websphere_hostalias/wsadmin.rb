@@ -211,12 +211,9 @@ END
 
   # Remove a given Virtual Host
   def destroy
-
-    # Set the scope for this vhost.
-    scope = scope('query')
     
     # So I'm going to cheat a little:
-    hostalias_id = "#{scope('query')}|virtualhosts.xml##{@alias_id}"
+    hostalias_id = "#{scope('mod')}|virtualhosts.xml##{@alias_id}"
 
     cmd = <<-END.unindent
 import AdminUtilities
