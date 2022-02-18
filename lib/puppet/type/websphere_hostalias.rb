@@ -122,6 +122,10 @@ Puppet::Type.newtype(:websphere_hostalias) do
     desc 'The cell for which this Virtual Host should be set'
   end
 
+  newparam(:node_name) do
+    desc 'Optional. The node name to sync config to.'
+  end
+
   newparam(:profile) do
     desc "The profile to run 'wsadmin' under"
   end
