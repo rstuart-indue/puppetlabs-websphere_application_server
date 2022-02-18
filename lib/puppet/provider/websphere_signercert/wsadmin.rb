@@ -24,8 +24,6 @@ Puppet::Type.type(:websphere_signercert).provide(:wsadmin, parent: Puppet::Provi
     Jython. This means we need to use heredocs to satisfy whitespace sensitivity.
     DESC
 
-  # Since you can't change the params of a certificate after import, there's nothing
-  # we need to do as flush(). The only way to modify a certificate is to delete it.
   def initialize(val = {})
     super(val)
     @property_flush = {}
@@ -371,5 +369,14 @@ END
     debug "Running #{cmd}"
     result = wsadmin(file: cmd, user: resource[:user])
     debug result
+  end
+
+  # If we have a nodename to sync to, let's call the super() method
+  def flush
+    if resource[:node_name].nil?
+      return
+    else
+      super
+    end
   end
 end

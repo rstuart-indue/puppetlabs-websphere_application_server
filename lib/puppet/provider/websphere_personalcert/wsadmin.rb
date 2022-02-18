@@ -22,9 +22,6 @@ Puppet::Type.type(:websphere_personalcert).provide(:wsadmin, parent: Puppet::Pro
     Jython. This means we need to use heredocs to satisfy whitespace sensitivity.
     DESC
 
-  # We are going to use the flush() method to enact all the changes we may perform.
-  # This will speed up the application of changes, because instead of changing every
-  # attribute individually, we coalesce the changes in one script and execute it once.
   def initialize(val = {})
     super(val)
     @property_flush = {}
@@ -394,6 +391,12 @@ END
     debug result
   end
 
-  # Since you can't change the params of a certificate after import, there's nothing
-  # we need to do as flush(). The only way to modify a certificate is to delete it.
+  # If we have a nodename to sync to, let's call the super() method
+  def flush
+    if resource[:node_name].nil?
+      return
+    else
+      super
+    end
+  end
 end
