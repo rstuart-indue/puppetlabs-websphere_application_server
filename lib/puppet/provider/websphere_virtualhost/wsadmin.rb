@@ -429,9 +429,4 @@ END
     result = wsadmin(file: cmd, user: resource[:user])
     debug "result: #{result}"
   end
-
-  # We can't use the flush method from the helper because we don't have a "node"
-  def flush
-    return
-  end
 end
