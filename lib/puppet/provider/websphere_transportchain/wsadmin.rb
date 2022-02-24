@@ -481,19 +481,19 @@ def deleteWCTransportChain(scope, name, endPoint, failonerror=AdminUtilities._BL
 
     tcRegex = re.compile("%s\\(.*" % name)
 
-    target=list(filter(tcRegex.match, tcList))
-    if (len(target) == 1):
+    chainID=list(filter(tcRegex.match, tcList))
+    if (len(chainID) == 1):
       # Call the corresponding AdminTask command
-      AdminUtilities.debugNotice("About to delete chain %s in scope %s. " % (str(target), str(configIdScope)))
+      AdminUtilities.debugNotice("About to delete chain %s in scope %s. " % (str(chainID[0]), str(configIdScope)))
 
       # Delete the Transport Chain and its associated channels
-      AdminTask.deleteChain(str(target[0]), '[-deleteChannels true]') 
+      AdminTask.deleteChain(str(chainID[0]), '[-deleteChannels true]') 
 
       AdminConfig.save()
-    elif (len(target) == 0):
+    elif (len(chainID) == 0):
       raise AttributeError("Unable to find removal chain target %s in scope: %s" % (name, str(configIdScope)))
-    elif (len(target) > 1):
-      raise AttributeError("Too many chain targets for removal found: %s" % str(target))
+    elif (len(chainID) > 1):
+      raise AttributeError("Too many chain targets for removal found: %s" % str(chainID))
     #endif
 
   except:
@@ -664,13 +664,13 @@ def modifyWCTransportChain(scope, name, chainEnabled, endPointName, endPointData
     #endif
 
     chainDetailsList = [['name', name], ['enable', chainEnabled]]
-    AdminUtilities.debugNotice("About to modify chain %s with parameters: %s" % (str(chainID), str(chainDetailsList)))
+    AdminUtilities.debugNotice("About to modify chain %s with parameters: %s" % (str(chainID[0]), str(chainDetailsList)))
 
-    AdminConfig.modify(chainID, str(chainDetailsList).replace(',', '')) 
+    AdminConfig.modify(chainID[0], str(chainDetailsList).replace(',', '')) 
 
     # Get the Transport Channels for the created chain (gotta mangle the output string a little)
     # If we don't have a list of parameters we just move on.
-    for transportChannel in AdminConfig.show(chainID, 'transportChannels')[20:-2].split(' '):
+    for transportChannel in AdminConfig.show(chainID[0], 'transportChannels')[20:-2].split(' '):
       if (tcpAttrsList and re.search('^TCP_.+TCPInboundChannel_.+', transportChannel)):
         tcpAttrsList = normalizeArgList(tcpAttrsList, "tcpAttrsList")
         AdminUtilities.debugNotice("Updating TCP Inbound Channel with params : " + str(tcpAttrsList))
