@@ -94,7 +94,7 @@ Puppet::Type.newtype(:websphere_transportchain) do
     end
 
     # Do not set the EndPointName inside the tcp_inbound_channel - we will use the one set at the resource level.
-    raise Puppet::Error, 'Puppet::Type::Websphere_TransportChain: tcp_inbound_channel must not contain the end_point_name parameter. The `endpoint_name` parameter will be used instead.' if self[:tcp_inbound_channel].key?(:endPointName)
+    raise Puppet::Error, 'Puppet::Type::Websphere_TransportChain: tcp_inbound_channel must not contain the end_point_name parameter. The `endpoint_name` parameter will be used instead.' if ( !self[:tcp_inbound_channel].nil? && self[:tcp_inbound_channel].key?(:endPointName) )
 
 
     # If we are not using a secure template but we are passing the ssl inbound channel params - we need to bail.
