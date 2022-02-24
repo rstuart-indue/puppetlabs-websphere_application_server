@@ -352,7 +352,7 @@ END
 
   # Get a chain's enabled status
   def enabled
-    @old_chain_data[:enabled]
+    @old_chain_data[:enabled].to_sym
   end
 
   # Set a chain's enabled status
