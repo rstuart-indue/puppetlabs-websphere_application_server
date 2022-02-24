@@ -60,7 +60,7 @@ Puppet::Type.newtype(:websphere_transportchain) do
       ],
       # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:server:CELL_01:AppNode01:AppServer01:TChainName
       [
-        %r{^([^:]+):([^:]+):(server):([^:]+):([^:]+):([^:]+)$},
+        %r{^([^:]+):([^:]+):(server):([^:]+):([^:]+):([^:]+):([^:]+)$},
         [
           [:profile_base],
           [:dmgr_profile],
