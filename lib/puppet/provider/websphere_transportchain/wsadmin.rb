@@ -352,12 +352,12 @@ END
 
   # Get a chain's enabled status
   def enabled
-    @old_chain_data[:enabled].to_sym
+    @old_chain_data[:enable]
   end
 
   # Set a chain's enabled status
   def enabled=(val)
-    @property_flush[:enabled] = val
+    @property_flush[:enable] = val
   end
 
   # Get a chain's endpoint name
