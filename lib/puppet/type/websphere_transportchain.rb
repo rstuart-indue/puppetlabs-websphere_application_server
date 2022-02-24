@@ -12,7 +12,7 @@ Puppet::Type.newtype(:websphere_transportchain) do
         enabled              => true,
         template             => 'WebContainer-Secure',
         endpoint_name        => 'WC_WSHost',
-        endpoint_details     => [['*', 9443]],
+        endpoint_details     => ['*', 9443],
         tcp_inbound_channel  => tcp_hash,
         ssl_inbound_channel  => ssl_hash,
         http_inbound_channel => http_hash,
@@ -134,7 +134,8 @@ Puppet::Type.newtype(:websphere_transportchain) do
   end
 
   newparam(:endpoint_details, :array_matching => :all) do
-    desc 'Optional. If a new endpoint configuration is to be created - specify a [`host`, `port`] pair.'
+    defaultto []
+    desc 'Optional. If a new endpoint configuration is to be created - specify a [`host`, `port`] pair. Defaults to the empty array `[]`'
   end
 
   newproperty(:tcp_inbound_channel) do

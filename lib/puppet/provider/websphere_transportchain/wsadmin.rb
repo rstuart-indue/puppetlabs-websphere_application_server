@@ -97,8 +97,6 @@ Puppet::Type.type(:websphere_transportchain).provide(:wsadmin, parent: Puppet::P
     http_attrs_str = makeWASParams(resource[:http_inbound_channel])
     wcc_attrs_str  = makeWASParams(resource[:wcc_inbound_channel])
 
-    endpoint_data = resource[:endpoint_details].nil? ? [] : resource[:endpoint_details]
-
     cmd = <<-END.unindent
 import AdminUtilities
 import re
@@ -109,7 +107,7 @@ template = "#{resource[:template].to_s}"
 name = "#{resource[:tc_name]}"
 chainEnabled = "#{resource[:enabled]}"
 endpoint = "#{resource[:endpoint_name]}"
-endpoint_data = #{endpoint_data}
+endpoint_data = #{resource[:endpoint_details]}
 tcp_attrs = #{tcp_attrs_str}
 ssl_attrs = #{ssl_attrs_str}
 http_attrs = #{http_attrs_str}
@@ -534,8 +532,6 @@ END
     http_attrs_str = makeWASParams(resource[:http_inbound_channel])
     wcc_attrs_str  = makeWASParams(resource[:wcc_inbound_channel])
 
-    endpoint_data = resource[:endpoint_details].nil? ? [] : resource[:endpoint_details]
-
     cmd = <<-END.unindent
 import AdminUtilities
 import re
@@ -546,7 +542,7 @@ template = "#{resource[:template].to_s}"
 name = "#{resource[:tc_name]}"
 chainEnabled = "#{resource[:enabled]}"
 endpoint = "#{resource[:endpoint_name]}"
-endpoint_data = #{endpoint_data}
+endpoint_data = #{resource[:endpoint_details]}
 tcp_attrs = #{tcp_attrs_str}
 ssl_attrs = #{ssl_attrs_str}
 http_attrs = #{http_attrs_str}
