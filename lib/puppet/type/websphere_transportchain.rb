@@ -80,7 +80,7 @@ Puppet::Type.newtype(:websphere_transportchain) do
     raise ArgumentError, 'cell is required' if self[:cell].nil?
     raise ArgumentError, 'node_name is required' if self[:node_name].nil?
     raise ArgumentError, 'server is required' if self[:server].nil?
-    raise ArgumentError, 'cluster is required when scope is cluster' if self[:cluster].nil? && self[:scope] =~ %r{^cluster$}
+    raise ArgumentError, 'cluster is required' if self[:cluster].nil?
     raise ArgumentError, "Invalid profile_base #{self[:profile_base]}" unless Pathname.new(self[:profile_base]).absolute?
     raise ArgumentError, 'endpoint_name is required' if self[:endpoint_name].nil?
 
