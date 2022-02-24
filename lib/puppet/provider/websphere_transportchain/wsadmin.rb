@@ -92,7 +92,7 @@ Puppet::Type.type(:websphere_transportchain).provide(:wsadmin, parent: Puppet::P
     # Set the scope for this Transport Chain Resource.
     scope = scope('query') 
 
-    tcp_attrs_str  = makeWASParams(resource[:tcp_inbound_channel], initial_array: [['endPointName', "#{resource[:end_point_name]}"]])
+    tcp_attrs_str  = makeWASParams(resource[:tcp_inbound_channel], initial_array: [['endPointName', "#{resource[:endpoint_name]}"]])
     ssl_attrs_str  = makeWASParams(resource[:ssl_inbound_channel])
     http_attrs_str = makeWASParams(resource[:http_inbound_channel])
     wcc_attrs_str  = makeWASParams(resource[:wcc_inbound_channel])
@@ -527,7 +527,7 @@ END
     scope = scope('query') 
 
     # Set the endpoint Name in this TCP Attributes
-    tcp_attrs_str  = makeWASParams(resource[:tcp_inbound_channel], initial_array: [['endPointName', "#{resource[:end_point_name]}"]])
+    tcp_attrs_str  = makeWASParams(resource[:tcp_inbound_channel], initial_array: [['endPointName', "#{resource[:endpoint_name]}"]])
     ssl_attrs_str  = makeWASParams(resource[:ssl_inbound_channel])
     http_attrs_str = makeWASParams(resource[:http_inbound_channel])
     wcc_attrs_str  = makeWASParams(resource[:wcc_inbound_channel])
