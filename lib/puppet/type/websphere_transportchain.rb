@@ -170,11 +170,6 @@ Puppet::Type.newtype(:websphere_transportchain) do
 
   newproperty(:ssl_inbound_channel) do
     desc 'A hash table containing the SSL inbound channel settings. See Working with SSL inbound channel properties files documentation'
-    default_mapping_data = { 
-      :mapping_config_alias => '',
-      :auth_data_alias => ''
-    }
-    defaultto default_mapping_data   
 
     def insync?(is)
       # There will almost always be more properties on the system than
@@ -200,6 +195,7 @@ Puppet::Type.newtype(:websphere_transportchain) do
 
   newproperty(:http_inbound_channel) do
     desc 'A hash table containing the HTTP inbound channel settings. See Working with HTTP inbound channel properties files documentation'
+
     def insync?(is)
       # There will almost always be more properties on the system than
       # defined in the resource. Make sure the properties in the resource
@@ -224,6 +220,7 @@ Puppet::Type.newtype(:websphere_transportchain) do
 
   newproperty(:wcc_inbound_channel) do
     desc 'A hash table containing the WCC inbound channel settings. See Working with WCC inbound channel properties files documentation'
+
     def insync?(is)
       # There will almost always be more properties on the system than
       # defined in the resource. Make sure the properties in the resource
