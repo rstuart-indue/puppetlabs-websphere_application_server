@@ -331,19 +331,21 @@ END
      end
     } unless chain_entry.nil?
 
-    # We're only looking for these types of channels. Long term - perhaps this module should be using a
-    # whole different approach.
-    tcp_in_channel_id  = @old_chain_data[:transportChannels].grep(/^TCPInboundChannel_\d+$/)
-    ssl_in_channel_id  = @old_chain_data[:transportChannels].grep(/^SSLInboundChannel_\d+$/)
-    http_in_channel_id = @old_chain_data[:transportChannels].grep(/^HTTPInboundChannel_\d+$/)
-    wcc_in_channel_id  = @old_chain_data[:transportChannels].grep(/^WebContainerInboundChannel_\d+$/)
+    if (!chain_entry.nil?)
+      # We're only looking for these types of channels. Long term - perhaps this module should be using a
+      # whole different approach.
+      tcp_in_channel_id  = @old_chain_data[:transportChannels].grep(/^TCPInboundChannel_\d+$/)
+      ssl_in_channel_id  = @old_chain_data[:transportChannels].grep(/^SSLInboundChannel_\d+$/)
+      http_in_channel_id = @old_chain_data[:transportChannels].grep(/^HTTPInboundChannel_\d+$/)
+      wcc_in_channel_id  = @old_chain_data[:transportChannels].grep(/^WebContainerInboundChannel_\d+$/)
 
-    @old_tcp_data  = getTransportChannelData(tcp_in_channel_id[0], tcs_entry) unless tcp_in_channel_id.nil?
-    @old_ssl_data  = getTransportChannelData(ssl_in_channel_id[0], tcs_entry) unless ssl_in_channel_id.nil?
-    @old_http_data = getTransportChannelData(http_in_channel_id[0], tcs_entry) unless http_in_channel_id.nil?
-    @old_wcc_data  = getTransportChannelData(wcc_in_channel_id[0], tcs_entry) unless wcc_in_channel_id.nil?
+      @old_tcp_data  = getTransportChannelData(tcp_in_channel_id[0], tcs_entry) unless tcp_in_channel_id.nil?
+      @old_ssl_data  = getTransportChannelData(ssl_in_channel_id[0], tcs_entry) unless ssl_in_channel_id.nil?
+      @old_http_data = getTransportChannelData(http_in_channel_id[0], tcs_entry) unless http_in_channel_id.nil?
+      @old_wcc_data  = getTransportChannelData(wcc_in_channel_id[0], tcs_entry) unless wcc_in_channel_id.nil?
 
-    debug "Exists? method result for #{resource[:tc_name]} is: #{chain_entry}"
+      debug "Exists? method result for #{resource[:tc_name]} is: #{chain_entry}"
+    end
 
     !chain_entry.nil?
   end
