@@ -343,10 +343,6 @@ END
     @old_http_data = getTransportChannelData(http_in_channel_id[0], tcs_entry) unless http_in_channel_id.nil?
     @old_wcc_data  = getTransportChannelData(wcc_in_channel_id[0], tcs_entry) unless wcc_in_channel_id.nil?
 
-    # We are going to have to cheat a little - because the Named EndPoints are a pain
-    # We need the NEP ID. If we have one by that name - we'll take it.
-    @old_named_endpoint = getNamedEndPoint(resource[:endpoint_name], scope('index'))
-
     debug "Exists? method result for #{resource[:tc_name]} is: #{chain_entry}"
 
     !chain_entry.nil?
