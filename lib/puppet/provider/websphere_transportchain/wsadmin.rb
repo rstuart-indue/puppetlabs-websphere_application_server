@@ -423,7 +423,7 @@ import re
 # Parameters we need for our Web Container Transport Chain removal
 scope = '#{scope}'
 name = "#{resource[:tc_name]}"
-endpoint = '#{resource[:endpoint_name]}
+endpoint = '#{resource[:endpoint_name]}'
 
 # Enable debug notices ('true'/'false')
 AdminUtilities.setDebugNotices('#{@jython_debug_state}')
