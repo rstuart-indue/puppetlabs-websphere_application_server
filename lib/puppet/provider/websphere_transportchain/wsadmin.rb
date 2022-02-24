@@ -82,7 +82,7 @@ Puppet::Type.type(:websphere_transportchain).provide(:wsadmin, parent: Puppet::P
     raise Puppet::Error, 'Puppet::Provider::Websphere_TransportChain::wsadmin:makeWASParams(): source_hash argument must be a hash' unless (source_hash.nil? || source_hash.kind_of?(Hash) )
     raise Puppet::Error, 'Puppet::Provider::Websphere_TransportChain::wsadmin:makeWASParams(): initial_array argument must be an array' unless initial_array.kind_of?(Array)
 
-    initial_array += (source_hash.map{|k,v|[[k.to_s, v]]}).to_a unless source_hash.nil?
+    initial_array += (source_hash.map{|k,v|[k.to_s, v]}).to_a unless source_hash.nil?
     was_params_str = initial_array.to_s.tr("\"", "'")
   end
 
