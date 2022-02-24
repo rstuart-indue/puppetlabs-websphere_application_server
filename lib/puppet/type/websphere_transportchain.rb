@@ -82,7 +82,7 @@ Puppet::Type.newtype(:websphere_transportchain) do
     raise ArgumentError, 'server is required' if self[:server].nil?
     raise ArgumentError, 'cluster is required when scope is cluster' if self[:cluster].nil? && self[:scope] =~ %r{^cluster$}
     raise ArgumentError, "Invalid profile_base #{self[:profile_base]}" unless Pathname.new(self[:profile_base]).absolute?
-    raise ArgumentError, 'port_name is required' if self[:port_name].nil?
+    raise ArgumentError, 'endpoint_name is required' if self[:endpoint_name].nil?
 
     if self[:profile].nil?
       raise ArgumentError, 'profile is required' unless self[:dmgr_profile]
@@ -94,7 +94,7 @@ Puppet::Type.newtype(:websphere_transportchain) do
     end
 
     # Do not set the EndPointName inside the tcp_inbound_channel - we will use the one set at the resource level.
-    raise Puppet::Error, 'Puppet::Type::Websphere_TransportChain: tcp_inbound_channel must not contain the end_point_name parameter. The `port_name` parameter will be used instead.' if self[:tcp_inbound_channel].key?(:endPointName)
+    raise Puppet::Error, 'Puppet::Type::Websphere_TransportChain: tcp_inbound_channel must not contain the end_point_name parameter. The `endpoint_name` parameter will be used instead.' if self[:tcp_inbound_channel].key?(:endPointName)
 
 
     # If we are not using a secure template but we are passing the ssl inbound channel params - we need to bail.
