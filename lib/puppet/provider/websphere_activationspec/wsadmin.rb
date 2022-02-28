@@ -62,6 +62,7 @@ Puppet::Type.type(:websphere_activationspec).provide(:wsadmin, parent: Puppet::P
       'cloneSupport' => 'cloneSubs',
       'was_stopEndpointIfDeliveryFails' => 'stopEndpointIfDeliveryFails',
       'was_failureDeliveryCount' => 'failureDeliveryCount',
+      'maxPoolDepth' => 'maxPoolSize',
     }
 
     # Dynamic debugging
