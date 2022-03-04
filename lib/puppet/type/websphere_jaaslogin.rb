@@ -85,11 +85,10 @@ Puppet::Type.newtype(:websphere_jaaslogin) do
       ],
       # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:cell:CELL_01:JAASLogin
       [
-        %r{^([^:]+):([^:]+):(cell):([^:]+):([^:]+)$},
+        %r{^([^:]+):([^:]+):([^:]+):([^:]+)$},
         [
           [:profile_base],
           [:dmgr_profile],
-          [:scope],
           [:cell],
           [:jaas_login],
         ],
