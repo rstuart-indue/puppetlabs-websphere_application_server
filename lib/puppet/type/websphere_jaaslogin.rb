@@ -149,6 +149,7 @@ Puppet::Type.newtype(:websphere_jaaslogin) do
   end
 
   newparam(:scope) do
+    defaultto 'cell'
     isnamevar
     desc <<-EOT
     The scope for the JAAS Login .
