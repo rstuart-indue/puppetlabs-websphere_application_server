@@ -371,7 +371,7 @@ def modifyJAASLogin(name, loginType, loginModulesString, authStrategyString, cus
   if (failonerror==AdminUtilities._BLANK_):
       failonerror=AdminUtilities._FAIL_ON_ERROR_
   #endIf
-  msgPrefix = "createJAASLogin(" + `name` +  ", " + `loginType`+ `loginModulesString` + `authStrategyString` + `failonerror`+"): "
+  msgPrefix = "modifyJAASLogin(" + `name` +  ", " + `loginType`+ `loginModulesString` + `authStrategyString` + `failonerror`+"): "
 
   try:
     #--------------------------------------------------------------------
