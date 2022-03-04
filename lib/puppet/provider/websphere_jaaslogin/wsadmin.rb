@@ -323,7 +323,7 @@ def deleteJAASLogin(name, loginType, failonerror=AdminUtilities._BLANK_ ):
   #endTry
 #endDef
 
-# And now - delete the certalias
+# And now - delete the JAASLogin
 deleteJAASLogin(jaas_login, login_type)
 
 END
