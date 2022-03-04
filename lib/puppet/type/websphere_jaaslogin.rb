@@ -128,7 +128,12 @@ Puppet::Type.newtype(:websphere_jaaslogin) do
   end
 
   newproperty(:login_modules) do
-    desc 'Optional. A hash of login modules to be configured for the defined JAAS Login. Defaults to NIL.'
+    desc <<-EOT
+      Optional. A hash of login modules to be configured for the defined JAAS Login. Passing an empty hash `{}` will
+      delete all and any pre-existing login modules for the target JAAS Login.
+      
+      Defaults to `nil`, which has the effect of keeping any manually configured login modules in the target JAAS Login.
+    EOT
 
     # Passed argument must be a hash
     # TODO: Perhaps a validation of the provided login modules should happen here. Sadly, it's more wagging of the
