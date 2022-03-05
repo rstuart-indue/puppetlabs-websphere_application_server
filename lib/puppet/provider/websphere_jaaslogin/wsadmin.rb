@@ -356,7 +356,7 @@ import AdminUtilities
 jaas_login = '#{resource[:jaas_login]}'
 login_type = '#{resource[:login_type]}'
 login_modules = '#{login_modules_stringified[:names_str]}'
-auth_strategies = '#{login_modules_stringified[:strategies_str]'
+auth_strategies = '#{login_modules_stringified[:strategies_str]}'
 custom_props = #{custom_props_str}
 removable_modules = #{removable_modules_str}
 
