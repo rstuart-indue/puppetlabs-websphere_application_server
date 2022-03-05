@@ -306,7 +306,7 @@ def deleteJAASLogin(name, loginType, failonerror=AdminUtilities._BLANK_ ):
     AdminUtilities.debugNotice("About to call AdminTask command for target JAAS Login alias: " + str(name))
 
     # Delete the JAAS Login
-    AdminTask.unconfigureJAASLoginEntry(['-loginEntryAlias', name, '-loginType', loginType]')
+    AdminTask.unconfigureJAASLoginEntry(['-loginEntryAlias', name, '-loginType', loginType])
 
     AdminConfig.save()
 
