@@ -83,13 +83,24 @@ Puppet::Type.newtype(:websphere_jaaslogin) do
           [:jaas_login],
         ],
       ],
-      # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:cell:CELL_01:JAASLogin
+      # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:CELL_01:JAASLogin
       [
         %r{^([^:]+):([^:]+):([^:]+):([^:]+)$},
         [
           [:profile_base],
           [:dmgr_profile],
           [:cell],
+          [:jaas_login],
+        ],
+      ],
+      # /opt/IBM/WebSphere/AppServer/profiles:PROFILE_DMGR_01:CELL_01:system:JAASLogin
+      [
+        %r{^([^:]+):([^:]+):([^:]+):([^:]+):([^:]+)$},
+        [
+          [:profile_base],
+          [:dmgr_profile],
+          [:cell],
+          [:login_type],
           [:jaas_login],
         ],
       ],
@@ -122,6 +133,7 @@ Puppet::Type.newtype(:websphere_jaaslogin) do
 
   newparam(:login_type) do
     defaultto :system
+    isnamevar
     newvalues(:system, :application)
     desc 'Optional. The type for the defined JAAS Login - it can only be `system` or `application`. Defaults to `system`'
   end
