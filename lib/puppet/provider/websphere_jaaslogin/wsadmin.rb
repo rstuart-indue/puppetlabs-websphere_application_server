@@ -447,7 +447,7 @@ def modifyJAASLogin(name, loginType, loginModulesString, authStrategyString, cus
 #endDef
 
 # And now - modify the JAAS Login.
-modifyJAASLogin(jaas_login, login_type, login_modules, auth_strategies, custom_props)    
+modifyJAASLogin(jaas_login, login_type, login_modules, auth_strategies, custom_props, removable_modules)    
 END
     debug "Running #{cmd}"
     result = wsadmin(file: cmd, user: resource[:user])
