@@ -112,6 +112,7 @@ Puppet::Type.type(:websphere_cluster_member).provide(:wsadmin, parent: Puppet::P
     AdminTask.deleteClusterMember(['-clusterName', '#{resource[:cluster]}', '-memberNode', '#{resource[:node_name]}', '-memberName', '#{resource[:name]}'])
     AdminConfig.save()
     END
+    debug "Running #{cmd}"
     wsadmin(file: cmd, user: resource[:user])
   end
 
@@ -135,9 +136,10 @@ Puppet::Type.type(:websphere_cluster_member).provide(:wsadmin, parent: Puppet::P
   def runas_user=(_value)
     cmd = <<-END.unindent
     the_id = AdminConfig.list('ProcessExecution', '(cells/#{resource[:cell]}/nodes/#{resource[:node_name]}/servers/#{resource[:name]}|server.xml)')
-    AdminConfig.modify(the_id, [['runAsUser', #{resource[:runas_user]}]])
+    AdminConfig.modify(the_id, [['runAsUser', '#{resource[:runas_user]}']])
     AdminConfig.save()
     END
+    debug "Running #{cmd}"
     wsadmin(file: cmd, user: resource[:user])
   end
 
@@ -148,9 +150,10 @@ Puppet::Type.type(:websphere_cluster_member).provide(:wsadmin, parent: Puppet::P
   def runas_group=(_value)
     cmd = <<-END.unindent
     the_id = AdminConfig.list('ProcessExecution', '(cells/#{resource[:cell]}/nodes/#{resource[:node_name]}/servers/#{resource[:name]}|server.xml)')
-    AdminConfig.modify(the_id, [['runAsGroup', #{resource[:runas_group]}]])
+    AdminConfig.modify(the_id, [['runAsGroup', '#{resource[:runas_group]}']])
     AdminConfig.save()
     END
+    debug "Running #{cmd}"
     wsadmin(file: cmd, user: resource[:user])
   end
 
@@ -164,9 +167,10 @@ Puppet::Type.type(:websphere_cluster_member).provide(:wsadmin, parent: Puppet::P
   def umask=(_value)
     cmd = <<-END.unindent
     the_id = AdminConfig.list('ProcessExecution', '(cells/#{resource[:cell]}/nodes/#{resource[:node_name]}/servers/#{resource[:name]}|server.xml)')
-    AdminConfig.modify(the_id, [['umask', #{resource[:umask]}]])
+    AdminConfig.modify(the_id, [['umask', '#{resource[:umask]}']])
     AdminConfig.save()
     END
+    debug "Running #{cmd}"
     wsadmin(file: cmd, user: resource[:user])
   end
 
@@ -288,6 +292,7 @@ Puppet::Type.type(:websphere_cluster_member).provide(:wsadmin, parent: Puppet::P
     AdminConfig.modify(the_id, [['totalTranLifetimeTimeout', #{resource[:total_transaction_timeout]}]])
     AdminConfig.save()
     END
+    debug "Running #{cmd}"
     wsadmin(file: cmd, user: resource[:user])
   end
 
@@ -324,6 +329,7 @@ Puppet::Type.type(:websphere_cluster_member).provide(:wsadmin, parent: Puppet::P
     AdminConfig.modify(the_id, [['clientInactivityTimeout', #{resource[:client_inactivity_timeout]}]])
     AdminConfig.save()
     END
+    debug "Running #{cmd}"
     wsadmin(file: cmd, user: resource[:user])
   end
 
@@ -347,6 +353,7 @@ Puppet::Type.type(:websphere_cluster_member).provide(:wsadmin, parent: Puppet::P
       AdminConfig.modify(tpWebContainer, [['minimumSize', #{resource[:threadpool_webcontainer_min_size]}]])
       AdminConfig.save()
     END
+    debug "Running #{cmd}"
     wsadmin(file: cmd, user: resource[:user])
   end
 
@@ -370,6 +377,7 @@ Puppet::Type.type(:websphere_cluster_member).provide(:wsadmin, parent: Puppet::P
       AdminConfig.modify(tpWebContainer, [['maximumSize', #{resource[:threadpool_webcontainer_max_size]}]])
       AdminConfig.save()
     END
+    debug "Running #{cmd}"
     wsadmin(file: cmd, user: resource[:user])
     refresh
   end
