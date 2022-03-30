@@ -59,7 +59,7 @@ Puppet::Type.type(:websphere_activationspec).provide(:wsadmin, parent: Puppet::P
       'subscriptionStore' => 'subStore',
       'statusRefreshInterval' => 'stateRefreshInt',
       'sparseSubscriptions' => 'sparseSub',
-      'cloneSupport' => 'cloneSubs',
+      'cloneSupport' => 'clonedSubs',
       'was_stopEndpointIfDeliveryFails' => 'stopEndpointIfDeliveryFails',
       'was_failureDeliveryCount' => 'failureDeliveryCount',
       'maxPoolDepth' => 'maxPoolSize',
