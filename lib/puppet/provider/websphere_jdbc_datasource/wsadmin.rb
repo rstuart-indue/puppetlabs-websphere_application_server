@@ -87,25 +87,29 @@ Puppet::Type.type(:websphere_jdbc_datasource).provide(:wsadmin, parent: Puppet::
   end
 
   def create
-    case resource[:data_store_helper_class]
-    when 'com.ibm.websphere.rsadapter.DB2UniversalDataStoreHelper'
-      configprop = [['databaseName', 'java.lang.String', "#{resource[:database]}"],
-                    ['driverType',   'java.lang.Integer', "#{resource[:db2_driver]}"],
-                    ['serverName',   'java.lang.String', "#{resource[:db_server]}"],
-                    ['portNumber',   'java.lang.Integer', "#{resource[:db_port]}"]]
-    when 'com.ibm.websphere.rsadapter.MicrosoftSQLServerDataStoreHelper'
-      configprop = [['databaseName', 'java.lang.String', "#{resource[:database]}"],
-                    ['serverName',   'java.lang.String', "#{resource[:db_server]}"],
-                    ['portNumber',   'java.lang.Integer', "#{resource[:db_port]}"]]
-    when 'com.ibm.websphere.rsadapter.Oracle11gDataStoreHelper'
-      configprop = [['URL', 'java.lang.String', "#{resource[:url]}"]]
-    else
-      raise Puppet::Error, "Unsupported Helper Class: #{resource[:data_store_helper_class]}"
-    end
 
     # Set the scope for this JDBC Resource.
     jdbc_scope = scope('query')
 
+    # Assemble the resource attributes pertaining to the DB connection
+    case resource[:data_store_helper_class]
+    when 'com.ibm.websphere.rsadapter.DB2UniversalDataStoreHelper'
+      resource_attrs = [['databaseName', 'java.lang.String', "#{resource[:database]}"],
+                        ['driverType',   'java.lang.Integer', "#{resource[:db2_driver]}"],
+                        ['serverName',   'java.lang.String', "#{resource[:db_server]}"],
+                        ['portNumber',   'java.lang.Integer', "#{resource[:db_port]}"]]
+    when 'com.ibm.websphere.rsadapter.MicrosoftSQLServerDataStoreHelper'
+      resource_attrs = [['databaseName', 'java.lang.String', "#{resource[:database]}"],
+                        ['serverName',   'java.lang.String', "#{resource[:db_server]}"],
+                        ['portNumber',   'java.lang.Integer', "#{resource[:db_port]}"]]
+    when 'com.ibm.websphere.rsadapter.Oracle11gDataStoreHelper'
+      resource_attrs = [['URL', 'java.lang.String', "#{resource[:url]}"]]
+    else
+      raise Puppet::Error, "Unsupported Helper Class: #{resource[:data_store_helper_class]}"
+    end
+    resource_attrs_str = resource_attrs.to_s.tr("\"", "'")
+
+    # Put the rest of the resource attributes together 
     extra_attrs = []
     extra_attrs += ['containerManagedPersistence',  "#{resource[:container_managed_persistence]}"] unless resource[:container_managed_persistence].nil?
     extra_attrs += ['componentManagedAuthenticationAlias',  "#{resource[:component_managed_auth_alias]}"] unless resource[:component_managed_auth_alias].nil?
@@ -128,10 +132,9 @@ ds_helper = "#{resource[:data_store_helper_class]}"
 ds_name = "#{resource[:ds_name]}"
 jndi_name = "#{resource[:jndi_name]}"
 provider = "#{resource[:jdbc_provider]}"
-attrs = #{cf_attrs_str}
 cpool_attrs = #{cpool_attrs_str}
 
-resource_attrs = #{config_props}
+resource_attrs = #{resource_attrs_str}
 extra_attrs = #{extra_attrs_str}
 
 # Enable debug notices ('true'/'false')
