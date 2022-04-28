@@ -324,10 +324,10 @@ END
     } unless ds_entry.nil?
 
     # Extract the Oracle DB URL value for the resource. It will either be an URL or an empty string.
-    oradb_url = XPath.first(ds_entry, "propertySet/resourceProperties[@name='URL']/@*[local-name()='value']")
+    oradb_url = XPath.first(ds_entry, "propertySet/resourceProperties[@name='URL']/@*[local-name()='value']") unless ds_entry.nil?
     @old_ds_data[:url] = oradb_url.value.to_s unless oradb_url.nil?
 
-    debug "Exists? method result for #{resource[:ds_name]} is: #{ds_entry}"
+    debug "Exists? method result for #{resource[:ds_name]} is: #{ds_entry.nil?}"
 
     !ds_entry.nil?
   end
