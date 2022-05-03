@@ -111,9 +111,10 @@ Puppet::Type.type(:websphere_jdbc_datasource).provide(:wsadmin, parent: Puppet::
 
     # Put the rest of the resource attributes together 
     extra_attrs = []
-    extra_attrs += ['containerManagedPersistence',  "#{resource[:container_managed_persistence]}"] unless resource[:container_managed_persistence].nil?
-    extra_attrs += ['componentManagedAuthenticationAlias',  "#{resource[:component_managed_auth_alias]}"] unless resource[:component_managed_auth_alias].nil?
-    extra_attrs += ['description',  "#{resource[:description]}"] unless resource[:description].nil?
+    extra_attrs += [['containerManagedPersistence',  "#{resource[:container_managed_persistence]}"]] unless resource[:container_managed_persistence].nil?
+    extra_attrs += [['componentManagedAuthenticationAlias',  "#{resource[:component_managed_auth_alias]}"]] unless resource[:component_managed_auth_alias].nil?
+    extra_attrs += [['xaRecoveryAuthAlias',  "#{resource[:xa_recovery_auth_alias]}"]] unless resource[:xa_recovery_auth_alias].nil?
+    extra_attrs += [['description',  "#{resource[:description]}"]] unless resource[:description].nil?
     extra_attrs_str = extra_attrs.to_s.tr("\"", "'")
 
     # Make an nice array of arrays [[],[]] out of our hash, then turn into a simple string 
@@ -170,7 +171,7 @@ def createDataSourceAtScope( scope, JDBCProvider, datasourceName, jndiName, data
         AdminUtilities.debugNotice (" AdminJDBC:                  create JDBC DataSource")
         AdminUtilities.debugNotice (" Scope:")
         AdminUtilities.debugNotice ("    scope                                   "+scope)
-        AdminUtilities.debugNotice (" JDBC provider:"
+        AdminUtilities.debugNotice (" JDBC provider:")
         AdminUtilities.debugNotice ("    name                                    "+JDBCProvider)
         AdminUtilities.debugNotice (" DataSource:")
         AdminUtilities.debugNotice ("    name                                    "+datasourceName)
@@ -230,12 +231,10 @@ def createDataSourceAtScope( scope, JDBCProvider, datasourceName, jndiName, data
           attr = ["-"+attrs[0], attrs[1]]
           finalParamList = finalParamList + attr
 
-        finalParameters = []
-
         # The -configureResourceProperties takes a mangled array of arrays with no commas
-        resProp = ['-configureResourceProperties', str(resourceAttrsList).replace(',', '')]
-        resPropList = []
+        resPropList = ['-configureResourceProperties', str(resourceAttrsList).replace(',', '')]
 
+        finalParameters = []
         finalParameters = finalParamList + resPropList
 
         AdminUtilities.debugNotice("Creating datasource for JDBC Provider ID %s  with args %s" %(jdbcProvId, str(finalParameters)))
@@ -266,7 +265,7 @@ def createDataSourceAtScope( scope, JDBCProvider, datasourceName, jndiName, data
     AdminUtilities.infoNotice(AdminUtilities._OK_+msgPrefix)
 #endDef
 
-# And now - create the connection factory
+# And now - create the JDBC Data Source
 createDataSourceAtScope(scope, provider, ds_name, jndi_name, ds_helper, extra_attrs, resource_attrs, cpool_attrs)
 
 END
