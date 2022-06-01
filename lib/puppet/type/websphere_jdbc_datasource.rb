@@ -191,6 +191,7 @@ Puppet::Type.newtype(:websphere_jdbc_datasource) do
 
     String: Optional
     EOT
+    defaultto ''
   end
 
   newproperty(:xa_recovery_auth_alias) do
@@ -201,6 +202,7 @@ Puppet::Type.newtype(:websphere_jdbc_datasource) do
 
     String: Optional
     EOT
+    defaultto ''
   end
 
   newproperty(:mapping_configuration_alias) do
@@ -213,6 +215,7 @@ Puppet::Type.newtype(:websphere_jdbc_datasource) do
 
     String: Optional
     EOT
+    defaultto ''
   end
 
   newproperty(:container_managed_auth_alias) do
@@ -225,6 +228,7 @@ Puppet::Type.newtype(:websphere_jdbc_datasource) do
 
     String: Optional
     EOT
+    defaultto ''
   end
 
   newproperty(:conn_pool_data) do

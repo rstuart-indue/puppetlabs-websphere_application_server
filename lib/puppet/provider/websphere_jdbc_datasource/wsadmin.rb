@@ -112,8 +112,6 @@ Puppet::Type.type(:websphere_jdbc_datasource).provide(:wsadmin, parent: Puppet::
     # Put the rest of the resource attributes together 
     extra_attrs = []
     extra_attrs += [['containerManagedPersistence',  "#{resource[:container_managed_persistence]}"]] unless resource[:container_managed_persistence].nil?
-    extra_attrs += [['componentManagedAuthenticationAlias',  "#{resource[:component_managed_auth_alias]}"]] unless resource[:component_managed_auth_alias].nil?
-    extra_attrs += [['xaRecoveryAuthAlias',  "#{resource[:xa_recovery_auth_alias]}"]] unless resource[:xa_recovery_auth_alias].nil?
     extra_attrs += [['description',  "#{resource[:description]}"]] unless resource[:description].nil?
     extra_attrs_str = extra_attrs.to_s.tr("\"", "'")
 
@@ -138,6 +136,11 @@ cpool_attrs = #{cpool_attrs_str}
 resource_attrs = #{resource_attrs_str}
 extra_attrs = #{extra_attrs_str}
 
+map_alias = '#{resource[:mapping_configuration_alias]}'
+container_auth_alias = '#{resource[:container_managed_auth_alias]}'
+component_auth_alias = '#{resource[:component_managed_auth_alias]}'
+xa_recovery_auth_alias = '#{resource[:xa_recovery_auth_alias]}'
+
 # Enable debug notices ('true'/'false')
 AdminUtilities.setDebugNotices('#{@jython_debug_state}')
 
@@ -157,7 +160,13 @@ def normalizeArgList(argList, argName):
   return argList
 #endDef
 
-def createDataSourceAtScope( scope, JDBCProvider, datasourceName, jndiName, dataStoreHelperClassName, otherAttrsList=[], resourceAttrsList=[], connectionPoolAttrsList=[], failonerror=AdminUtilities._BLANK_ ):
+# Get the ObjectID of a named object, of a given type at a specified scope.
+def getObjectId (scope, objectType, objName):
+    objId = AdminConfig.getid(scope+"/"+objectType+":"+objName)
+    return objId
+#endDef
+
+def createDataSourceAtScope( scope, JDBCProvider, datasourceName, jndiName, dataStoreHelperClassName, mappingConfigAlias='', authDataAlias='', xaRecoveryAuthAlias='', componentAuthAlias='', otherAttrsList=[], resourceAttrsList=[], connectionPoolAttrsList=[], failonerror=AdminUtilities._BLANK_ ):
     if(failonerror==AdminUtilities._BLANK_):
         failonerror=AdminUtilities._FAIL_ON_ERROR_
     #endIf
@@ -177,10 +186,15 @@ def createDataSourceAtScope( scope, JDBCProvider, datasourceName, jndiName, data
         AdminUtilities.debugNotice ("    name                                    "+datasourceName)
         AdminUtilities.debugNotice ("    jndiName                                "+jndiName)
         AdminUtilities.debugNotice ("    dataStoreHelperClassName                "+dataStoreHelperClassName)
+        AdminUtilities.debugNotice (" Security attributes:")
+        AdminUtilities.debugNotice ("    componentAuthAlias:                     "+componentAuthAlias)
+        AdminUtilities.debugNotice ("    xaRecoveryAuthAlias:                    "+xaRecoveryAuthAlias)
+        AdminUtilities.debugNotice ("    mappingConfigAlias:                     "+mappingConfigAlias)
+        AdminUtilities.debugNotice ("    authDataAlias:                          "+authDataAlias)
         AdminUtilities.debugNotice (" Additional attributes:")
         AdminUtilities.debugNotice ("    otherAttributesList:                    "+str(otherAttrsList))
         AdminUtilities.debugNotice ("    ResourceAttributesList:                 "+str(resourceAttrsList))
-        AdminUtilities.debugNotice ("    ConnectionPoolAttributesList:           "+str(connectionPoolAttrsList))        
+        AdminUtilities.debugNotice ("    ConnectionPoolAttributesList:           "+str(connectionPoolAttrsList))
         AdminUtilities.debugNotice (" Return: The configuration ID of the new JDBC data source")
         AdminUtilities.debugNotice ("---------------------------------------------------------------")
         AdminUtilities.debugNotice (" ")
@@ -223,7 +237,20 @@ def createDataSourceAtScope( scope, JDBCProvider, datasourceName, jndiName, data
         resourceAttrsList = AdminUtilities.convertParamStringToList(resourceAttrsList)
         connectionPoolAttrsList = AdminUtilities.convertParamStringToList(connectionPoolAttrsList)
 
-        finalAttrsList = requiredParameters + otherAttrsList
+        finalAttrsList = requiredParameters + otherAttrsList + [['componentManagedAuthenticationAlias', componentAuthAlias]]
+
+        # Get the JDBC Provider ID so that we can find its providerType attribute.
+        jdbcProviderId = getObjectId(scope, 'JDBCProvider', JDBCProvider)
+        AdminUtilities.debugNotice("JDBC Provider ID: %s" % (jdbcProviderId))
+
+        # Set the xaRecoveryAuthAlias attribute if the JDBC Provider is an XA type
+        jdbcProviderType = AdminConfig.showAttribute(jdbcProviderId, 'providerType')
+        AdminUtilities.debugNotice("JDBC Provider Type: %s" % (jdbcProviderType))
+        if jdbcProviderType:
+          if jdbcProviderType.find("XA") >= 0 and xaRecoveryAuthAlias:
+              finalAttrsList.append(['xaRecoveryAuthAlias', xaRecoveryAuthAlias])
+          #endIf
+        #endIf
 
         # Assemble all the command parameters
         finalParamList = []
@@ -231,20 +258,35 @@ def createDataSourceAtScope( scope, JDBCProvider, datasourceName, jndiName, data
           attr = ["-"+attrs[0], attrs[1]]
           finalParamList = finalParamList + attr
 
+        finalParameters = []
+
         # The -configureResourceProperties takes a mangled array of arrays with no commas
         resPropList = ['-configureResourceProperties', str(resourceAttrsList).replace(',', '')]
 
-        finalParameters = []
         finalParameters = finalParamList + resPropList
 
         AdminUtilities.debugNotice("Creating datasource for JDBC Provider ID %s  with args %s" %(jdbcProvId, str(finalParameters)))
 
         # Create the JDBC Datasource for the given JDBC Provider
         newObjectId = AdminTask.createDatasource(jdbcProvId, finalParameters )
+        mapModuleData = [['mappingConfigAlias', mappingConfigAlias], ['authDataAlias', authDataAlias]]
+        AdminConfig.create('MappingModule', newObjectId, str(mapModuleData).replace(',', ''))
+
+        # Get the Container Managed Persistence (CMP) Connector Factory ID. Its name is derived from the Data Source name it
+        # belongs to and the '_CF' suffix.
+        CMPConnFactoryId = getObjectId(scope, 'J2CResourceAdapter:WebSphere Relational Resource Adapter/CMPConnectorFactory', datasourceName+'_CF')
+
+        AdminUtilities.debugNotice("CMP Connection Factory ID: %s" % (CMPConnFactoryId))
+        # Configure the mapping config alias and auth data alias
+        if CMPConnFactoryId:
+          cmpCFData = [['name', datasourceName+"_CF"], ['authDataAlias', authDataAlias], ['xaRecoveryAuthAlias', xaRecoveryAuthAlias]]
+          AdminConfig.modify(CMPConnFactoryId, str(cmpCFData).replace(',', ''))
+          AdminConfig.create('MappingModule', CMPConnFactoryId, str(mapModuleData).replace(',', ''))
 
         # Set the Connection Pool Params - the modify() takes a mangled array of arrays with no commas
         if connectionPoolAttrsList:
           connectionPool = AdminConfig.showAttribute(newObjectId, 'connectionPool')
+          AdminUtilities.debugNotice("Connection Pool ID: %s" % (connectionPool))
           AdminConfig.modify(connectionPool, str(connectionPoolAttrsList).replace(',', ''))
 
         # Save this JDBC DataSource
@@ -266,7 +308,8 @@ def createDataSourceAtScope( scope, JDBCProvider, datasourceName, jndiName, data
 #endDef
 
 # And now - create the JDBC Data Source
-createDataSourceAtScope(scope, provider, ds_name, jndi_name, ds_helper, extra_attrs, resource_attrs, cpool_attrs)
+createDataSourceAtScope(scope, provider, ds_name, jndi_name, ds_helper, map_alias, container_auth_alias, xa_recovery_auth_alias, component_auth_alias, extra_attrs, resource_attrs, cpool_attrs)
+
 
 END
     # rubocop:enable Layout/IndentHeredoc
