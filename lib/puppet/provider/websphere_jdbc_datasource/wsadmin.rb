@@ -32,6 +32,7 @@ Puppet::Type.type(:websphere_jdbc_datasource).provide(:wsadmin, parent: Puppet::
     @old_mapping_data = {}
     @old_cmp_cf_data = {}
     @old_cmp_mapping_data = {}
+    @xa_provider = false
 
     # This hash acts as a translation table between what shows up in the XML file
     # and what the Jython parameters really are. Its format is:
@@ -348,6 +349,7 @@ END
         # We're looking for Connection Factory entries matching our cf_name. We have to ensure we're looking under the
     # correct provider entry.
     provider_entry = XPath.first(doc, "/xmi:XMI[@xmlns:resources.jdbc]/resources.jdbc:JDBCProvider[@name='#{resource[:jdbc_provider]}']")
+    @xa_provider = XPath.first(provider_entry, "@*[local-name()='xa']").value unless provider_entry.nil?
     ds_entry = XPath.first(provider_entry, "factories[@xmi:type='resources.jdbc:DataSource'][@name='#{resource[:ds_name]}']") unless provider_entry.nil?
 
     # Populate the @old_ds_data by discovering what are the params for the given DataSource
@@ -389,9 +391,19 @@ END
     @property_flush[:authDataAlias] = val
   end
 
-    # Get the XA recovery authentication alias
+  # Get the XA recovery authentication alias
+  # If this is not an XA Provider, then we make some noise about it and refuse to change the setting.
   def xa_recovery_auth_alias
-    @old_ds_data[:xaRecoveryAuthAlias]
+    if @xa_provider 
+      return @old_ds_data[:xaRecoveryAuthAlias]
+    else 
+      if resource[:xa_recovery_auth_alias] == ''
+        return resource[:xa_recovery_auth_alias]
+      else
+        Puppet.warning("XA Recovery Alias set to '#{resource[:xa_recovery_auth_alias]}' but the JDBC Provider '#{resource[:jdbc_provider]}' is not an XA enabled provider. Cowardly refusing to change this parameter")
+        return resource[:xa_recovery_auth_alias]
+      end
+    end
   end
 
   # Set the XA recovery authentication alias
@@ -431,7 +443,16 @@ END
 
   # Get the Oracle DB URL
   def url
-    @old_ds_data[:url]
+    if resource[:data_store_helper_class] == 'com.ibm.websphere.rsadapter.Oracle11gDataStoreHelper'
+      return @old_ds_data[:url]
+    else 
+      if resource[:url] == ''
+        return resource[:url]
+      else
+        Puppet.warning("Oracle DB URL is set to '#{resource[:url]}' but the DataStore Helper Class is set to '#{resource[:data_store_helper_class]}' - not an Oracle DB. Cowardly refusing to change this parameter")
+        return resource[:url]
+      end
+    end
   end
 
   # Set the Oracle DB URL
@@ -746,7 +767,11 @@ def modifyDataSourceAtScope( scope, JDBCProvider, datasourceName, jndiName, cmpE
           if CMPConnFactoryId:
             cmpMappingModuleId = AdminConfig.showAttribute(CMPConnFactoryId, 'mapping')
             AdminConfig.modify(CMPConnFactoryId, str(cmpCFData).replace(',', ''))
-            AdminConfig.modify(cmpMappingModuleId, str(mapModuleData).replace(',', ''))
+            if cmpMappingModuleId:
+              AdminConfig.modify(cmpMappingModuleId, str(mapModuleData).replace(',', ''))
+            else:
+              AdminConfig.create('MappingModule', CMPConnFactoryId, str(mapModuleData).replace(',', ''))
+            #endIf
           else:
             # We have to create the CMP Connector Factory from scratch. Which means we have to set up
             cmpCreateData = []
