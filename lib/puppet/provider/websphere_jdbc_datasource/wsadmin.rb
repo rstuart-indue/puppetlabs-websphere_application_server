@@ -376,14 +376,14 @@ END
     oradb_url = XPath.first(ds_entry, "propertySet/resourceProperties[@name='URL']/@*[local-name()='value']") unless ds_entry.nil?
     @old_ds_data[:url] = oradb_url.value.to_s unless oradb_url.nil?
 
-    debug "Exists? method result for #{resource[:ds_name]} is: #{ds_entry.nil?}"
+    debug "Exists? method result for #{resource[:ds_name]} is: #{!ds_entry.nil?}"
 
     !ds_entry.nil?
   end
 
   # Get the component-managed authentication alias
   def component_managed_auth_alias
-    @old_ds_data[:authDataAlias]
+    @old_ds_data.key?(:authDataAlias)? @old_ds_data[:authDataAlias] : ''
   end
 
   # Set the component-managed authentication alias
@@ -395,7 +395,7 @@ END
   # If this is not an XA Provider, then we make some noise about it and refuse to change the setting.
   def xa_recovery_auth_alias
     if @xa_provider 
-      return @old_ds_data[:xaRecoveryAuthAlias]
+      @old_ds_data.key?(:xaRecoveryAuthAlias)? @old_ds_data[:xaRecoveryAuthAlias] : ''
     else 
       if resource[:xa_recovery_auth_alias] == ''
         return resource[:xa_recovery_auth_alias]
@@ -413,7 +413,7 @@ END
 
   # Get the mapping configuration alias
   def mapping_configuration_alias
-    @old_mapping_data[:mappingConfigAlias]
+    @old_mapping_data.key?(:mappingConfigAlias)? @old_mapping_data[:mappingConfigAlias] : '' 
   end
 
   # Set the mapping configuration alias
@@ -423,7 +423,7 @@ END
 
   # Get the container-managed authentication alias
   def container_managed_auth_alias
-    @old_mapping_data[:authDataAlias]
+    @old_mapping_data.key?(:authDataAlias)? @old_mapping_data[:authDataAlias] : '' 
   end
 
   # Set the container-managed authentication alias
