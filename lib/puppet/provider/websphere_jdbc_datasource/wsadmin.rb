@@ -245,7 +245,7 @@ def createDataSourceAtScope( scope, JDBCProvider, datasourceName, jndiName, data
         jdbcProviderType = AdminConfig.showAttribute(jdbcProviderId, 'providerType')
         AdminUtilities.debugNotice("JDBC Provider Type: %s" % (jdbcProviderType))
         if jdbcProviderType:
-          if jdbcProviderType.find("XA") >= 0 and xaRecoveryAuthAlias:
+          if jdbcProviderType.find("XA") >= 0:
               finalAttrsList.append(['xaRecoveryAuthAlias', xaRecoveryAuthAlias])
           #endIf
         #endIf
@@ -279,7 +279,7 @@ def createDataSourceAtScope( scope, JDBCProvider, datasourceName, jndiName, data
         if CMPConnFactoryId:
           cmpCFData = [['name', datasourceName+"_CF"], ['authDataAlias', authDataAlias]]
           if jdbcProviderType:
-            if jdbcProviderType.find("XA") >= 0 and xaRecoveryAuthAlias:
+            if jdbcProviderType.find("XA") >= 0:
               cmpCFData.append(['xaRecoveryAuthAlias', xaRecoveryAuthAlias])
             #endIf
           #endIf
@@ -734,7 +734,7 @@ def modifyDataSourceAtScope( scope, JDBCProvider, datasourceName, jndiName, cmpE
         jdbcProviderType = AdminConfig.showAttribute(jdbcProviderId, 'providerType')
         AdminUtilities.debugNotice("JDBC Provider Type: %s" % (jdbcProviderType))
         if jdbcProviderType:
-          if jdbcProviderType.find("XA") >= 0 and xaRecoveryAuthAlias:
+          if jdbcProviderType.find("XA") >= 0:
               finalAttrsList.append(['xaRecoveryAuthAlias', xaRecoveryAuthAlias])
           #endIf
         #endIf
@@ -759,7 +759,7 @@ def modifyDataSourceAtScope( scope, JDBCProvider, datasourceName, jndiName, cmpE
         else:
           cmpCFData = [['name', datasourceName+"_CF"], ['authDataAlias', authDataAlias]]
           if jdbcProviderType:
-            if jdbcProviderType.find("XA") >= 0 and xaRecoveryAuthAlias:
+            if jdbcProviderType.find("XA") >= 0:
               cmpCFData.append(['xaRecoveryAuthAlias', xaRecoveryAuthAlias])
             #endIf
           #endIf
