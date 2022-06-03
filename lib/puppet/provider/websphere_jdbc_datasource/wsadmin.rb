@@ -531,9 +531,24 @@ def deleteDataSourceAtScope( scope, datasourceName, failonerror=AdminUtilities._
 deleteDataSourceAtScope(scope, ds_name)
 
 END
+
+    debug "Running command: #{cmd} as user: #{resource[:user]}"
+    result = wsadmin(file: cmd, user: resource[:user], failonfail: true)
+    if %r{Invalid parameter value "" for parameter "parent config id" on command "create"}.match?(result)
+      err = <<-EOT
+      Could not delete JDBC Data Source: #{resource[:ds_name]}
+      EOT
+      raise Puppet::Error, err
+    end
+    debug "Result:\n#{result}"
   end
 
   def flush
+
+    # If we haven't got anything to modify, we've got nothing to flush. Otherwise
+    # parse the list of things to do
+    return if @property_flush.empty?
+
     # Set the scope for this JDBC Resource.
     jdbc_scope = scope('query')
 
@@ -798,6 +813,17 @@ def modifyDataSourceAtScope( scope, JDBCProvider, datasourceName, jndiName, cmpE
 modifyDataSourceAtScope(scope, provider, ds_name, jndi_name, cmp_enabled, ds_helper, map_alias, container_auth_alias, xa_recovery_auth_alias, component_auth_alias, extra_attrs, resource_attrs, cpool_attrs)
 
 END
+
+    debug "Running command: #{cmd} as user: #{resource[:user]}"
+    result = wsadmin(file: cmd, user: resource[:user], failonfail: true)
+    if %r{Invalid parameter value "" for parameter "parent config id" on command "create"}.match?(result)
+      err = <<-EOT
+      Could not update JDBC Data Source: #{resource[:ds_name]}
+      EOT
+      raise Puppet::Error, err
+    end
+    debug "Result:\n#{result}"
+
     case resource[:scope]
     when %r{(server|node)}
       sync_node
