@@ -809,6 +809,9 @@ def modifyDataSourceAtScope( scope, JDBCProvider, datasourceName, jndiName, cmpE
         AdminUtilities.debugNotice("Mapping Module ID: %s" % (mappingModuleId))
         if mappingModuleId:
           AdminConfig.modify(mappingModuleId, str(mapModuleData).replace(',', ''))
+        else:
+          AdminConfig.create('MappingModule', dataSourceId, str(mapModuleData).replace(',', ''))
+        #endIf
 
         # Set the Connection Pool Params - the modify() takes a mangled array of arrays with no commas
         if connectionPoolAttrsList:
