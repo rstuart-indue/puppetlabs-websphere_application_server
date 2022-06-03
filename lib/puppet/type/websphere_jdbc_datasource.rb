@@ -264,6 +264,7 @@ Puppet::Type.newtype(:websphere_jdbc_datasource) do
 
     Example: 'jdbc:oracle:thin:@//localhost:1521/sample'
     EOT
+    defaultto ''
   end
 
   newparam(:description) do
