@@ -341,7 +341,7 @@ END
     # Make a Jython hash out of the custom props if we have any - otherwise pass an empty hash.
     custom_props = {}
     custom_props = @resource[:login_modules].select{|module_name,values_hash| values_hash.key?(:custom_properties)} unless resource[:login_modules].nil?
-    custom_props_str = custom_props.map { |k, v| [k, v[:custom_properties].to_s]}.to_h.to_json
+    custom_props_str = custom_props.map { |k, v| [k, "'#{v[:custom_properties].to_s}'"]}.to_h.to_json
    
     # Get the list of modules which we need to remove.
     removable_modules = []
