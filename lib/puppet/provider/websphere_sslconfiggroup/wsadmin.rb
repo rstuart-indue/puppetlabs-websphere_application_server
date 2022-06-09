@@ -85,7 +85,7 @@ Puppet::Type.type(:websphere_sslconfiggroup).provide(:wsadmin, parent: Puppet::P
      confgrp_scope = scope('xml')
   
     # Compute the SSL config scope
-    sslconf_scope = scope('xml', target_scope: resource[:ssl_conf_scope])
+    sslconf_scope = scope('xml', target_scope: resource[:ssl_config_scope])
 
     cmd = <<-END.unindent
 import AdminUtilities
@@ -94,7 +94,7 @@ import AdminUtilities
 confgrp_name = "#{resource[:confgrp_alias]}"
 confgrp_scope = "#{confgrp_scope}"
 direction = "#{resource[:direction]}"
-ssl_conf_alias = "#{resource[:ssl_conf_alias]}"
+ssl_conf_alias = "#{resource[:ssl_config_name]}"
 ssl_conf_scope = "#{sslconf_scope}"
 c_cert = "#{resource[:client_cert_alias]}"
 
@@ -384,7 +384,7 @@ END
     confgrp_scope = scope('xml')
 
     # Compute the SSL config scope
-    sslconf_scope = scope('xml', target_scope: resource[:ssl_conf_scope])
+    sslconf_scope = scope('xml', target_scope: resource[:ssl_config_scope])
 
     cmd = <<-END.unindent
 import AdminUtilities
@@ -393,7 +393,7 @@ import AdminUtilities
 confgrp_name = "#{resource[:confgrp_alias]}"
 confgrp_scope = "#{confgrp_scope}"
 direction = "#{resource[:direction]}"
-ssl_conf_alias = "#{resource[:ssl_conf_alias]}"
+ssl_conf_alias = "#{resource[:ssl_config_name]}"
 ssl_conf_scope = "#{sslconf_scope}"
 c_cert = "#{resource[:client_cert_alias]}"
 
