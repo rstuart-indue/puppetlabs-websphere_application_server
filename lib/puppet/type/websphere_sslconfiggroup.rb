@@ -122,8 +122,7 @@ Puppet::Type.newtype(:websphere_sslconfiggroup) do
     end
 
     # Default the SSL Config scope to the resource SSL Config Group scope.
-    self[:ssl_config_scope] = self[:scope] if self[:ssl_config_scope].nil?
-
+    self[:ssl_config_scope_type] = self[:scope] if self[:ssl_config_scope_type].nil?
     [:confgrp_alias, :server, :cell, :node_name, :cluster, :profile, :user].each do |value|
       raise ArgumentError, "Invalid #{value} #{self[:value]}" unless %r{^[-0-9A-Za-z._]+$}.match?(value)
     end 
