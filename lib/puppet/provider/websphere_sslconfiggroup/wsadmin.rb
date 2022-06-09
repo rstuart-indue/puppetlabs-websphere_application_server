@@ -85,7 +85,7 @@ Puppet::Type.type(:websphere_sslconfiggroup).provide(:wsadmin, parent: Puppet::P
      confgrp_scope = scope('xml')
   
     # Compute the SSL config scope
-    sslconf_scope = scope('xml', target_scope: resource[:ssl_config_scope])
+    sslconf_scope = scope('xml', target_scope: resource[:ssl_config_scope_type])
 
     cmd = <<-END.unindent
 import AdminUtilities
@@ -280,12 +280,12 @@ END
     @property_flush[:sslConfig] = val
   end
 
-  def ssl_config_scope
-    @old_conf_details[:sslConfigScope]
+  def ssl_config_scope_type
+    @old_conf_details[:sslConfigScopeType]
   end
 
-  def ssl_config_scope=(val)
-    @property_flush[:sslConfigScope] = val
+  def ssl_config_scope_type=(val)
+    @property_flush[:sslConfigScopeType] = val
   end
 
   def client_cert_alias
@@ -385,7 +385,7 @@ END
     confgrp_scope = scope('xml')
 
     # Compute the SSL config scope
-    sslconf_scope = scope('xml', target_scope: resource[:ssl_config_scope])
+    sslconf_scope = scope('xml', target_scope: resource[:ssl_config_scope_type])
 
     cmd = <<-END.unindent
 import AdminUtilities
