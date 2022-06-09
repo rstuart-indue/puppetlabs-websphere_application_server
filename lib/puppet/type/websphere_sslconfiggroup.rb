@@ -148,8 +148,9 @@ Puppet::Type.newtype(:websphere_sslconfiggroup) do
     desc 'Required. The name of the SSL configuration associated with the SSL Config Group'
   end
 
-  newproperty(:ssl_config_scope) do
-    desc 'Optional. The scope of the associated SSL configuration.'
+  newproperty(:ssl_config_scope_type) do
+    newvalues(:cell, :cluster, :node, :server)
+    desc 'Required. The scope type of the associated SSL configuration. Valid values: cell, cluster, node, or server'
   end  
   
   newproperty(:client_cert_alias) do
