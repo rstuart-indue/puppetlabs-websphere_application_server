@@ -143,6 +143,7 @@ def createSSLConfigGroup(name, confgrp_scope, direction, sslConfAlias, sslConfSc
 
     # Prepare the parameters for the AdminTask command:
     requiredParameters = [["name", name], ["scopeName", confgrp_scope], ["direction", direction], ["sslConfigScopeName", sslConfScope], ["sslConfigAliasName", sslConfAlias], ["certificateAlias", client_cert]]
+    finalParameters = []
     for attrs in requiredParameters:
       attr = ["-"+attrs[0], attrs[1]]
       finalParameters = finalParameters+attr
@@ -442,6 +443,7 @@ def modifySSLConfigGroup(name, confgrp_scope, direction, sslConfAlias, sslConfSc
 
     # Prepare the parameters for the AdminTask command:
     requiredParameters = [["name", name], ["scopeName", confgrp_scope], ["direction", direction], ["sslConfigScopeName", sslConfScope], ["sslConfigAliasName", sslConfAlias], ["certificateAlias", client_cert]]
+    finalParameters = []
     for attrs in requiredParameters:
       attr = ["-"+attrs[0], attrs[1]]
       finalParameters = finalParameters+attr
