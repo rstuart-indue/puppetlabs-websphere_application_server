@@ -449,7 +449,7 @@ AdminUtilities.setDebugNotices('#{@jython_debug_state}')
 bundleName = "com.ibm.ws.scripting.resources.scriptLibraryMessage"
 resourceBundle = AdminUtilities.getResourceBundle(bundleName)
 
-def deleteSSLConfig(name, scope, ks_name, failonerror=AdminUtilities._TRUE_ ):
+def deleteSSLConfig(name, scope, failonerror=AdminUtilities._TRUE_ ):
   if (failonerror==AdminUtilities._BLANK_):
       failonerror=AdminUtilities._FAIL_ON_ERROR_
   #endIf
@@ -497,7 +497,7 @@ def deleteSSLConfig(name, scope, ks_name, failonerror=AdminUtilities._TRUE_ ):
   #endTry
 #endDef
 
-# And now - delete the certalias
+# And now - delete the SSL Config Alias
 deleteSSLConfig(config_alias, conf_scope)
 
 END
