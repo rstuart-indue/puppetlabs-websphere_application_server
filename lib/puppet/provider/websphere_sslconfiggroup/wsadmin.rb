@@ -42,7 +42,7 @@ Puppet::Type.type(:websphere_sslconfiggroup).provide(:wsadmin, parent: Puppet::P
     # I don't honestly know where the query/mod could be used, but sure as hell
     # the xml entry is used in security.xml scope attribute for a management scope.
     # It's yet another way of defining scope in WAS.
-    case target_scope
+    case target_scope.to_s
     when 'cell'
       query = "/Cell:#{resource[:cell]}"
       mod   = "cells/#{resource[:cell]}"
