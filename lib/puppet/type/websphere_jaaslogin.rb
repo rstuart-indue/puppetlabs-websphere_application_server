@@ -25,7 +25,7 @@ Puppet::Type.newtype(:websphere_jaaslogin) do
       com.foo.bar.security.server.lm.wsMapDefaultInboundLoginModule => {
         ordinal                 => 1,
         authentication_strategy => 'REQUIRED',
-        custom_properties       => ["Custom_PROP_NAME1=Custom_PROP_VALUE1","Custom_PROP_NAME2=Custom_PROP_VALUE2"]
+        custom_properties       => {"Custom_PROP_NAME1" => "Custom_PROP_VALUE1","Custom_PROP_NAME2" => "Custom_PROP_VALUE2"},
       }
       com.baz.quux.security.server.lm.ltpaLoginModule => {
         ordinal                 => 2,
@@ -39,10 +39,12 @@ Puppet::Type.newtype(:websphere_jaaslogin) do
           stacked for consulting, whereas the authentication_strategy specifies the behaviour of the module as
           the authentication process moves through the stack of login modules.
 
-          The `custom_properties` field is an array containing string elements in the format of `"Key=Value".
+          The `custom_properties` field is a hash containing string elements in the format of "Key"=> "Value".
           If `custom_properties` is not present, the type will not create/manage any custom properties for the
-          given login module. If `custom_properties` is an empty array, this will cause the removal of all
-          custom properties for the given login module.
+          given login module. If `custom_properties` is an empty hash, this will cause the removal of all
+          custom properties for the given login module. If key-value pairs are
+          present in the WAS config but are missing from the puppet hash, 
+          they will be removed from the WAS config.
 
           If the login_modules hash is not provided, the type will not manage the login modules. However,
           if it is provided, the type will bring the list of login modules in line with the provided configuration.

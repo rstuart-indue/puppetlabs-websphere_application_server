@@ -85,8 +85,8 @@ Puppet::Type.type(:websphere_jaaslogin).provide(:wsadmin, parent: Puppet::Provid
 
     # Make a Jython hash out of the custom props if we have any - otherwise pass an empty hash.
     custom_props = {}
-    custom_props = @resource[:login_modules].select{|module_name,values_hash| values_hash.key?(:custom_properties)} unless resource[:login_modules].nil?
-    custom_props_str = custom_props.map { |k, v| [k, v[:custom_properties].to_s]}.to_h.to_json
+    custom_props = resource[:login_modules].select{|module_name,values_hash| values_hash.key?(:custom_properties)} unless resource[:login_modules].nil?
+    custom_props_str = custom_props.map { |k, v| [k, "'#{v[:custom_properties].map{ |cpk, cpv| "#{cpk}=#{cpv}"}}'"]}.to_h.to_json
    
     login_modules_stringified = get_login_modules_strings
 
@@ -232,14 +232,15 @@ END
       }
 
       # Extract the custom properties from a login module
-      custom_properties = []
+      custom_properties = {}
       XPath.each(module_entry, "options") { |custom_property|
         prop_name, prop_value = XPath.match(custom_property, "@*[local-name()='name' or local-name()='value']")
-        custom_properties += ["#{prop_name.value.to_s}=#{prop_value.value.to_s}"]
+        custom_properties[prop_name.value.to_sym]=prop_value.value.to_s
       } unless module_entry.nil?
 
-      # Add the custom properties for this login module, if we have discovered any
-      @old_conf_details[module_class_name].store(:custom_properties, custom_properties) unless custom_properties.length == 0
+      # Add the custom properties for this login module, regardless of whether we have discovered any. 
+      # We'll clean them later in the login_modules() method
+      @old_conf_details[module_class_name].store(:custom_properties, custom_properties)
 
       # Increment the ordinal number
       ordinal += 1
@@ -251,7 +252,16 @@ END
   end
 
   def login_modules
-    @old_conf_details
+    sanitised_list = @old_conf_details
+    each resource[:login_modules] { |login_module|
+      if sanitised_list.key?(login_module)
+        # Ignore custom_properties if we don't have them in the "SHOULD" hash.
+        # Delete them from the returnable hash just so Puppet is 'happy' and move
+        # to the next login module
+        sanitised_list[login_module].delete(:custom_properties) unless resource[:login_modules][login_module].key?(:custom_properties)
+      end
+    }
+    return sanitised_list
   end
 
   def login_modules=(val)
@@ -340,9 +350,19 @@ END
 
     # Make a Jython hash out of the custom props if we have any - otherwise pass an empty hash.
     custom_props = {}
-    custom_props = @resource[:login_modules].select{|module_name,values_hash| values_hash.key?(:custom_properties)} unless resource[:login_modules].nil?
-    custom_props_str = custom_props.map { |k, v| [k, "'#{v[:custom_properties].to_s}'"]}.to_h.to_json
-   
+    custom_props = resource[:login_modules].select{|module_name,values_hash| values_hash.key?(:custom_properties)} unless resource[:login_modules].nil?
+    #custom_props_str = custom_props.map { |k, v| [k, "'#{v[:custom_properties].map{ |cpk, cpv| "#{cpk}=#{cpv}"}}'"]}.to_h.to_json
+
+    # This is a bit of a mind-bender:
+    # We calculate the differences between the custom properties in WAS and the ones passed to Puppet
+    # What is missing in Puppet means it needs to be deleted from WAS: so we add these "keys" with an empty value
+    # because this way WAS will delete them from the config.
+    custom_props.map{|k, v| 
+      diff_props = @old_conf_details[k][:custom_properties].keys - v[:custom_properties].keys
+      diff_props.each {|e| v[:custom_properties].store(e, '')}
+      [k, "'#{v[:custom_properties].map{ |cpk, cpv| "#{cpk}=#{cpv}"}}'"]
+    }
+  
     # Get the list of modules which we need to remove.
     removable_modules = []
     removable_modules = @old_conf_details.keys - resource[:login_modules].keys unless resource[:login_modules].nil?
