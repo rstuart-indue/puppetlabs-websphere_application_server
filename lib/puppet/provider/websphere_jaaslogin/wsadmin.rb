@@ -253,7 +253,7 @@ END
 
   def login_modules
     sanitised_list = @old_conf_details
-    debug "IS details: #{old_conf_details}"
+    debug "IS details: #{@old_conf_details}"
     debug "SHOULD details: #{resource[:login_modules]}"
 
     resource[:login_modules].each { |login_module|
