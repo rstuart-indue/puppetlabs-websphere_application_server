@@ -358,10 +358,11 @@ END
     # What is missing in Puppet means it needs to be deleted from WAS: so we add these "keys" with an empty value
     # because this way WAS will delete them from the config.
     custom_props_str = custom_props.map{|k, v|
-      debug "IS #{k} -> #{@old_conf_details}"
-      debug "Should #{v}"
-      diff_props = @old_conf_details[k][:custom_properties].keys - v[:custom_properties].keys unless @old_conf_details.key?(k)
-      diff_props.each {|e| v[:custom_properties].store(e, '')} unless diff_props.nil?
+      # If we have a new module to add, the WAS config won't have it listed, so skip this
+      if @old_conf_details.key?(k)
+        diff_props = @old_conf_details[k][:custom_properties].keys - v[:custom_properties].keys
+        diff_props.each {|e| v[:custom_properties].store(e, '')} unless diff_props.nil?
+      end
       [k, "#{v[:custom_properties].map{ |cpk, cpv| "#{cpk}=#{cpv}"}}"]
     }.to_h.to_json
   
