@@ -253,9 +253,6 @@ END
 
   def login_modules
     sanitised_list = @old_conf_details
-    debug "IS details: #{@old_conf_details}"
-    debug "SHOULD details: #{resource[:login_modules]}"
-
     resource[:login_modules].keys.each { |login_module|
       if sanitised_list.key?(login_module)
         # Ignore custom_properties if we don't have them in the "SHOULD" hash.
@@ -364,9 +361,6 @@ END
     # because this way WAS will delete them from the config.
     custom_props_str = custom_props.map{|k, v|
       diff_props = @old_conf_details[k][:custom_properties].keys - v[:custom_properties].keys
-      debug "IS Keys    : #{@old_conf_details[k][:custom_properties].keys}"
-      debug "SHOULD Keys: #{v[:custom_properties].keys}"
-      debug "DIFF Keys  : #{diff_props}"
       diff_props.each {|e| v[:custom_properties].store(e, '')}
       [k, "#{v[:custom_properties].map{ |cpk, cpv| "#{cpk}=#{cpv}"}}"]
     }.to_h.to_json
