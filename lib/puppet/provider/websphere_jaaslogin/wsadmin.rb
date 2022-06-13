@@ -362,7 +362,7 @@ END
     # We calculate the differences between the custom properties in WAS and the ones passed to Puppet
     # What is missing in Puppet means it needs to be deleted from WAS: so we add these "keys" with an empty value
     # because this way WAS will delete them from the config.
-    custom_props.map{|k, v|
+    custom_props_str = custom_props.map{|k, v|
       diff_props = @old_conf_details[k][:custom_properties].keys - v[:custom_properties].keys
       debug "IS Keys    : #{@old_conf_details[k][:custom_properties].keys}"
       debug "SHOULD Keys: #{v[:custom_properties].keys}"
