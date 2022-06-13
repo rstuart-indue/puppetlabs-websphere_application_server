@@ -360,7 +360,7 @@ END
     custom_props_str = custom_props.map{|k, v|
       debug "IS #{k} -> #{@old_conf_details}"
       debug "Should #{v}"
-      diff_props = @old_conf_details[k][:custom_properties].keys - v[:custom_properties].keys unless @old_conf_details.key?(k).nil?
+      diff_props = @old_conf_details[k][:custom_properties].keys - v[:custom_properties].keys unless @old_conf_details.key?(k)
       diff_props.each {|e| v[:custom_properties].store(e, '')} unless diff_props.nil?
       [k, "#{v[:custom_properties].map{ |cpk, cpv| "#{cpk}=#{cpv}"}}"]
     }.to_h.to_json
