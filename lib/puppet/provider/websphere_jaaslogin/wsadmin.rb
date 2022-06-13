@@ -86,7 +86,7 @@ Puppet::Type.type(:websphere_jaaslogin).provide(:wsadmin, parent: Puppet::Provid
     # Make a Jython hash out of the custom props if we have any - otherwise pass an empty hash.
     custom_props = {}
     custom_props = resource[:login_modules].select{|module_name,values_hash| values_hash.key?(:custom_properties)} unless resource[:login_modules].nil?
-    custom_props_str = custom_props.map { |k, v| [k, "'#{v[:custom_properties].map{ |cpk, cpv| "#{cpk}=#{cpv}"}}'"]}.to_h.to_json
+    custom_props_str = custom_props.map { |k, v| [k, "#{v[:custom_properties].map{ |cpk, cpv| "#{cpk}=#{cpv}"}}"]}.to_h.to_json
    
     login_modules_stringified = get_login_modules_strings
 
@@ -368,8 +368,8 @@ END
       debug "SHOULD Keys: #{v[:custom_properties].keys}"
       debug "DIFF Keys  : #{diff_props}"
       diff_props.each {|e| v[:custom_properties].store(e, '')}
-      [k, "'#{v[:custom_properties].map{ |cpk, cpv| "#{cpk}=#{cpv}"}}'"]
-    }
+      [k, "#{v[:custom_properties].map{ |cpk, cpv| "#{cpk}=#{cpv}"}}"]
+    }.to_h.to_json
   
     # Get the list of modules which we need to remove.
     removable_modules = []
