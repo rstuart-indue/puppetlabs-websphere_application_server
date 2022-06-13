@@ -352,13 +352,17 @@ END
     custom_props = {}
     custom_props = resource[:login_modules].select{|module_name,values_hash| values_hash.key?(:custom_properties)} unless resource[:login_modules].nil?
     #custom_props_str = custom_props.map { |k, v| [k, "'#{v[:custom_properties].map{ |cpk, cpv| "#{cpk}=#{cpv}"}}'"]}.to_h.to_json
+    debug "CustomProps SHOULD: #{custom_props}"
 
     # This is a bit of a mind-bender:
     # We calculate the differences between the custom properties in WAS and the ones passed to Puppet
     # What is missing in Puppet means it needs to be deleted from WAS: so we add these "keys" with an empty value
     # because this way WAS will delete them from the config.
-    custom_props.map{|k, v| 
+    custom_props.map{|k, v|
       diff_props = @old_conf_details[k][:custom_properties].keys - v[:custom_properties].keys
+      debug "IS Keys    : #{@old_conf_details[k][:custom_properties].keys}"
+      debug "SHOULD Keys: #{v[:custom_properties].keys}"
+      debug "DIFF Keys  : #{diff_props}"
       diff_props.each {|e| v[:custom_properties].store(e, '')}
       [k, "'#{v[:custom_properties].map{ |cpk, cpv| "#{cpk}=#{cpv}"}}'"]
     }
