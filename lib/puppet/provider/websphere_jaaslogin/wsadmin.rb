@@ -256,7 +256,7 @@ END
     debug "IS details: #{@old_conf_details}"
     debug "SHOULD details: #{resource[:login_modules]}"
 
-    resource[:login_modules].each { |login_module|
+    resource[:login_modules].keys.each { |login_module|
       if sanitised_list.key?(login_module)
         # Ignore custom_properties if we don't have them in the "SHOULD" hash.
         # Delete them from the returnable hash just so Puppet is 'happy' and move
