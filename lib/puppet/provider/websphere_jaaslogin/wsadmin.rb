@@ -253,11 +253,15 @@ END
 
   def login_modules
     sanitised_list = @old_conf_details
+    debug "IS details: #{old_conf_details}"
+    debug "SHOULD details: #{resource[:login_modules]}"
+
     resource[:login_modules].each { |login_module|
       if sanitised_list.key?(login_module)
         # Ignore custom_properties if we don't have them in the "SHOULD" hash.
         # Delete them from the returnable hash just so Puppet is 'happy' and move
         # to the next login module
+        debug "checking custom_properties for #{login_module}"
         sanitised_list[login_module].delete(:custom_properties) unless resource[:login_modules][login_module].key?(:custom_properties)
       end
     }
