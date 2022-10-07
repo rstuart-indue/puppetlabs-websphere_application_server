@@ -30,7 +30,6 @@ Puppet::Type.type(:websphere_jdbc_datasource).provide(:wsadmin, parent: Puppet::
     @old_ds_data = {}
     @old_conn_pool_data = {}
     @old_mapping_data = {}
-    @old_cmp_cf_data = {}
     @old_cmp_mapping_data = {}
     @xa_provider = false
 
@@ -346,7 +345,7 @@ END
 
     debug "Retrieving value of #{resource[:jdbc_provider]}/#{resource[:ds_name]} from #{scope('file')}"
 
-        # We're looking for Connection Factory entries matching our cf_name. We have to ensure we're looking under the
+        # We're looking for Connection Factory entries matching our ds_name. We have to ensure we're looking under the
     # correct provider entry.
     provider_entry = XPath.first(doc, "/xmi:XMI[@xmlns:resources.jdbc]/resources.jdbc:JDBCProvider[@name='#{resource[:jdbc_provider]}']")
     @xa_provider = XPath.first(provider_entry, "@*[local-name()='xa']").value unless provider_entry.nil?
