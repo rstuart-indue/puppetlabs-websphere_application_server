@@ -236,10 +236,11 @@ Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::
       # We'll need to look each of them up - to find out what they are called.
       # I suppose we could risk it and hardcode the role_id -> role_name mappings
       # but I'm not sure how immutable those mappings are.
-      role_id_array = XPath.match(admin_doc, "/rolebasedauthz:AuthorizationTableExt[@context='domain']/authorizations/groups[@name=$thegrp]/ancestor::/@role",
-        {}, { "thegrp" => "#{resource[:groupid]}" } )
-      audit_id_array = XPath.match(audit_doc, "/rolebasedauthz:AuthorizationTableExt[@context='domain']/authorizations/groups[@name=$thegrp]/ancestor::/@role",
-        {}, { "thegrp" => "#{resource[:groupid]}" } )
+      # /rolebasedauthz:AuthorizationTableExt[@context='domain']/authorizations/groups[@name='#{member}']/parent::*/@role
+      role_id_array = XPath.match(admin_doc, "/rolebasedauthz:AuthorizationTableExt[@context='domain']/authorizations/groups[@name='#{member}']/parent::*/@role")
+      audit_id_array = XPath.match(audit_doc, "/rolebasedauthz:AuthorizationTableExt[@context='domain']/authorizations/groups[@name='#{member}']/parent::*/@role")
+
+      debug "role_id_array = #{role_id_array}"
 
       # Extract the mapping from the role_id to the real role_name
       # These entries look something similar to this:
@@ -249,6 +250,7 @@ Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::
       role_id_array.each do |role_id|
         role_name = XPath.first(admin_doc, "/rolebasedauthz:AuthorizationTableExt[@context='domain']/roles[@xmi:id='#{role_id}']/@roleName").value
         @old_roles_list.push(role_name.to_sym) unless role_name.nil?
+        debug "role_id = #{role_id} and role_name = #{role_name}"
       end
 
       audit_id_array.each do |audit_id|
