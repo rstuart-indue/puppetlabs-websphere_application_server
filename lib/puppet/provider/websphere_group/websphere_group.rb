@@ -237,8 +237,8 @@ Puppet::Type.type(:websphere_group).provide(:wsadmin, parent: Puppet::Provider::
       # I suppose we could risk it and hardcode the role_id -> role_name mappings
       # but I'm not sure how immutable those mappings are.
       # /rolebasedauthz:AuthorizationTableExt[@context='domain']/authorizations/groups[@name='#{member}']/parent::*/@role
-      role_id_array = XPath.match(admin_doc, "/rolebasedauthz:AuthorizationTableExt[@context='domain']/authorizations/groups[@name='#{member}']/parent::*/@role")
-      audit_id_array = XPath.match(audit_doc, "/rolebasedauthz:AuthorizationTableExt[@context='domain']/authorizations/groups[@name='#{member}']/parent::*/@role")
+      role_id_array = XPath.match(admin_doc, "/rolebasedauthz:AuthorizationTableExt[@context='domain']/authorizations/groups[@name='#{resource[:groupid]}']/parent::*/@role")
+      audit_id_array = XPath.match(audit_doc, "/rolebasedauthz:AuthorizationTableExt[@context='domain']/authorizations/groups[@name='#{resource[:groupid]}']/parent::*/@role")
 
       debug "role_id_array = #{role_id_array}"
 
